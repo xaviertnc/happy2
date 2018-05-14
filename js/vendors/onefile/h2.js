@@ -11,30 +11,27 @@
 
 class HappyItem {
 
-  constructor(type, selector, happy2doc, happy2parent, options) {
+  constructor(happy2type, happy2parent, options) {
+    options = options || {};
+    console.log('HappyItem.constructor(), happy2type:', happy2type, ', opt.elm:', options.elm, ', opt.sel:', options.selector);
+    // console.log('HappyItem.constructor(), happy2parent:', happy2parent, ', options:', options);
 
-    console.log('HappyItem.constructor(), type:', type, ' selector:', selector, ', opt.elm:', options?options.elm:'');
-    // console.log('HappyItem.constructor(), h2doc:', happy2doc, ', happy2parent:', happy2parent);
-    // console.log('HappyItem.constructor(), options:', options);
+    this.happy2type = happy2type || 'doc';
+    this.happy2parent = happy2parent || { nextId: 1, getOpt: function(){} };
+    this.happy2doc = this.happy2parent.happy2doc || this;
 
-    this.nextId = 1;
-    this.type = type;
-    this.happy2doc = happy2doc;
-    this.happy2parent = happy2parent;
+    Object.assign(this, options);
 
-    Object.assign(this, options || {});
-
-    if ( ! this.happy2doc && type == 'doc') { this.happy2doc = this; }
-    if ( ! this.happy2parent) { this.happy2parent = { nextId: 1, getOpt: function(){} }; }
-    if ( ! this.elm) { this.elm = this.findDOMElement(selector); }
+    if ( ! this.elm) { this.elm = this.findDOMElement(this.selector); }
     if ( ! this.id)  { this.id = this.getId(); }
 
     this.elm.happy2item = this;
+    this.nextId = 1;
   }
 
 
   getId() {
-    let id = this.type + this.happy2parent.nextId++;
+    let id = this.happy2type + this.happy2parent.nextId++;
     if (this.happy2parent.id) { id = this.happy2parent.id + '_' + id; }
     return id;
   }
@@ -190,25 +187,33 @@ class HappyValidation {
 
 
 
-class HappyMessageAnchor {
-
-}
-// end: HappyMessageAnchor
-
-
-
 class HappyMessage {
+
+  constructor(options) {
+    Object.assign(this, options || {});
+  }
 
 }
 // end: HappyMessage
 
 
 
+class HappyMessageAnchor {
+
+  constructor(options) {
+    Object.assign(this, options || {});
+  }
+
+}
+// end: HappyMessageAnchor
+
+
+
 class HappyInput extends HappyItem {
 
-  constructor(selector, happy2doc, happy2parent, options) {
+  constructor(happy2parent, options) {
     options = options || {};
-    super('input', selector, happy2doc, happy2parent, options);
+    super('input', happy2parent, options);
     this.messageAnchorDOMElements = this.findMessageAnchors();
     if (this.messageAnchorDOMElements) {
       this.messageAnchors = this._parseMessageAnchorElements();
@@ -216,6 +221,10 @@ class HappyInput extends HappyItem {
       if (this.messageDOMElements) { this.messages = this._parseMessageElements(); }
     }
     console.log('HappyInput - Initialized', this);
+  }
+
+  update(event, isSubmit) {
+    console.log('HappyInput.update(), target:', event.target, ', isSubmit:', isSubmit);
   }
 
   findMessageAnchors() {
@@ -244,8 +253,8 @@ class HappyInput extends HappyItem {
     let messageAnchors = [], happy2input = this;
     if ( ! this.messageAnchorDOMElements.length) { return messageAnchors; }
     this.messageAnchorDOMElements.forEach(function createMessageAnchor(msgAnchorElement, index) {
-      let anchorOptions = { elm: msgAnchorElement };
-      let messageAnchor = new HappyMessageAnchor(happy2input, anchorOptions);
+      let anchorOptions = { happy2parent: happy2input, elm: msgAnchorElement };
+      let messageAnchor = new HappyMessageAnchor(anchorOptions);
       messageAnchors.push(messageAnchor);
     });
     return messageAnchors;
@@ -258,8 +267,8 @@ class HappyInput extends HappyItem {
     if ( ! this.messageDOMElements.length) { return messages; }
     console.log('HappyInput._parseMessageElements(), messageDOMElements:', this.messageDOMElements);
     this.messageDOMElements.forEach(function createMessage(messageElement, index) {
-      let messageOptions = { elm: messageElement };
-      let message = new HappyMessage(happy2input, messageOptions);
+      let messageOptions = { happy2parent: happy2input, elm: messageElement };
+      let message = new HappyMessage(messageOptions);
       messages.push(message);
     });
     return messages;
@@ -272,12 +281,29 @@ class HappyInput extends HappyItem {
 
 class HappyField extends HappyItem {
 
-  constructor(selector, happy2doc, happy2parent, options) {
+  constructor(happy2parent, options) {
     options = options || {};
-    super('field', selector, happy2doc, happy2parent, options);
+    super('field', happy2parent, options);
     this.inputDOMElements = this.findInputElements();
     this.happyInputs = this._parseInputElements();
+    this.bindUpdateTriggers();
     console.log('HappyField - Initialized', this);
+  }
+
+  update(event, isSubmit) {
+    console.log('HappyField.validate(), target:', event.target, ', isSubmit:', isSubmit);
+  }
+
+  bindUpdateTriggers() {
+    let happy2field = this;
+    this.elm.addEventListener('change', function(event) {
+      let happy2input = event.target.happy2item;
+      if (happy2input && happy2input.validations) {
+        happy2input.update(event, false)
+      } else {
+        happy2field.update(event, false);
+      }
+    }, true);
   }
 
   findInputElements() {
@@ -286,12 +312,12 @@ class HappyField extends HappyItem {
 
   _parseInputElements() {
     let happyInputs = [],
-        happy2field = this,
-        happy2doc = this.happy2doc;
+        happy2field = this;
     if (!this.inputDOMElements.length) { return happyInputs; }
     this.inputDOMElements.forEach(function createHappyInput(inputElement, index) {
       let inputOptions = { elm: inputElement };
-      happyInputs.push(new HappyInput(null, happy2doc, happy2field, inputOptions));
+      let happyInput = new HappyInput(happy2field, inputOptions);
+      happyInputs.push(happyInput);
     });
     return happyInputs;
   }
@@ -303,9 +329,9 @@ class HappyField extends HappyItem {
 
 class HappyForm extends HappyItem {
 
-  constructor(selector, happy2doc, options) {
+  constructor(happy2doc, options) {
     options = options || {};
-    super('form', selector, happy2doc, happy2doc, options);
+    super('form', happy2doc, options);
     this.fieldDOMElements = this.findFieldElements();
     this.happyFields = this._parseFieldElements();
     console.log('HappyForm - Initialized', this);
@@ -315,12 +341,11 @@ class HappyForm extends HappyItem {
 
   _parseFieldElements() {
     let happyFields = [],
-        happy2form = this,
-        happy2doc = this.happy2doc;
+        happy2form = this;
     if (!this.fieldDOMElements.length) { return happyFields; }
     this.fieldDOMElements.forEach(function createHappyField(fieldElement, index) {
       let fieldOptions = { elm: fieldElement };
-      happyFields.push(new HappyField(null, happy2doc, happy2form, fieldOptions));
+      happyFields.push(new HappyField(happy2form, fieldOptions));
     });
     return happyFields;
   }
@@ -334,6 +359,7 @@ class HappyDocument extends HappyItem {
 
   constructor(options) {
     options = options || {};
+    options.selector = options.selector || '.happy2doc';
     options.formSelector = options.formSelector || 'form';
     options.fieldSelector = options.fieldSelector || '.field';
     options.inputSelector = options.inputSelector || 'input,textarea,select';
@@ -342,17 +368,17 @@ class HappyDocument extends HappyItem {
     options.messageSelector = options.messageSelector || '.message';
     options.customInputModels = options.customInputModels || [];
     options.customFieldModels = options.customFieldModels || [];
-    super('doc', options.selector || '.happy2doc', null, null, options);
-    this.formDOMElements = this.findFormDOMElements();
-    this.happyForms = this.parseFormDOMElements();
+    super('doc', null, options);
+    this.formDOMElements = this.findFormElements();
+    this.happyForms = this._parseFormElements();
     this.inputModels = { 'text': HappyInput };
     this.fieldModels = { 'text': HappyField };
     console.log('HappyDocument - Initialized', this);
   }
 
-  findFormDOMElements() { return this.findDOMElements(this.formSelector, this.elm); }
+  findFormElements() { return this.findDOMElements(this.formSelector, this.elm); }
 
-  parseFormDOMElements() {
+  _parseFormElements() {
     let happyForms = [],
         happy2doc = this;
     if (!this.formDOMElements.length) { return happyForms; }
