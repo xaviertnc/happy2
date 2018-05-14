@@ -92,7 +92,7 @@ fieldset { padding: 1em; }
 
 label {
   display: inline-block;
-  min-width: 15%;
+  width: 6em;
   vertical-align: top;
 }
 
@@ -100,3 +100,7 @@ label {
 .field { margin: 1em 0; }
 
 .form-actions-bar { padding: 1em 0 0; }
+
+@media (max-width:580px) {
+  label { display: block; }
+}
