@@ -1,6 +1,6 @@
         <div class="happy2doc">
 
-          <form id="form_1" class="pjax" method="post" novalidate>
+          <form id="form_1" class="pjax has-error" method="post" novalidate>
 
             <fieldset>
 
@@ -10,13 +10,21 @@
 
               <div class="field text required has-error">
                 <label>Name:</label>
-                <div class="input-container">
-                  <input name="form_1[name]" type="text" value="">
-                  <ul class="messages">
-                    <li class="message">Enter your full name. e.g. Neels Moller</li>
-                    <li class="message danger">Oeps... Wat het jy gedoen!</li>
-                    <li class="message warning">Ek gaan vir PA se!</li>
-                  </ul>
+                <div class="input-group">
+                  <div class="input-container has-error">
+                    <input name="form_1[name]" type="text" value="">
+                    <ul class="messages">
+                      <li class="message">Firstname</li>
+                      <li class="message danger">Ouch... What have you done!</li>
+                      <li class="message warning">I'm telling DAD!</li>
+                    </ul>
+                  </div>
+                  <div class="input-container">
+                    <input name="form_1[van]" type="text" value="">
+                    <ul class="messages">
+                      <li class="message">Lastname</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
 
