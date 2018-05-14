@@ -1,7 +1,11 @@
 /* Page Styles Go Here... */
+.input-group {
+  display: inline-block;
+}
 
 .input-container {
   display: inline-block;
+  vertical-align: top;
 }
 
 .messages {
@@ -27,11 +31,11 @@
   color: darkorange;
 }
 
-.has-error input,
-.has-error textarea {
+.has-error > input,
+.has-error > textarea {
   border-color: red;
 }
 
-.has-error label {
+.has-error > label {
   color: crimson;
 }
