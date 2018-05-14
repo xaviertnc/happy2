@@ -1,0 +1,38 @@
+/* Page Styles Go Here... */
+
+.input-container {
+  display: inline-block;
+}
+
+.happy-messages {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.happy-messages li {
+  font-size: 0.8em;
+  display: block;
+}
+
+.has-error .happy-messages {
+  display: block;
+}
+
+.has-error input,
+.has-error textarea {
+  border-color: red;
+}
+
+.has-error label {
+  color: crimson;
+}
+
+.happy-messages .danger {
+  color: crimson;
+}
+
+.happy-messages .warning {
+  color: darkorange;
+}

@@ -1,0 +1,102 @@
+fieldset { padding: 1em; }
+
+#page-header .titlebar { background-color: black; color: white; padding: 1em; }
+
+#page-header .nav { padding: 1em; margin: 0; }
+#page-header .nav li { display: inline-block; margin: 0; padding: 0.3em; border: 1px solid gainsboro; }
+#page-header .nav .active { border: 1px solid red; }
+
+#busy-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  z-index: 900;
+}
+
+#back-to-top {
+  background-color: white;
+  border: 1px solid gainsboro;
+  box-shadow: 1px 1px 3px grey;
+  bottom: 1em;
+  cursor: pointer;
+  position: fixed;
+  right: 1em;
+  z-index: 1000;
+}
+
+#back-to-top  a { display: inline-block; padding: 1em 0.5em; }
+
+#page-content { padding: 1em; }
+
+#page-footer { background-color: gainsboro; padding: 1em; }
+
+.pjax-error h3 { color: red; }
+
+.hidden { display: none; }
+
+.busy, .busy a { cursor: progress; }
+
+.busy-indicator-inner {
+  background-color: white;
+  border: 1px solid gainsboro;
+  box-shadow: 1px 1px 3px grey;
+  display: inline-block;
+  margin-top: 40vh;
+  padding: 1em;
+}
+
+.alert {
+  background-color: mistyrose;
+  border: 1px solid red;
+  color: crimson;
+  cursor: pointer;
+  padding: 0.3em 1em;
+  margin-bottom: 0.1em;
+}
+
+#alerts .info {
+  background-color: azure;
+  border-color: royalblue;
+  color: royalblue;
+}
+
+#alerts .success {
+  background-color: mintcream;
+  border-color: green;
+  color: green;
+}
+
+.alert::after {
+  content: "x";
+  float: right;
+  font-family: sans, sans-serif;
+}
+
+#page { max-width: 1024px; margin: 0 auto; }
+
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 800; }
+
+.modal-inner {
+  background-color: white;
+  border: 1px solid gainsboro;
+  box-shadow: 1px 1px 3px grey;
+  margin: 1em auto;
+  padding: 1em;
+  width: 50%;
+}
+
+.modal-close { float: right; }
+
+label {
+  display: inline-block;
+  min-width: 15%;
+  vertical-align: top;
+}
+
+
+.form-field { margin: 1em 0; }
+
+.form-actions-bar { padding: 1em 0 0; }
