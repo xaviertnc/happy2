@@ -4,20 +4,27 @@
   display: inline-block;
 }
 
-.happy-messages {
-  display: none;
+.messages {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.happy-messages li {
-  font-size: 0.8em;
+.messages li {
+  color: silver;
   display: block;
+  font-family: arial,"sans-serif";
+  font-size: 0.7em;
+  font-style: italic;
+  line-height: 1.3em;
 }
 
-.has-error .happy-messages {
-  display: block;
+.messages .danger {
+  color: crimson;
+}
+
+.messages .warning {
+  color: darkorange;
 }
 
 .has-error input,
@@ -27,12 +34,4 @@
 
 .has-error label {
   color: crimson;
-}
-
-.happy-messages .danger {
-  color: crimson;
-}
-
-.happy-messages .warning {
-  color: darkorange;
 }

@@ -1,56 +1,60 @@
+        <div class="happy2doc">
 
-        <form id="form_1" class="pjax" method="post" novalidate>
+          <form id="form_1" class="pjax" method="post" novalidate>
 
-          <fieldset>
+            <fieldset>
 
-            <div class="validation-summary hidden"></div>
+              <div class="validation-summary hidden"></div>
 
-            <legend>Form 1</legend>
+              <legend>Form 1</legend>
 
-            <div class="form-field text required has-error">
-              <label>Name:</label>
-              <div class="input-container">
-                <input name="form_1[name]" type="text" value="">
-                <ul class="happy-messages">
-                  <li class="happy-message danger">Oeps... Wat het jy gedoen!</li>
-                  <li class="happy-message warning">Ek gaan vir PA se!</li>
-                </ul>
+              <div class="field text required has-error">
+                <label>Name:</label>
+                <div class="input-container">
+                  <input name="form_1[name]" type="text" value="">
+                  <ul class="messages">
+                    <li class="message">Enter your full name. e.g. Neels Moller</li>
+                    <li class="message danger">Oeps... Wat het jy gedoen!</li>
+                    <li class="message warning">Ek gaan vir PA se!</li>
+                  </ul>
+                </div>
               </div>
-            </div>
 
-            <div class="form-field number required">
-              <label>Number:</label>
-              <div class="input-container">
-                <input name="form_1[number]" type="number" value="">
+              <div class="field number required">
+                <label>Number:</label>
+                <div class="input-container">
+                  <input name="form_1[number]" type="number" value="">
+                </div>
               </div>
-            </div>
 
-            <div class="form-field currency required">
-              <label>Currency:</label>
-              <input name="form_1[amount]" type="text" value="" data-format="R|2|,">
-            </div>
+              <div class="field currency required">
+                <label>Currency:</label>
+                <input name="form_1[amount]" type="text" value="" data-format="R|2|,">
+              </div>
 
-            <div class="form-field email required">
-              <label>Email:</label>
-              <input name="form_1[email]" type="email" value="" placeholder="e.g. john.doe@example.com">
-            </div>
+              <div class="field email required">
+                <label>Email:</label>
+                <input name="form_1[email]" type="email" value="" placeholder="e.g. john.doe@example.com">
+              </div>
 
-            <div class="form-field memo required">
-              <label>Memo:</label>
-              <textarea name="form_1[memo]" rows="3" placeholder="Enter note here..."></textarea>
-            </div>
+              <div class="field memo required">
+                <label>Memo:</label>
+                <textarea name="form_1[memo]" rows="3" placeholder="Enter note here..."></textarea>
+              </div>
 
-            <div class="form-field checkbox required">
-              <label>Single Checkbox:</label>
-              <input name="form_1[confirm]" type="checkbox" value="1" checked>
-            </div>
+              <div class="field checkbox required">
+                <label>Single Checkbox:</label>
+                <input name="form_1[confirm]" type="checkbox" value="1" checked>
+              </div>
 
-            <div class="form-actions-bar">
-              <button class="button primary" type="submit">Submit</button>
-              <button class="button primary" type="submit" name="refresh">Refresh</button>
-              <button class="button primary" type="submit" name="delete-item" value="1" onclick="F1.confirm(this, event)">Delete Item</button>
-            </div>
+              <div class="form-actions-bar">
+                <button class="button primary" type="submit">Submit</button>
+                <button class="button primary" type="submit" name="refresh">Refresh</button>
+                <button class="button primary" type="submit" name="delete-item" value="1" onclick="F1.confirm(this, event)">Delete Item</button>
+              </div>
 
-          </fieldset>
+            </fieldset>
 
-        </form>
+          </form>
+
+        </div>
