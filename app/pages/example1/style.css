@@ -32,11 +32,13 @@
   color: darkorange;
 }
 
+.has-error > fieldset,
 .has-error > input,
 .has-error > textarea {
   border-color: red;
 }
 
+.has-error > fieldset > legend,
 .has-error > label {
   color: crimson;
 }
