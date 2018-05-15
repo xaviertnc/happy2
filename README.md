@@ -17,27 +17,27 @@ a calculation based on the item's sub-component values.
 - HappyDocMessageAnchors
   - HappyDocMessages
 
-  ### HappyForms
-  - HappyFormMessageAnchors
-    - HappyFormMessages
+### HappyForms
+- HappyFormMessageAnchors
+  - HappyFormMessages
 
-    ### HappyFields
-    - HappyFieldMessageAnchors
-      - HappyFieldMessagesDefaultAnchor
-        - HappyFieldDefaultGroupMessages
-      - HappyFieldMessagesSummaryAnchor
-        - HappyFieldSummaryGroupMessages
-      - HappyFieldMessagesExtraAnchor
-        - HappyFieldExtraGroupMessages
+### HappyFields
+- HappyFieldMessageAnchors
+  - HappyFieldMessagesDefaultAnchor
+    - HappyFieldDefaultGroupMessages
+  - HappyFieldMessagesSummaryAnchor
+    - HappyFieldSummaryGroupMessages
+  - HappyFieldMessagesExtraAnchor
+    - HappyFieldExtraGroupMessages
 
-      ### HappyInputs
-      - HappyInputMessageAnchors
-        - HappyInputMessages
-          - HappyMessage
-          - HappyType1Message
-          - HappyType2Message
-          - HappyType1Message
-          - HappyType3Message
+### HappyInputs
+- HappyInputMessageAnchors
+  - HappyInputMessages
+    - HappyMessage
+    - HappyType1Message
+    - HappyType2Message
+    - HappyType1Message
+    - HappyType3Message
 
 
 

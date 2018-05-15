@@ -152,16 +152,15 @@ class HappyCanValidate extends HappyItem {
   }
 
   findMessageAnchors() {
-    let anchorDOMElements = [];
-    anchorDOMElements.push(this.elm);
-    return anchorDOMElements;
+    if ( ! this.messageAnchorsSelector) { return []; }
+    return this.findDOMElements(this.messageAnchorsSelector, this.elm);
   }
 
   getAnchorElementTypeAttribute(anchorElement) {
     return this.getElementTypeAttribute(anchorElement);
   }
 
-  getHappyMessageAnchorModel(anchorElement) {
+  getHappyMessageAnchorType(anchorElement) {
     let anchorType = this.getAnchorElementTypeAttribute(anchorElement);
     if ( ! anchorType) { return HappyMessageAnchor; }
     return this.happy2doc.customMessageAnchorTypes[anchorType] || HappyMessageAnchor;
@@ -170,10 +169,10 @@ class HappyCanValidate extends HappyItem {
   _parseMessageAnchorElements() {
     let messageAnchors = [], happy2item = this;
     if ( ! this.messageAnchorDOMElements.length) { return messageAnchors; }
-    this.messageAnchorDOMElements.forEach(function createMessageAnchor(msgAnchorElement, index) {
-      let anchorOptions = { elm: msgAnchorElement };
-      let HappyMessageAnchorModel = happy2item.getHappyMessageAnchorModel(msgAnchorElement);
-      let messageAnchor = new HappyMessageAnchorModel(happy2item, anchorOptions);
+    this.messageAnchorDOMElements.forEach(function createMessageAnchor(anchorElement, index) {
+      let anchorOptions = { elm: anchorElement };
+      let HappyMessageAnchorType = happy2item.getHappyMessageAnchorType(anchorElement);
+      let messageAnchor = new HappyMessageAnchorType(happy2item, anchorOptions);
       messageAnchors.push(messageAnchor);
     });
     return messageAnchors;
@@ -330,6 +329,8 @@ class HappyMessageAnchor extends HappyItem {
 class HappyInput extends HappyCanValidate {
 
   constructor(happy2parent, options) {
+    options = options || {};
+    options.messageAnchorsSelector = options.messageAnchorsSelector || '.messages';
     super('input', happy2parent, options);
     console.log('HappyInput - Initialized', this);
   }
@@ -337,15 +338,15 @@ class HappyInput extends HappyCanValidate {
   findInputContainer() {
     if ( ! this.elm) { return; }
     let parentDOMElement = this.elm.parentElement;
-    if (parentDOMElement.matches(this.happy2doc.inputContainerSelector)) { return parentDOMElement; }
+    if (parentDOMElement.matches(this.getOpt('inputContainerSelector'))) { return parentDOMElement; }
   }
 
   // Only look for message anchors that are specifically related to this input.
   // i.e. Message anchors that are within the CONTAINER of this input!
   findMessageAnchors() {
     let inputContainerDOMElement = this.findInputContainer();
-    if ( ! inputContainerDOMElement) { return; }
-    return this.findDOMElements(this.happy2doc.messageAnchorSelector, inputContainerDOMElement);
+    if ( ! inputContainerDOMElement) { return []; }
+    return this.findDOMElements(this.messageAnchorsSelector, inputContainerDOMElement);
   }
 
   check(event, isSubmit) {
@@ -360,7 +361,8 @@ class HappyInput extends HappyCanValidate {
 class HappyField extends HappyCanValidate {
 
   constructor(happy2parent, options) {
-    super('field', happy2parent, options || {});
+    options = options || {};
+    super('field', happy2parent, options);
     this.inputDOMElements = this.findInputElements();
     this.happyInputs = this._parseInputElements();
     this.bindUpdateTriggers();
@@ -421,7 +423,8 @@ class HappyField extends HappyCanValidate {
 class HappyForm extends HappyCanValidate {
 
   constructor(happy2doc, options) {
-    super('form', happy2doc, options || {});
+    options = options || {};
+    super('form', happy2doc, options);
     this.fieldDOMElements = this.findFieldElements();
     this.happyFields = this._parseFieldElements();
     console.log('HappyForm - Initialized', this);
@@ -468,7 +471,6 @@ class HappyDocument extends HappyCanValidate {
     options.fieldSelector = options.fieldSelector || '.field';
     options.inputSelector = options.inputSelector || 'input,textarea,select';
     options.inputContainerSelector = options.inputContainerSelector || '.input-container';
-    options.messageAnchorSelector = options.messageAnchorSelector || '.messages';
     options.messageSelector = options.messageSelector || '.message';
     options.customMessageTypes = options.customMessageTypes || [];
     options.customMessageAnchorTypes = options.customMessageAnchorTypes || [];
