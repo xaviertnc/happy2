@@ -1,6 +1,9 @@
+/* globals window, F1, Happy2, HappyInput, HappyField, HappyMessage */
 /* eslint-env es6 */
 
 window.F1 = window.F1 || { afterPageLoadScripts: [] };
+
+
 F1.afterPageLoadScripts.push(function initPage1()
 {
 
@@ -10,9 +13,7 @@ F1.afterPageLoadScripts.push(function initPage1()
     }
   }
 
-
   class MultiValueField extends HappyField {}
-
 
   class BirthdayField extends MultiValueField {}
 
@@ -26,16 +27,19 @@ F1.afterPageLoadScripts.push(function initPage1()
                       },
 
       'length'      : function (inputElement, min, max) {
+                        let val = inputElement.value;
                         if (val && val.length >= min && val.length <= max) { return; }
                         return 'LENGTH ERROR';
                       },
 
       'minLength'   : function (inputElement, min) {
+                        let val = inputElement.value;
                         if (val && val.length >= min) { return; }
                         return 'MIN LENGTH ERROR';
                       },
 
       'between'     : function (inputElement, min, max) {
+                        let val = inputElement.value;
                         if (val && val >= min && val <= max) { return; }
                         return 'RANGE ERROR';
                     }
@@ -56,19 +60,36 @@ F1.afterPageLoadScripts.push(function initPage1()
 
     customFormTypes: {},
 
-    defaults: {
-      messages: {
-        required : 'Voltooi asb.',
-        invalid  : 'Ongeldig'
+    customConfig: {
+      HappyMessage: {
+        requiredText : 'Voltooi asb.',
+        invalidText  : 'Ongeldig'
       },
-      inputs: {
-        messageAnchorsSelector: '.input-messages'
+
+      HappyMessageAnchor: {
+
       },
-      fields: {
+
+      HappyInput: {
+        messageAnchorsSelector: '.input-messages',
+        inputContainerSelector: '.input-wrapper'
+      },
+
+      HappyField: {
         errorClass: '.has-error'
       },
-      forms: {},
-      docs: {}
+
+      MultiValueField: {
+        gomtor: 'Ek is BAKGAT!'
+      },
+
+      Happyform: {
+
+      },
+
+      HappyDocument: {
+
+      }
     }
 
   });
@@ -97,6 +118,7 @@ F1.afterPageLoadScripts.push(function initPage1()
     }
   );
 
-  console.log('This is AFTER Page 1 loaded succesfully!');
+
+  F1.console.log('This is AFTER Page 1 loaded succesfully!');
 
 });

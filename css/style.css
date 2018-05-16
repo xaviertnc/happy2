@@ -29,7 +29,7 @@ fieldset { padding: 1em; }
 
 #back-to-top  a { display: inline-block; padding: 1em 0.5em; }
 
-#page-content { padding: 1em; }
+#page-content { padding: 1em; position: relative; }
 
 #page-footer { background-color: gainsboro; padding: 1em; }
 
@@ -53,8 +53,13 @@ fieldset { padding: 1em; }
   border: 1px solid red;
   color: crimson;
   cursor: pointer;
-  padding: 0.3em 1em;
+  padding: 0.3em 0.5em;
   margin-bottom: 0.1em;
+}
+
+#alerts {
+  position: absolute;
+  right: 1em;
 }
 
 #alerts .info {
@@ -73,6 +78,7 @@ fieldset { padding: 1em; }
   content: "x";
   float: right;
   font-family: sans, sans-serif;
+  padding-left: 0.5em;
 }
 
 #page { max-width: 1024px; margin: 0 auto; }

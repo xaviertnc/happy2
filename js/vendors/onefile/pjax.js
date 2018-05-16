@@ -1,3 +1,5 @@
+/* globals window, document, F1, $ */
+
 window.F1 = window.F1 || { afterPageLoadScripts: [] };
 
 /**
@@ -55,7 +57,7 @@ F1.Pjax = function (options)
 
   this.viewports = this.setupViewports(options.viewports);
 
-  console.log('F1 PJAX Initialized:', this);
+  // console.log('F1 PJAX Initialized:', this);
 };
 
 
@@ -73,8 +75,8 @@ F1.Pjax.prototype.setupViewports = function(viewportDefinitions)
   var viewports = [];
   if (viewportDefinitions)
   {
-    var i, n, vewDefinition, viewportSelector, viewportOptions = {};
-    for (var i=0, n=viewportDefinitions.length; i < n; i++)
+    var i, n, viewportDefinition, viewportSelector, viewportOptions = {};
+    for (i=0, n=viewportDefinitions.length; i < n; i++)
     {
       viewportDefinition = viewportDefinitions[i];
       if (viewportDefinition.selector)
@@ -163,8 +165,7 @@ F1.Pjax.prototype.getCurrentPath = function(forceUpdate)
   var baseUri = this.getBaseUri(forceUpdate);
   var currentLocation = this.getCurrentLocation(forceUpdate);
   this.currentPath = currentLocation.substring(baseUri.length);
-  console.log('Pjax.getCurrentPath(), this.currentLocation:', currentLocation,
-    ', this.baseUri:', baseUri, ', path:', this.currentPath);
+  // console.log('Pjax.getCurrentPath(), this.currentLocation:', currentLocation, ', this.baseUri:', baseUri, ', path:', this.currentPath);
   return this.currentPath;
 };
 
@@ -175,8 +176,7 @@ F1.Pjax.prototype.isCurrentLocation = function(testUrl)
   if (testUrl.length === currentLocation.length && testUrl === currentLocation) { return true; }
   if (currentLocation.length > testUrl.length) { currentLocation = this.getCurrentPath(); }
   var result = (testUrl === currentLocation);
-  console.log('Pjax.isCurrentLocation(), testUrl:', testUrl,
-    ', currentLocation:', currentLocation, ', result:', result);
+  // console.log('Pjax.isCurrentLocation(), testUrl:', testUrl, ', currentLocation:', currentLocation, ', result:', result);
   return result;
 };
 
@@ -189,8 +189,7 @@ F1.Pjax.prototype.isRedirectResponse = function(jqXHR)
 
 F1.Pjax.prototype.showBusyIndication = function()
 {
-  console.log('Pjax.showBusyIndication(), busyImageUrl:', this.busyImageUrl,
-    ', $favicon:', this.$favicon);
+  // console.log('Pjax.showBusyIndication(), busyImageUrl:', this.busyImageUrl, ', $favicon:', this.$favicon);
   if (this.busyImageUrl && this.$favicon) {
     this.$favicon.attr('href', this.busyImageUrl);
   }
@@ -201,7 +200,7 @@ F1.Pjax.prototype.showBusyIndication = function()
 
 F1.Pjax.prototype.removeBusyIndication = function()
 {
-  console.log('Pjax.removeBusyIndication()');
+  // console.log('Pjax.removeBusyIndication()');
   this.$busyIndicator.addClass('hidden');
   document.body.classList.remove('busy');
   if (this.busyImageUrl && this.$favicon) {
@@ -213,7 +212,7 @@ F1.Pjax.prototype.removeBusyIndication = function()
 F1.Pjax.prototype.pushState = function(url, title)
 {
   if ( ! this.history) {
-    console.error('Pjax.pushState(), Error: Missing history service!');
+    // console.error('Pjax.pushState(), Error: Missing history service!');
     return false;
   }
   if (this.beforePushState && this.beforePushState(url, this.history) === 'abort') { return false; }
@@ -226,13 +225,13 @@ F1.Pjax.prototype.pushState = function(url, title)
 
 F1.Pjax.prototype.popStateHandler = function(event)
 {
-  console.log('Pjax.popState() - Start - event.state:', event.state);
+  // console.log('Pjax.popState() - Start - event.state:', event.state);
   if ( ! this.history) {
-    console.error('Pjax.popState(), Error: Missing history service!');
+    // console.error('Pjax.popState(), Error: Missing history service!');
     return false;
   }
   var url = event.state ? event.state.url : '';
-  console.log('Pjax.popState() - beforePopState:', this.beforePopState, ', url:', url);
+  // console.log('Pjax.popState() - beforePopState:', this.beforePopState, ', url:', url);
   if (this.beforePopState && this.beforePopState(url, this.history) === 'abort')
   {
     var state = { 'url': this.getCurrentLocation(), 'title': '' };
@@ -241,7 +240,7 @@ F1.Pjax.prototype.popStateHandler = function(event)
   }
   if ( ! this.isCurrentLocation(url))
   {
-    if (this.beforePageLoad && this.beforePageLoad(options) === 'abort') { return false; };
+    if (this.beforePageLoad && this.beforePageLoad(url, event) === 'abort') { return false; }
     this.showBusyIndication();
     this.loadPage({ url: url });
   }
@@ -259,7 +258,7 @@ F1.Pjax.prototype.setPageTitle = function(newPageTitle)
 // Override me!
 F1.Pjax.prototype.setPageTitleUsingLink = function($link)
 {
-  var newTitle
+  var newPageTitle;
   if ( ! $link) { return false; }
   newPageTitle = $link.data('page-title');
   if ( ! newPageTitle) {
@@ -272,16 +271,16 @@ F1.Pjax.prototype.setPageTitleUsingLink = function($link)
 // Override me!
 F1.Pjax.prototype.pageHasUnsavedChanges = function ()
 {
-  console.log('Pjax.pageHasUnsavedChanges()');
+  // console.log('Pjax.pageHasUnsavedChanges()');
   return false;
 }
 
 
 F1.Pjax.prototype.beforePageExit = function (event)
 {
-  console.log('Pjax.beforePageExit()');
-  if (this.pageHasUnsavedChanges()) {
-    return confirm(this.unsavedChangesMessage || 'You have unsaved changes! Ignore?');
+  // console.log('Pjax.beforePageExit()');
+  if (this.pageHasUnsavedChanges(event)) {
+    return window.confirm(this.unsavedChangesMessage || 'You have unsaved changes! Ignore?');
   } else {
     return true;
   }
@@ -296,9 +295,9 @@ F1.Pjax.prototype.formSubmitHandler = function (event)
       submitElement,
       submitAction,
       submitParams;
-  console.log('F1.Pjax.formSubmitHandler(), form:', this, ', event:', event);
+  // console.log('F1.Pjax.formSubmitHandler(), form:', this, ', event:', event);
   submitElement = $form[0].submitElement;
-  console.log('F1.Pjax.formSubmitHandler(), submitElement:', submitElement);
+  // console.log('F1.Pjax.formSubmitHandler(), submitElement:', submitElement);
   submitAction = submitElement.name || '';
   if (submitElement.tagName.toLowerCase() === 'input') {
     // INPUT[type="submit"] elements use "input.value" for the button label,
@@ -319,7 +318,7 @@ F1.Pjax.prototype.formSubmitHandler = function (event)
       serializedData += serializedData.length ? '&' : '';
       serializedData += '__ACTION__=' + submitAction + '&__PARAMS__=' + submitParams;
     }
-    // console.log('F1.Pjax.formSubmitHandler(), serializedData:', serializedData);
+    // // console.log('F1.Pjax.formSubmitHandler(), serializedData:', serializedData);
     var actionUrl = $form.attr('action');
     actionUrl = actionUrl || pjax.getCurrentLocation();
     pjax.postPage({ url: actionUrl, data: serializedData });
@@ -334,14 +333,14 @@ F1.Pjax.prototype.pageLinkClickHandler = function (event)
       linkUrl = $link.attr('href'),
       pjax = event.data;
 
-  console.log('F1.Pjax.pageLinkClickHandler(), link:', this) //, ', event:', event);
+  // console.log('F1.Pjax.pageLinkClickHandler(), link:', this) //, ', event:', event);
 
   pjax.stopDOMEvent(event);
 
   if ( ! pjax.isCurrentLocation(linkUrl))
   {
     if ( ! pjax.beforePageExit()) { return false; }
-    if (pjax.beforePageLoad && pjax.beforePageLoad(options) === 'abort') { return false; };
+    if (pjax.beforePageLoad && pjax.beforePageLoad(linkUrl, event) === 'abort') { return false; }
     pjax.showBusyIndication();
     pjax.setPageTitleUsingLink($link);
     pjax.pushState(linkUrl);
@@ -351,11 +350,11 @@ F1.Pjax.prototype.pageLinkClickHandler = function (event)
 
 
 // Override me!
-F1.Pjax.prototype.updatePageHead = function ($loadedHtml, jqXHR)
+F1.Pjax.prototype.updatePageHead = function ($loadedHtml)
 {
   if ($loadedHtml)
   {
-    console.log('updatePageHead(), $loadedHtml:', $loadedHtml);
+    // console.log('updatePageHead(), $loadedHtml:', $loadedHtml);
 
     document.title = $loadedHtml.find('title').text();
 
@@ -388,12 +387,12 @@ F1.Pjax.prototype.bindForms = function (viewport, formSubmitHandler)
   formSubmitHandler = formSubmitHandler || this.formSubmitHandler;
   viewport.$elm.find('form.pjax').each(function() {
     var $form = $(this);
-    console.log('Binding PJAX form:', $form);
+    // console.log('Binding PJAX form:', $form);
     $form.on('submit', _pjax, formSubmitHandler);
     $form.find('[type="submit"]').click(function(event) {
       _pjax.showBusyIndication();
       $form[0].submitElement = this;
-      if (_pjax.beforeSubmit && _pjax.beforeSubmit(event, $form) === 'abort') { return false; };
+      if (_pjax.beforeSubmit && _pjax.beforeSubmit(event, $form) === 'abort') { return false; }
     });
   });
 };
@@ -406,15 +405,15 @@ F1.Pjax.prototype.bindPageLinks = function (viewport, pageLinkClickHandler)
   pageLinkClickHandler = pageLinkClickHandler || this.pageLinkClickHandler;
   viewport.$elm.find('.pagelink').each(function() {
     var $link = $(this);
-    console.log('Binding PJAX link:', $link);
-    $(this).on('click', _pjax, pageLinkClickHandler);
+    // console.log('Binding PJAX link:', $link);
+    $link.on('click', _pjax, pageLinkClickHandler);
   });
 };
 
 
 F1.Pjax.prototype.updateViewports = function ($loadedHtml, jqXHR)
 {
-  console.log('Pjax.updateViewports(), $loadedHtml:', $loadedHtml);
+  // console.log('Pjax.updateViewports(), $loadedHtml:', $loadedHtml);
   var viewports = this.viewports, i, n = viewports.length;
   for (i=0; i < n; i++) { viewports[i].beforeUpdate(this, jqXHR);        }
   for (i=0; i < n; i++) { viewports[i].update(this, $loadedHtml, jqXHR); }
@@ -424,7 +423,7 @@ F1.Pjax.prototype.updateViewports = function ($loadedHtml, jqXHR)
 
 F1.Pjax.prototype.bindViewports = function ()
 {
-  console.log('Pjax.bindEvents()');
+  // console.log('Pjax.bindEvents()');
   var viewports = this.viewports, i, n = viewports.length;
   for (i=0; i < n; i++) { viewports[i].beforeBind(this); }
   for (i=0; i < n; i++) { viewports[i].bindEvents(this); }
@@ -441,7 +440,7 @@ F1.Pjax.prototype.getMainViewport = function ()
 
 F1.Pjax.prototype.showError = function (errorMessage)
 {
-  console.error('Pjax.showError(), errorMessage =', errorMessage);
+  // console.error('Pjax.showError(), errorMessage =', errorMessage);
   var errorsContainerSelector = this.errorsContainerSelector || this.getMainViewport().selector || 'body';
   $(errorsContainerSelector).html(errorMessage);
 };
@@ -482,7 +481,7 @@ F1.Pjax.prototype.handleRedirect = function (jqXHR) {
     resp = (typeof resp === 'string') ? JSON.parse(resp) : resp;
     redirectUrl = resp.redirect || resp.url || '';
   }
-  console.log('handleRedirect(), redirectUrl:', redirectUrl);
+  // console.log('handleRedirect(), redirectUrl:', redirectUrl);
   if ( ! this.isCurrentLocation(redirectUrl)) {
     this.pushState(redirectUrl);
   }
@@ -492,8 +491,8 @@ F1.Pjax.prototype.handleRedirect = function (jqXHR) {
 
 F1.Pjax.prototype.loadSuccessHandler = function (resp, statusText, jqXHR)
 {
-  console.log('F1.Pjax.loadSuccessHandler(), jqXHR:', jqXHR);
-  // console.log('F1.Pjax.loadSuccessHandler(), getAllResponseHeaders:', jqXHR.getAllResponseHeaders());
+  // console.log('F1.Pjax.loadSuccessHandler(), jqXHR:', jqXHR);
+  // // console.log('F1.Pjax.loadSuccessHandler(), getAllResponseHeaders:', jqXHR.getAllResponseHeaders());
   if (this.onPageLoadSuccess && this.onPageLoadSuccess(jqXHR) === 'abort') { return; }
   if (this.isRedirectResponse(jqXHR)) { return this.handleRedirect(jqXHR); }
   var $loadedHtml = $('<response></response>').html(resp); // Parse response
@@ -505,7 +504,7 @@ F1.Pjax.prototype.loadSuccessHandler = function (resp, statusText, jqXHR)
 
 F1.Pjax.prototype.loadFailedHandler = function (jqXHR)
 {
-  console.error('Pjax.loadFailedHandler(), jqXHR =', jqXHR);
+  // console.error('Pjax.loadFailedHandler(), jqXHR =', jqXHR);
   var errorMessage = this.getResponseErrorMessage(jqXHR);
   if (this.onPageLoadFail && this.onPageLoadFail(jqXHR, errorMessage) === 'abort') { return; }
   return this.showError(errorMessage);
@@ -515,7 +514,7 @@ F1.Pjax.prototype.loadFailedHandler = function (jqXHR)
 // Override me!
 F1.Pjax.prototype.alwaysAfterLoadHandler = function (resp, statusText, jqXHR)
 {
-  console.log('Pjax.alwaysAfterLoadHandler()'); //, jqXHR =', jqXHR);
+  // console.log('Pjax.alwaysAfterLoadHandler()'); //, jqXHR =', jqXHR);
   if ( ! this.isRedirectResponse(jqXHR)) {
     this.getCurrentPath('force-update'); // Also force-updates 'this.currentLocation'
     this.removeBusyIndication();
@@ -529,7 +528,7 @@ F1.Pjax.prototype.loadPage = function (options)
   options.method = 'GET';
   options.dataType = options.dataType || 'html';
   options.cache = (typeof options.cache !== 'undefined') ? options.cache : false;
-  console.log('Pjax.loadPage(), options:', options);
+  // console.log('Pjax.loadPage(), options:', options);
   return $.ajax(options)
     .done(this.loadSuccessHandler.bind(this))
     .fail(this.loadFailedHandler.bind(this))
@@ -539,7 +538,7 @@ F1.Pjax.prototype.loadPage = function (options)
 
 F1.Pjax.prototype.postSuccessHandler = function (resp, statusText, jqXHR)
 {
-  console.log('F1.Pjax.postSuccessHandler(), jqXHR:', jqXHR);
+  // console.log('F1.Pjax.postSuccessHandler(), jqXHR:', jqXHR);
   if (this.onPostSuccess && this.onPostSuccess(jqXHR) === 'abort') { return; }
   return this.handleRedirect(jqXHR);
 };
@@ -547,7 +546,7 @@ F1.Pjax.prototype.postSuccessHandler = function (resp, statusText, jqXHR)
 
 F1.Pjax.prototype.postFailedHandler = function (jqXHR)
 {
-  console.error('Pjax.postFailedHandler(), jqXHR =', jqXHR);
+  // console.error('Pjax.postFailedHandler(), jqXHR =', jqXHR);
   var errorMessage = this.getResponseErrorMessage(jqXHR);
   if (this.onPostFail && this.onPostFail(jqXHR, errorMessage) === 'abort') { return; }
   return this.showError(errorMessage);
@@ -557,7 +556,7 @@ F1.Pjax.prototype.postFailedHandler = function (jqXHR)
 // Override me!
 F1.Pjax.prototype.alwaysAfterPostHandler = function (resp, statusText, jqXHR)
 {
-  return;
+  return resp && statusText && jqXHR;
 };
 
 
@@ -573,7 +572,7 @@ F1.Pjax.prototype.postPage = function (options)
     options.headers[this.csrfTokenMetaName] = this.csrfToken;
   }
   options.headers['X-HTTP-REFERER'] = this.getCurrentLocation();
-  console.log('Pjax.postPage(), options:', options);
+  // console.log('Pjax.postPage(), options:', options);
   return $.ajax(options)
     .done(this.postSuccessHandler.bind(this))
     .fail(this.postFailedHandler.bind(this))
@@ -610,16 +609,16 @@ F1.Pjax.Viewport = function (viewElementSelector, options)
 F1.Pjax.Viewport.prototype.beforeUpdate = function (pjax, jqXHR)
 {
   // check if update is allowed...?
-  console.log('Viewport:', this.selector, '- Before Update HTML');
-  return;
+  // console.log('Viewport:', this.selector, '- Before Update HTML');
+  return pjax && jqXHR;
 };
 
 
 // Override me!
-F1.Pjax.Viewport.prototype.update = function (pjax, $loadedHtml, jqXHR)
+F1.Pjax.Viewport.prototype.update = function (pjax, $loadedHtml) // , jqXHR
 {
   var viewport = this, newContent;
-  console.log('Viewport:', viewport.selector, '- Update HTML');
+  // console.log('Viewport:', viewport.selector, '- Update HTML');
   if ( ! $loadedHtml) { return; }
   switch (viewport.updateMethod) {
     case 'innerHTML':
@@ -634,16 +633,16 @@ F1.Pjax.Viewport.prototype.update = function (pjax, $loadedHtml, jqXHR)
 F1.Pjax.Viewport.prototype.afterUpdate = function (pjax, jqXHR)
 {
   // modify default updates...?
-  console.log('Viewport:', this.selector, '- After Update HTML');
-  return;
+  // console.log('Viewport:', this.selector, '- After Update HTML');
+  return pjax && jqXHR;
 };
 
 
 // Override me!
 F1.Pjax.Viewport.prototype.beforeBind = function (pjax)
 {
-  console.log('Viewport:', this.selector, '- Before Bind');
-  return;
+  // console.log('Viewport:', this.selector, '- Before Bind');
+  return pjax;
 };
 
 
@@ -651,7 +650,7 @@ F1.Pjax.Viewport.prototype.beforeBind = function (pjax)
 F1.Pjax.Viewport.prototype.bindEvents = function (pjax)
 {
   var viewport = this;
-  console.log('Viewport:', viewport.selector, '- Bind');
+  // console.log('Viewport:', viewport.selector, '- Bind');
   pjax.bindForms(viewport);
   pjax.bindPageLinks(viewport);
   return;
@@ -661,8 +660,8 @@ F1.Pjax.Viewport.prototype.bindEvents = function (pjax)
 // Override me!
 F1.Pjax.Viewport.prototype.afterBind = function (pjax)
 {
-  console.log('Viewport:', this.selector, '- After Bind');
-  return;
+  // console.log('Viewport:', this.selector, '- After Bind');
+  return pjax;
 };
 
 // End: F1.Pjax.Viewport

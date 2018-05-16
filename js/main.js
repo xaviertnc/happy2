@@ -1,4 +1,9 @@
+/* globals window, document, F1, $ */
+
 // MAIN
+
+F1.DEBUG = true;
+
 
 F1.confirm = function(elm, event, message)
 {
@@ -7,9 +12,9 @@ F1.confirm = function(elm, event, message)
   else {
     event.preventDefault();
     event.stopImmediatePropagation();
-    if (confirm(message || 'Are you sure?')) {
+    if (window.confirm(message || 'Are you sure?')) {
       $elm.addClass('confirmed');
-      setTimeout(function reClickConfirm() { $elm.click(); }, 100);
+      window.setTimeout(function reClickConfirm() { $elm.click(); }, 100);
     }
   }
 };
@@ -27,9 +32,19 @@ F1.runScripts = function (scriptQueue)
 };
 
 
-$(document).ready(function start($) {
+$(document).ready(function start() {
 
-  console.log('*** DOCUMENT READY ***');
+  if (F1.DEBUG && window.console) {
+    F1.console = window.console;
+  } else {
+    F1.console = {
+      log: function noConsoleLog() {},
+      dir: function noConsoleDir() {},
+      error: function reportError(errMsg) { return new Error(errMsg); }
+    };
+  }
+
+  F1.console.log('*** DOCUMENT READY ***');
 
   F1.back2Top = new F1.Back2Top('#back-to-top');
 
@@ -43,7 +58,7 @@ $(document).ready(function start($) {
     csrfTokenMetaName: 'X-CSRF-TOKEN',
     viewports: ['#page-header', '#page-content'],
     afterPageLoadSuccess: function () {
-      console.log('Pjax.afterPageLoadSuccess()');
+      F1.console.log('Pjax.afterPageLoadSuccess()');
       F1.runScripts(F1.afterPageLoadScripts);
       F1.afterPageLoadScripts = [];
       F1.pjax.bindViewports();
