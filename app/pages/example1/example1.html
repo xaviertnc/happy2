@@ -8,19 +8,19 @@
 
               <legend>Form 1</legend>
 
-              <div class="field required has-error" data-type="multi-text">
+              <div class="field has-error" data-type="multi-value">
                 <label>Name:</label>
                 <div class="input-group">
-                  <div class="input-container has-error">
-                    <input name="form_1[name]" type="text" value="" data-validate="required|between:5:7">
-                    <ul class="messages">
+                  <div class="input-container required has-error">
+                    <input name="form_1[firstname]" type="text" value="" data-validate="required|minLength:3" data-format="name">
+                    <ul class="messages input-messages">
                       <li class="message danger">Name is required.</li>
                       <li class="message">Firstname</li>
                     </ul>
                   </div>
                   <div class="input-container">
-                    <input name="form_1[van]" type="text" value="">
-                    <ul class="messages">
+                    <input name="form_1[lastname]" type="text" value="" data-validate="minLength:3" data-format="lastname">
+                    <ul class="messages input-messages">
                       <li class="message">Lastname</li>
                     </ul>
                   </div>
