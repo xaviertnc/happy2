@@ -1,4 +1,4 @@
-/* globals window, F1, Happy2, HappyInput, HappyField, HappyMessage */
+/* globals window, F1, Happy2, HappyInput, HappyField */
 /* eslint-env es6 */
 
 window.F1 = window.F1 || { afterPageLoadScripts: [] };
@@ -21,28 +21,33 @@ F1.afterPageLoadScripts.push(function initPage1()
   F1.happy2 = new Happy2({
 
     validators: {
-      'required'    : function (inputElement) {
-                        if (inputElement.value && inputElement.value.length) { return; }
-                        return new HappyMessage('REQUIRED ERROR');
+      'required'    : function (isSubmit) {
+                        let happy2item = this;
+                        let ok = happy2item.value && !!happy2item.value.length;
+                        F1.console.log('Validate.required(), isSubmit:', isSubmit, ', ok:', ok);
+                        return ok;
                       },
 
-      'length'      : function (inputElement, min, max) {
-                        let val = inputElement.value;
-                        if (val && val.length >= min && val.length <= max) { return; }
-                        return 'LENGTH ERROR';
+      'length'      : function (min, max, isSubmit) {
+                        let happy2item = this;
+                        let ok = happy2item.value && happy2item.value.length >= min && happy2item.value.length <= max;
+                        F1.console.log('Validate.length(), value:', happy2item.value, ', min:', min, ', max:', max, ', isSubmit:', isSubmit, ', ok:', ok);
+                        return ok;
                       },
 
-      'minLength'   : function (inputElement, min) {
-                        let val = inputElement.value;
-                        if (val && val.length >= min) { return; }
-                        return 'MIN LENGTH ERROR';
+      'minLength'   : function (min, isSubmit) {
+                        let happy2item = this;
+                        let ok = happy2item.value && happy2item.value.length >= min;
+                        F1.console.log('Validate.minLength(), value:', happy2item.value, ', min:', min, ', isSubmit:', isSubmit, ', ok:', ok);
+                        return ok;
                       },
 
-      'between'     : function (inputElement, min, max) {
-                        let val = inputElement.value;
-                        if (val && val >= min && val <= max) { return; }
-                        return 'RANGE ERROR';
-                    }
+      'between'     : function (min, max, isSubmit) {
+                        let happy2item = this;
+                        let ok = happy2item.value && happy2item.value >= min && happy2item.value <= max;
+                        F1.console.log('Validate.between(), value:', happy2item.value, ', min:', min, ', max:', max, ', isSubmit:', isSubmit, ', ok:', ok);
+                        return ok;
+                      }
     },
 
     customMessageTypes: {},
@@ -71,8 +76,8 @@ F1.afterPageLoadScripts.push(function initPage1()
       },
 
       HappyInput: {
-        messageAnchorsSelector: '.input-messages',
-        inputContainerSelector: '.input-wrapper'
+        messageAnchorsSelector: '.input-messages'
+        //inputContainerSelector: '.input-wrapper'
       },
 
       HappyField: {
