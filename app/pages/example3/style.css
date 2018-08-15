@@ -1,0 +1,57 @@
+/* Page Styles Go Here... */
+.input-group {
+  display: inline-block;
+}
+
+.input-container {
+  display: inline-block;
+  margin-right: 0.3em;
+  vertical-align: top;
+}
+
+.messages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.messages li {
+  color: silver;
+  display: block;
+  font-family: arial,"sans-serif";
+  font-size: 0.7em;
+  font-style: italic;
+  line-height: 1.3em;
+}
+
+.messages .danger {
+  color: crimson;
+}
+
+.messages .warning {
+  color: darkorange;
+}
+
+.has-error > fieldset,
+.has-error > input,
+.has-error > textarea {
+  border-color: red;
+}
+
+.has-error > fieldset > legend,
+.has-error > label {
+  color: crimson;
+}
+
+input[type="text"],
+input[type="email"],
+textarea, select {
+  max-width: 280px;
+  width: 100%;
+}
+
+input[type="number"]
+{
+  max-width: 50px;
+  width: 100%;
+}

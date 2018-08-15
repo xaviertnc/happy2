@@ -7,7 +7,7 @@
     <link id="favicon" href="favicon.ico" rel="shortcut icon">
     <link href="css/style.css" rel="stylesheet">
 
-    <?=$ui->styles()?>
+    <?php include $view->stylesFile(); ?>
 
   </head>
 
@@ -43,12 +43,11 @@
     <div id="page">
 
       <header id="page-header">
-        <div class="titlebar">
-          PJAX and Happy2JS demo - <?=$page->title?>
-        </div>
-        <?php include 'topnav.html' ?>
+        <div class="titlebar"><?=$app->siteName?> - <?=$page->title?></div>
+        <?php include $view->partialFile($app->partialsPath, $app->partialsPath . '/topnav.html'); ?>
       </header>
 
       <section id="page-content">
 
-        <?=$ui->alerts()?>
+        <?=$view->alerts()?>
+        

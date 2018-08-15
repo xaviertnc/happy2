@@ -41,16 +41,17 @@ $app->id = 'PJAXDemo';
 $app->request = $request;
 $app->response = $response;
 $app->homepage = 'example1';
-$app->siteName = 'H2 Demo';
+$app->siteName = 'PJAX Demo';
 $app->currentPage = $request->pageref ?: $app->homepage;
 $app->state = array_get($_SESSION, $app->id, []);
 $app->rootPath = 'C:/UniServerZ/vhosts/NM/h2';
 $app->appPath = $app->rootPath . '/app';
 $app->servicesPath = $app->appPath . '/services';
 $app->partialsPath = $app->appPath . '/partials';
+$app->componentsPath = $app->appPath . '/components';
 $app->controllerPath = $app->appPath . '/pages/' . $app->currentPage;
 
-require $app->servicesPath . '/ui.php';
+require $app->servicesPath . '/view.php';
 
 
 require $app->controllerPath . '/' . $app->currentPage . '.php';

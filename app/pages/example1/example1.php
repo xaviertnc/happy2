@@ -55,7 +55,7 @@
   else {
 
     include $app->partialsPath . '/head.html';
-    include $app->page->viewFilePath;
+    include $view->partialFile($app->page->dir, $app->page->viewFilePath, 'html', 3, null, '        ');
     include $app->partialsPath . '/foot.html';
 
     $page->state['errors'] = [];

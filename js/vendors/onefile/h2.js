@@ -13,11 +13,11 @@ class HappyObj {
 
   constructor(happy2parent, options) {
     Object.assign(this, options || {});
-    this.debug = 1;
     this.state = {};
     this.nextId = 1;
+    this.happy2parent = happy2parent || { nextId: 0, getOpt: function noOptions() {}, debug: false };
+    this.debug = options.debug || this.happy2parent.debug;
     this.console = this.getConsole();
-    this.happy2parent = happy2parent || { nextId: 0, getOpt: function noOptions() {} };
   }
 
   getConsole() {
