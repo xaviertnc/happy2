@@ -26,7 +26,6 @@ class HappyValidator {
     let options = this.options;
 
     switch (this.type) {
-
       case 'required':
         unhappy = typeof model.getValue() === 'undefined';
         if (unhappy) {
@@ -51,7 +50,6 @@ class HappyValidator {
 
       case 'multi-select':
         break;
-
     }
 
     return errorMessage;
@@ -66,7 +64,6 @@ class HappyValidator {
       if (model.label) {
         message = message.replace('{label}', model.label);
       }
-
       else if (model.name) {
         message = message.replace('{name}', model.name);
       }
@@ -138,11 +135,8 @@ class HappyElement {
   findParentElement (el, selector) {
 
     if (typeof el.closest === 'undefined') {
-
       while ((el = el.parentElement) && !((el.matches || el.matchesSelector).call(el, selector)));
-
       return el;
-
     }
 
     return el.closest(selector);
@@ -152,14 +146,18 @@ class HappyElement {
 
   isDisabled () {
 
-    return this.el ? (this.el.classList.contains('disabled') || this.el.hasAttribute('disabled')) : false;
-
+    return this.el
+      ? (this.el.classList.contains('disabled') || this.el.hasAttribute('disabled'))
+      : false;
+    
   }
 
 
   isReadOnly () {
 
-    return this.el ? (this.el.classList.contains('readOnly') || this.el.hasAttribute('readOnly')) : false;
+    return this.el
+      ? (this.el.classList.contains('readOnly') || this.el.hasAttribute('readOnly'))
+      : false;
 
   }
 
@@ -206,7 +204,10 @@ class HappyElement {
 
   getType () {
 
-    let type = this.el ? (this.el.getAttribute('data-type') || this.el.getAttribute('type')) : null;
+    let type = this.el 
+      ? (this.el.getAttribute('data-type') || this.el.getAttribute('type'))
+      : null;
+    
     return type || this.options.type || 'text';
 
   }
@@ -385,7 +386,6 @@ class HappyInput extends HappyElement {
   }
 
 
-
   getMessages () {
 
     let input = this;
@@ -437,17 +437,14 @@ class HappyField extends HappyElement {
 
     // Loop through validators here + Set/Clear error messages
     this.validators.forEach(function (validator) {
-
       let validationMessage = validator.validate(field, isSubmit);
       if (validationMessage) {
         validationMessages.push(validationMessage);
         validationResult = 'unhappy';
       }
-
     });
 
     if (validationResult !== currentState) {
-
       this.updateHappy();
       this.state.happy = validationResult === 'happy' ? true : false;
       this.state.unhappy = !this.state.happy;
@@ -456,7 +453,6 @@ class HappyField extends HappyElement {
       } else {
         this.onUnhappy();
       }
-
     }
 
     this.updateMessages(validationMessages);
@@ -500,7 +496,6 @@ class HappyField extends HappyElement {
     state.modified = this.isModified();
     state.unhappy = this.isUnhappy();
     state.happy = !state.unhappy;
-
     return state;
 
   }
@@ -512,8 +507,6 @@ class HappyField extends HappyElement {
     let inputs = [];
     let inputSelector = this.options.inputSelector || 'input:not(hidden):not([type="submit"]), textarea, select';
     let inputElements = this.el.querySelectorAll(inputSelector)
-
-    //this.console.log('getInputs(), inputElements:', inputElements);
 
     inputElements.forEach(function (el) {
       inputs.push(new HappyInput(field, { 'el': el }));
@@ -540,9 +533,7 @@ class HappyField extends HappyElement {
 
         fieldValue = inputValues.join(',');
 
-      }
-
-      else {
+      } else {
 
         fieldValue = this.inputs[0].getValue();
 
@@ -650,18 +641,15 @@ class HappyForm extends HappyElement {
   getFields () {
 
     let form = this;
-    let fields = [];
+    let formFields = [];
     let fieldSelector = this.options.fieldSelector || '.field';
     let fieldElements = this.el.querySelectorAll(fieldSelector);
 
-    //this.console.log('getFields(), fieldElements:', fieldElements);
-
     fieldElements.forEach(function(el) {
-      form.console.log('el:', el);
-      fields.push(new HappyField(form, { 'el': el }));
+      formFields.push(new HappyField(form, { 'el': el }));
     });
 
-    return fields; 
+    return formFields;
 
   }
 
