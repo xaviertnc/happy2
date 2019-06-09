@@ -24,8 +24,8 @@ register_shutdown_function(function() {
 
 $request = new stdClass();
 $request->uri = $_SERVER['REQUEST_URI'];
-$request->host = '//nm.localhost';
-$request->uriBase = '/h2/';
+$request->host = '//happy.localhost';
+$request->uriBase = '/';
 $request->urlBase = $request->host . $request->uriBase;
 $request->method = $_SERVER['REQUEST_METHOD'];
 $request->back = array_get($_SERVER, 'HTTP_REFERER');
@@ -41,10 +41,10 @@ $app->id = 'PJAXDemo';
 $app->request = $request;
 $app->response = $response;
 $app->homepage = 'example1';
-$app->siteName = 'PJAX Demo';
+$app->siteName = 'HappyJS Demo';
 $app->currentPage = $request->pageref ?: $app->homepage;
 $app->state = array_get($_SESSION, $app->id, []);
-$app->rootPath = 'C:/UniServerZ/vhosts/NM/h2';
+$app->rootPath = 'C:/Laragon/www/happy';
 $app->appPath = $app->rootPath . '/app';
 $app->servicesPath = $app->appPath . '/services';
 $app->partialsPath = $app->appPath . '/partials';
