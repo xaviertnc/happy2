@@ -318,7 +318,7 @@ F1.Pjax.prototype.formSubmitHandler = function (event)
       serializedData += serializedData.length ? '&' : '';
       serializedData += '__ACTION__=' + submitAction + '&__PARAMS__=' + submitParams;
     }
-    // // console.log('F1.Pjax.formSubmitHandler(), serializedData:', serializedData);
+    // console.log('F1.Pjax.formSubmitHandler(), serializedData:', serializedData);
     var actionUrl = $form.attr('action');
     actionUrl = actionUrl || pjax.getCurrentLocation();
     pjax.postPage({ url: actionUrl, data: serializedData });
@@ -492,7 +492,7 @@ F1.Pjax.prototype.handleRedirect = function (jqXHR) {
 F1.Pjax.prototype.loadSuccessHandler = function (resp, statusText, jqXHR)
 {
   // console.log('F1.Pjax.loadSuccessHandler(), jqXHR:', jqXHR);
-  // // console.log('F1.Pjax.loadSuccessHandler(), getAllResponseHeaders:', jqXHR.getAllResponseHeaders());
+  // console.log('F1.Pjax.loadSuccessHandler(), getAllResponseHeaders:', jqXHR.getAllResponseHeaders());
   if (this.onPageLoadSuccess && this.onPageLoadSuccess(jqXHR) === 'abort') { return; }
   if (this.isRedirectResponse(jqXHR)) { return this.handleRedirect(jqXHR); }
   var $loadedHtml = $('<response></response>').html(resp); // Parse response

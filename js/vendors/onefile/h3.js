@@ -2,7 +2,9 @@
 /* eslint-env es6 */
 
 /**
- * Happy2JS
+ * Happy3JS
+ * jQuery Happy2 JS re-write without jQuery, using ES6 classes
+ * and vanilla JS DOM manipulation.
  *
  * @auth:  C. Moller <xavier.tnc@gmail.com>
  * @date:  14 May 2018
@@ -63,7 +65,7 @@ class HappyObj {
 // end: HappyObj
 
 
-class Happy2 extends HappyObj {
+class Happy3 extends HappyObj {
 
   constructor(options) {
     options.HappyDocumentType        = options.HappyDocumentType || HappyDocument;
@@ -86,18 +88,18 @@ class Happy2 extends HappyObj {
     this.happyInputsIndex = {};
     this.happyInputsByName = {};
     this.happyItemsIndex = {};
-    this.isHappy2 = true;
-    this.console.log('Happy2:', this);
+    this.isHappy3 = true;
+    this.console.log('Happy3:', this);
   }
 
   init(initialValues, savedValues, documentSelector) {
-    this.console.log('Happy2.mountDocument(), docInitialValues:', initialValues, ', docSavedValues:', savedValues);
+    this.console.log('Happy3.mountDocument(), docInitialValues:', initialValues, ', docSavedValues:', savedValues);
     let happy2doc = new this.HappyDocumentType(this, { selector: documentSelector || this.docSelector });
     this.happyDocumentsIndex[happy2doc.id] = happy2doc;
   }
 
 }
-// end: Happy2
+// end: Happy3
 
 
 class HappyItem extends HappyObj {
@@ -121,7 +123,7 @@ class HappyItem extends HappyObj {
   }
 
   getId() {
-    return this.happy2parent.isHappy2 ? this.happy2.nextId : this.happy2.nextId++;
+    return this.happy2parent.isHappy3 ? this.happy2.nextId : this.happy2.nextId++;
   }
 
   getName() {
@@ -240,8 +242,8 @@ class HappyCanValidate extends HappyItem {
     // if (validateResult) { happy2input.addMessage(validationMessage); }
     // this.update(validateResult);
     // this.updateDOM(validateResult);
-    this.notifyHappy2Listeners(event, validateResult);
-    if ( ! this.happy2parent.isHappy2) { // i.e. Only continue if below document level.
+    this.notifyHappy3Listeners(event, validateResult);
+    if ( ! this.happy2parent.isHappy3) { // i.e. Only continue if below document level.
       this.happy2parent.check(event, isSubmit, validateResult);
     }
   }
@@ -292,8 +294,8 @@ class HappyCanValidate extends HappyItem {
     this.console.log('HappyCanValidate.updateDOM()');
   }
 
-  notifyHappy2Listeners(event, data) {
-    this.console.log('HappyCanValidate.notifyHappy2Listeners()');
+  notifyHappy3Listeners(event, data) {
+    this.console.log('HappyCanValidate.notifyHappy3Listeners()');
     return event && data;
   }
 
@@ -570,4 +572,4 @@ class HappyDocument extends HappyCanValidate {
 // end: HappyDocument
 
 var exports = exports || {};
-exports.Happy2 = Happy2;
+exports.Happy3 = Happy3;

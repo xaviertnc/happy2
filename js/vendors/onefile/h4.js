@@ -2,7 +2,9 @@
 /* eslint-env es6 */
 
 /**
- * Happy JS
+ * Happy4 JS
+ * A simplified Happy3 re-write without the involved
+ * config/options system...
  *
  * @auth:  C. Moller <xavier.tnc@gmail.com>
  * @date:  17 September 2018
@@ -87,32 +89,22 @@ class HappyValidator {
 class HappyElement {
 
   constructor (parent, options) {
+    let noop = function (){};
+    let noconsole = { log:noop, error:noop, dir:noop };
 
     this.nextId = 0;
     this.parent = parent;
     this.options = options || {};
     this.el = this.findDomElement();
     this.debug = this.options.debug || (this.parent ? this.parent.debug : false);
-    this.console = this.getConsole();
+    this.console = this.debug && window.console ? window.console : noconsole;
     this.id = this.getId();
 
     //this.console.log('HappyElement:', this);
-
-  }
-
-
-  getConsole() {
-    if (this.debug && window.console) { return window.console; }
-    return {
-      log: function noConsoleLog() {},
-      dir: function noConsoleDir() {},
-      error: function reportError(errMsg) { return new Error(errMsg); }
-    };
   }
 
 
   findDomElement ()  {
-
     let options = this.options;
 
     if (options.el) {
@@ -128,88 +120,85 @@ class HappyElement {
        ? options.containerElement.querySelector(options.elementSelector)
        : this.parent.el.querySelector(options.selector);
     }
-
   }
 
 
   findParentElement (el, selector) {
-
     if (typeof el.closest === 'undefined') {
-      while ((el = el.parentElement) && !((el.matches || el.matchesSelector).call(el, selector)));
+      while ((el = el.parentElement) &&
+        !((el.matches || el.matchesSelector).call(el, selector)));
+
       return el;
     }
-
     return el.closest(selector);
-
   }
 
 
   isDisabled () {
-
-    return this.el
-      ? (this.el.classList.contains('disabled') || this.el.hasAttribute('disabled'))
-      : false;
-    
+    if (this.options.disabled) { return this.options.disabled; }
+    if (this.el) {
+      return this.el.classList.contains('disabled') ||
+        this.el.hasAttribute('disabled');
+    }
+    return false;
   }
 
 
   isReadOnly () {
-
-    return this.el
-      ? (this.el.classList.contains('readOnly') || this.el.hasAttribute('readOnly'))
-      : false;
-
+    if (this.options.readonly) { return this.options.readonly; }
+    if (this.el) {
+      return this.el.classList.contains('readOnly') ||
+        this.el.hasAttribute('readOnly');
+    }
+    return false;
   }
 
 
   isHidden () {
-
-    let hidden = this.el ? this.el.classList.contains('hidden') : false;
-    return hidden || (this.getType() === 'hidden');
-
+    if (this.options.hidden) { return this.options.hidden; }
+    if (this.el) {
+      return this.el.classList.contains('hidden') ||
+        this.getType() === 'hidden';
+    }
+    return false;
   }
 
 
   getId () {
-
-    let id = (this.el && this.el.id) ? this.el.id : null;
-    return id || this.options.id || (this.parent.nextId++);
-
+    if (this.options.id) { return this.options.id; }
+    if (this.el && this.el.id) { return this.el.id; }
+    return this.parent.nextId++;
   }
 
 
   getName () {
-
-    return (this.el && this.el.name) ? this.el.name : this.options.name;
-
+    if (this.options.name) { return this.options.name; }
+    if (this.el && this.el.name) { return this.el.name }
   }
 
 
   getLabel () {
-
-    let label;
-
-    if (this.options.label) {
-      return this.options.label;
-    }
-    
+    if (this.options.label) { return this.options.label; }
     if (this.el) {
-     label = this.el.getAttribute('data-label') || this.el.querySelector('label').innerText;
+      let label = this.el.getAttribute('data-label');
+      if (typeof label === 'undefined') {
+        label = this.el.querySelector('label').innerText;
+      }
+      return label;
     }
-
-    return label;
-
   }
 
 
   getType () {
-
-    let type = this.el 
-      ? (this.el.getAttribute('data-type') || this.el.getAttribute('type'))
-      : null;
-    
-    return type || this.options.type || 'text';
-
+    if (this.options.type) { return this.options.type; }
+    if (this.el) {
+      let type = this.el.getAttribute('data-type');
+      if (typeof type === 'undefined') {
+        type = this.el.getAttribute('type');
+      }
+      return type;
+    }
+    return 'text';
   }
 
 
