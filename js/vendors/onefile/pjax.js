@@ -55,9 +55,7 @@ F1.Pjax = function (options)
 
   window.onpopstate = this.popStateHandler.bind(this);
 
-  if (this.pageHasUnsavedChanges() !== false) {
-    window.onbeforeunload = this.beforePageExit.bind(this);
-  }
+  window.onbeforeunload = this.beforePageExit.bind(this);
 
   this.viewports = this.setupViewports(options.viewports);
 
