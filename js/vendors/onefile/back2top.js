@@ -29,9 +29,9 @@ F1.Back2Top.prototype.scrollHandler = function(event)
 {
   var display = this.style.display;
   if (document.body.scrollTop > this.showTop || document.documentElement.scrollTop > this.showTop) {
-    if ( ! display || display === 'none' ) { this.$elm.show(); }
+    if ( ! display || display === 'none' ) { this.style.display = 'block'; }
   } else {
-    if (display === 'block') { this.$elm.hide(); }
+    if (display === 'block') { this.style.display = 'none'; }
   }
 };
 
