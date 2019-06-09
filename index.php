@@ -32,12 +32,13 @@ $request->back = array_get($_SERVER, 'HTTP_REFERER');
 $request->isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']);
 $request->parts = explode('?', $request->uri);
 $request->query = isset($request->parts[1]) ? $request->parts[1] : '';
-$request->pageref = trim(substr($request->parts[0], strlen($request->uriBase)), '/');
+$request->pageref = trim(substr($request->parts[0], strlen($request->uriBase)), '/') ?: 'example1';
+$request->parts = explode('/', $request->pageref);
 
 $response = new stdClass();
 
 $app = new stdClass();
-$app->id = 'PJAXDemo';
+$app->id = 'HappyJsDemo';
 $app->request = $request;
 $app->response = $response;
 $app->homepage = 'example1';
@@ -49,7 +50,14 @@ $app->appPath = $app->rootPath . '/app';
 $app->servicesPath = $app->appPath . '/services';
 $app->partialsPath = $app->appPath . '/partials';
 $app->componentsPath = $app->appPath . '/components';
-$app->controllerPath = $app->appPath . '/pages/' . $app->currentPage;
+$app->currentPage = $request->parts[count($request->parts)-1];
+$app->controllerPath = $app->appPath . '/pages/' . $request->pageref;
+$app->controller = $app->controllerPath . '/' . $app->currentPage . '.php';
+
+if ( ! file_exists($app->controller)) {
+  $app->controllerPath = $app->appPath . '/errors/404';
+  $app->controller = $app->controllerPath . '/404.php';
+}
 
 require $app->servicesPath . '/view.php';
 
@@ -82,22 +90,31 @@ $_SESSION[$app->id] = $app->state;
 //       code should determine if a request should result in a HARD or SOFT redirect response.
 //       If the cleint wants a HARD REDIRECT, just make a normal NON-AJAX request!
 //
-if (isset($response->redirectTo)) {
-  // If you want a HARD REDIRECT after an AJAX POST,
-  // just set $request->isAjax == false in the controller.
+if (isset($response->redirectTo))
+{
+  // If you want a HARD REDIRECT after an AJAX POST, just
+  // set $request->isAjax == false in the controller.
   if ($request->isAjax)
   {
     // SOFT REDIRECT
     http_response_code(202);
     header('Content-type: application/json');
     header('Cache-Control: no-cache, must-revalidate');
-		header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
-		header('X-REDIRECT-TO:' . $response->redirectTo);
-    echo json_encode(['redirect' => $response->redirectTo]);
+    header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+    if (empty($response->redirectExternal))
+    {
+      header('X-REDIRECT-TO:' . $response->redirectTo);
+      $jsonData = ['redirect' => $response->redirectTo];
+    }
+    else
+    {
+      $jsonData = ['redirect' => $response->redirectTo, 'external' => 1];
+    }
+    echo json_encode($jsonData);
     exit;
   }
   // HARD REDIRECT
-  header('location:' . $response->redirectTo);
+  header('location:' . full_url($request->urlBase,  $response->redirectTo));
   exit;
 }
 

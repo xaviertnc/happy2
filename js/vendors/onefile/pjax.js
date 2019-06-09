@@ -19,7 +19,7 @@ window.F1 = window.F1 || { afterPageLoadScripts: [] };
  * @prop: {string} errorsContainerSelector
  * @prop: {string} csrfTokenMetaName
  * @prop: {string} currentLocation
- * @prop: {string} busyImageUrl
+ * @prop: {string} busyFaviconUrl
  * @prop: {string} currentPath
  * @prop: {string} faviconUrl
  *
@@ -29,15 +29,25 @@ window.F1 = window.F1 || { afterPageLoadScripts: [] };
  *     viewports: ['#top-navbar', '#main-content'],
  *     baseUri: 'http://www.example.com/',
  *     csrfTokenMetaName: 'x-csrf-token',
- *     busyImageUrl: 'loading.ico'
+ *     busyFaviconUrl: 'loading.ico'
  *   }
  */
 F1.Pjax = function (options)
 {
+  //this.chrome   = navigator.userAgent.indexOf('Chrome') > -1;
+  //this.explorer = navigator.userAgent.indexOf('MSIE') > -1;
+  //this.firefox  = navigator.userAgent.indexOf('Firefox') > -1;
+  //this.safari   = navigator.userAgent.indexOf("Safari") > -1;
+  //this.camino   = navigator.userAgent.indexOf("Camino") > -1;
+  //this.opera    = navigator.userAgent.toLowerCase().indexOf("op") > -1;
+  //if ((this.chrome) && (this.safari)) { this.safari = false; }
+  //if ((this.chrome) && (this.opera)) { this.chrome = false; }
+
   options = options || {};
 
-  if (options.busyImageUrl) {
+  if (options.busyFaviconUrl) {
     this.$favicon = $(options.faviconSelector || '#favicon');
+    this.faviconUrl = options.faviconUrl || this.$favicon[0].href;
   }
 
   if (options.csrfTokenMetaName) {
@@ -45,8 +55,8 @@ F1.Pjax = function (options)
     this.csrfToken = this.$csrfMeta.attr('content');
   }
 
-  if ( ! options.$busyIndicator) {
-    this.$busyIndicator = $(options.busySelector || '#busy-indicator');
+  if ( ! options.$busyIndicator && options.busyIndicatorSelector) {
+    this.$busyIndicator = $(options.busyIndicatorSelector);
   }
 
   $.extend(this, options);
@@ -55,7 +65,9 @@ F1.Pjax = function (options)
 
   window.onpopstate = this.popStateHandler.bind(this);
 
-  window.onbeforeunload = this.beforePageExit.bind(this);
+  if (this.pageHasUnsavedChanges() !== false) {
+    window.onbeforeunload = this.beforePageExit.bind(this);
+  }
 
   this.viewports = this.setupViewports(options.viewports);
 
@@ -192,21 +204,28 @@ F1.Pjax.prototype.isRedirectResponse = function(jqXHR)
 F1.Pjax.prototype.showBusyIndication = function()
 {
   // console.log('Pjax.showBusyIndication(), busyImageUrl:', this.busyImageUrl, ', $favicon:', this.$favicon);
-  if (this.busyImageUrl && this.$favicon) {
-    this.$favicon.attr('href', this.busyImageUrl);
+  $(document.body).addClass('busy');
+  if (this.busyFaviconUrl && this.$favicon) {
+    this.$favicon.attr('href', this.busyFaviconUrl);
   }
-  document.body.classList.add('busy');
-  this.$busyIndicator.removeClass('hidden');
+  if (this.$busyIndicator) {
+    this.$busyIndicator.removeClass('hidden');
+  }
 };
 
 
 F1.Pjax.prototype.removeBusyIndication = function()
 {
+  var self = this;
   // console.log('Pjax.removeBusyIndication()');
-  this.$busyIndicator.addClass('hidden');
-  document.body.classList.remove('busy');
-  if (this.busyImageUrl && this.$favicon) {
-    this.$favicon.attr('href', this.faviconUrl || 'favicon.ico');
+  if (this.$busyIndicator) {
+    this.$busyIndicator.addClass('hidden');
+  }
+  if (this.busyFaviconUrl && this.$favicon) {
+    setTimeout(function() {
+      self.$favicon.attr('href', self.faviconUrl);
+      $(document.body).removeClass('busy');
+    }, 300);
   }
 };
 
@@ -244,7 +263,8 @@ F1.Pjax.prototype.popStateHandler = function(event)
   {
     if (this.beforePageLoad && this.beforePageLoad(url, event) === 'abort') { return false; }
     this.showBusyIndication();
-    this.loadPage({ url: url });
+    var self = this;
+    setTimeout(function () { self.loadPage({ url: url }); }, 100);
   }
   if (this.afterPopState) { this.afterPopState(url, this.history); }
 };
@@ -346,7 +366,9 @@ F1.Pjax.prototype.pageLinkClickHandler = function (event)
     pjax.showBusyIndication();
     pjax.setPageTitleUsingLink($link);
     pjax.pushState(linkUrl);
-    pjax.loadPage({ url: linkUrl });
+    setTimeout(function () {
+      pjax.loadPage({ url: linkUrl });
+    });
   }
 };
 
