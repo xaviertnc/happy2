@@ -22,17 +22,27 @@ fieldset { padding: 1em; }
 }
 
 #back-to-top {
-  background-color: white;
+  display: none;
+  border-radius: 6px;
+  background-color: darkslateblue;
   border: 1px solid gainsboro;
-  box-shadow: 1px 1px 3px grey;
-  bottom: 1em;
+  bottom: 0.5em;
   cursor: pointer;
   position: fixed;
-  right: 1em;
+  right: 0.3em;
   z-index: 1000;
+  opacity: 0.8;
 }
 
-#back-to-top  a { display: inline-block; padding: 1em 0.5em; }
+#back-to-top a {
+  border-radius: 4px;
+  color: white;
+  display: inline-block;
+  padding: 0.7em 0.9em 0.4em;
+  font-family: sans-serif;
+  font-weight: bold;
+  font-size: 1.34em;
+}
 
 #page-content { padding: 1em; position: relative; }
 
@@ -41,6 +51,9 @@ fieldset { padding: 1em; }
 .pjax-error h3 { color: red; }
 
 .hidden { display: none; }
+
+.pull-right { float: right; }
+.pull-left  { float: left;  }
 
 .busy, .busy a { cursor: progress; }
 
