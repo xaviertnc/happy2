@@ -39,7 +39,7 @@ class View {
   }
 
 
-  public function compile($pagePath, $filePath, $fileExt, $dentCount, 
+  public function compile($pagePath, $filePath, $fileExt, $dentCount,
     $dent, $before, $after, $firstDent = null)
   {
     $timestamp = filemtime($filePath);
@@ -59,16 +59,16 @@ class View {
     return $cacheFilePath;
   }
 
-  
-  public function partialFile($pagePath, $filePath, $fileExt = 'html', 
+
+  public function partialFile($pagePath, $filePath, $fileExt = 'html',
     $dentCount = null, $dent = null, $firstDent = null)
   {
     if ( ! file_exists($filePath)) { return; }
     return $this->compile($pagePath, $filePath, $fileExt, $dentCount?:3, $dent, null, null, $firstDent);
   }
-  
 
-  public function stylesFile($dentCount = 2, $dent = null)
+
+  public function styleFile($dentCount = 2, $dent = null)
   {
     $pagePath = $this->app->page->dir;
     $filePath = $pagePath . '/style.css';
@@ -88,6 +88,34 @@ class View {
   }
 
 
+  public function styleLinks(array $styleLinks, $dentCount, $dent = null)
+  {
+    $dent = $dent ?: $this->dent;
+    $indent = $this->indent($dentCount, $dent);
+    $html = '';
+    foreach ($styleLinks as $i => $styleHref)
+    {
+      $html .= ($i ? $indent : '') . '<link href="' . $styleHref . '" rel="stylesheet">' . PHP_EOL;
+    }
+    return $html;
+  }
+
+
+  public function scriptTags(array $scripts, $dentCount, $dent = null)
+  {
+    $dent = $dent ?: $this->dent;
+    $indent = $this->indent($dentCount, $dent);
+    $html = '';
+    foreach ($scripts as $i => $script)
+    {
+      $html .= ($i ? $indent : '') .
+        '<script' . (isset($script['async']) ? ' async defer' : '') .
+          ' src="' . $script['src'] . '"></script>' . PHP_EOL;
+    }
+    return $html;
+  }
+
+
   public function alerts($dentCount = 3, $dent = null)
   {
     $dent = $dent ?: $this->dent;
@@ -104,6 +132,17 @@ class View {
     }
     $html .= $indent . '</div>' . PHP_EOL;
     return $html;
+  }
+
+
+  public function breadcrumbs($pageTitle, $crumbs = null)
+  {
+    $linkHtml = [];
+    foreach ($crumbs?:[] as $linkText => $link)
+    {
+      $linkHtml[] = '<a class="pagelink" href="' . $link . '">' . $linkText . '</a>';
+    }
+    return $linkHtml ? implode(' / ', $linkHtml) . " / $pageTitle" : $pageTitle;
   }
 
 }
