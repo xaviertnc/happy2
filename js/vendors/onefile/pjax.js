@@ -55,10 +55,6 @@ F1.Pjax = function (options)
     this.csrfToken = this.$csrfMeta.attr('content');
   }
 
-  if ( ! options.$busyIndicator && options.busyIndicatorSelector) {
-    this.$busyIndicator = $(options.busyIndicatorSelector);
-  }
-
   $.extend(this, options);
 
   this.history = this.history || window.history;
@@ -208,19 +204,12 @@ F1.Pjax.prototype.showBusyIndication = function()
   if (this.busyFaviconUrl && this.$favicon) {
     this.$favicon.attr('href', this.busyFaviconUrl);
   }
-  if (this.$busyIndicator) {
-    this.$busyIndicator.removeClass('hidden');
-  }
 };
 
 
 F1.Pjax.prototype.removeBusyIndication = function()
 {
   var self = this;
-  // console.log('Pjax.removeBusyIndication()');
-  if (this.$busyIndicator) {
-    this.$busyIndicator.addClass('hidden');
-  }
   if (this.busyFaviconUrl && this.$favicon) {
     setTimeout(function() {
       self.$favicon.attr('href', self.faviconUrl);

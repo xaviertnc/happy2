@@ -1,6 +1,6 @@
 <?php
   $page = new stdClass();
-  $page->title = 'Example 1';
+  $page->title = 'Example1';
   $page->id = $app->currentPage;
   $page->dir = $app->controllerPath;
   $page->state = array_get($app->state, $page->id, []);
@@ -60,6 +60,6 @@
 
     $page->state['errors'] = [];
     $page->state['alerts'] = [];
-    $page->state = [ 'csrfToken' => $page->csrfToken ];
+    $page->state = ['csrfToken' => $page->csrfToken];
     $app->state[$page->id] = $page->state;
   }

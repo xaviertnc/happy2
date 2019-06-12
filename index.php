@@ -62,7 +62,7 @@ if ( ! file_exists($app->controller)) {
 require $app->servicesPath . '/view.php';
 
 
-require $app->controllerPath . '/' . $app->currentPage . '.php';
+require $app->controller;
 // echo '<pre>', print_r($app, true), '</pre>';
 // echo '<pre>', print_r($_SERVER, true), '</pre>';
 // echo '<pre>', print_r($_SESSION, true), '</pre>';

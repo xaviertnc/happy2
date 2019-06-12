@@ -1,57 +1,156 @@
 <div class="happy2doc">
 
-  <form id="form_1" class="pjax has-error" method="post" novalidate>
+  <form id="form1" class="pjax has-error" method="post" novalidate>
 
     <fieldset>
 
-      <div class="validation-summary hidden"></div>
-
       <legend>Form 1</legend>
 
-      <div class="field has-error" data-type="multi-value">
-        <label>Name:</label>
-        <div class="input-group">
-          <div class="input-container required has-error">
-            <input name="form_1[firstname]" type="text" value="" data-validate="required|minLength:3" data-format="name">
-            <ul class="messages input-messages">
-              <li class="message danger">Name is required.</li>
-              <li class="message">Firstname</li>
-            </ul>
+      <div class="validation-summary hidden"></div>
+
+      <div class="form-row">
+
+        <div class="form-column left-column">
+
+          <div class="field fullname required has-error" data-type="multi-value">
+            <label>Name:</label>
+            <div class="input-group">
+              <div class="input-zone required has-error">
+                <label class="small-text">Firstname:</label>
+                <input name="form1[firstname]" type="text" data-validate="required|minLength:3" data-format="name">
+                <ul class="messages">
+                  <li class="message error">Firstname is required.</li>
+                </ul>
+              </div>
+              <div class="input-zone">
+                <label class="small-text">Lastname:</label>
+                <input name="form1[lastname]" type="text" data-validate="minLength:3" data-format="lastname">
+              </div>
+              <!-- <p class="message">User note: Provide both Firstname AND Lastname pls!</p> -->
+            </div>
           </div>
-          <div class="input-container">
-            <input name="form_1[lastname]" type="text" value="" data-validate="minLength:3" data-format="lastname">
-            <ul class="messages input-messages">
-              <li class="message">Lastname</li>
-            </ul>
+
+          <div class="field email required" data-type="email">
+            <label>Email:</label>
+            <input name="form1[email]" type="email" placeholder="e.g. john.doe@example.com">
           </div>
+
+          <div class="field memo required" data-type="memo">
+            <label>Memo:</label>
+            <textarea class="input" name="form1[memo]" rows="3" placeholder="Enter memo here..."></textarea>
+          </div>
+
+          <div class="field birthday required" data-type="birthday">
+            <label>Brithday:</label>
+            <select class="input" name="form1[b-day]">
+              <option>- day -</option>
+            </select>
+            <select class="input" name="form1[b-month]">
+              <option>- mth -</option>
+            </select>
+            <select class="input" name="form1[b-year]">
+              <option>- year -</option>
+            </select>
+          </div>
+
+          <div class="field radiolist" data-type="radiolist">
+            <label>Radiolist:</label>
+            <div class="input-group">
+              <label class="input-wrapper">
+                <input name="form1[radiolist]" type="radio" value="1">
+                <span>Option #1</span>
+              </label>
+              <label class="input-wrapper">
+                <input name="form1[radiolist]" type="radio" value="2">
+                <span>Option #2</span>
+              </label>
+              <label class="input-wrapper">
+                <input name="form1[radiolist]" type="radio" value="3">
+                <span>Option #3</span>
+              </label>
+            </div>
+          </div>
+
+          <label class="field check required" data-type="checkbox">
+            <span>Checkbox:</span>
+            <input name="form1[confirm]" type="checkbox" value="1" checked>
+          </label>
+
         </div>
-      </div>
 
-      <div class="field required" data-type="number">
-        <label>Number:</label>
-        <div class="input-container">
-          <input name="form_1[number]" type="number" value="" data-validate="required|length:10:12">
+        <div class="form-column right-column">
+
+          <div class="field checklist" data-type="checklist">
+            <label>Checklist:</label>
+            <div class="input-group">
+              <label class="input-wrapper">
+                <input name="form1[checklist][]" type="checkbox">
+                <span>Item #1</span>
+              </label>
+              <label class="input-wrapper">
+                <input name="form1[checklist][]" type="checkbox">
+                <span>Item #2</span>
+              </label>
+              <label class="input-wrapper">
+                <input name="form1[checklist][]" type="checkbox">
+                <span>Item #3</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="field number required" data-type="number">
+            <label>Number1:</label>
+            <input name="form1[number]" type="number" min="0" max="100" value="0">
+          </div>
+
+          <div class="field updown required" data-type="updown">
+            <label>Number2:</label>
+            <div class="input-wrapper">
+              <div class="input-prepend">
+                <button type="button">-</button>
+              </div>
+              <input name="form1[updown]" type="text" value="0">
+              <div class="input-append">
+                <button type="button">+</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="field currency required" data-type="currency">
+            <label>Currency:</label>
+            <div class="input-wrapper">
+              <div class="input-prepend">
+                <span class="prepend-text">R</span>
+              </div>
+              <input name="form1[amount]" type="text" data-format="R|2|," value="0">
+            </div>
+          </div>
+
+          <div class="field date required" data-type="date">
+            <label>Date:</label>
+            <div class="input-wrapper">
+              <input name="form1[date]" type="text">
+              <div class="input-append no-border">
+                <button type="button">
+                  <img src="img/calendar.gif">
+                  <span class="hidden">Select</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="field select required" data-type="select">
+            <label>Select:</label>
+            <select class="input" name="form1[select]">
+              <option value="">- select something -</option>
+              <option value="1">Option #1</option>
+              <option value="2">Option #2</option>
+              <option value="3">Option #3</option>
+            </select>
+          </div>
+
         </div>
-      </div>
 
-      <div class="field required" data-type="currency">
-        <label>Currency:</label>
-        <input name="form_1[amount]" type="text" value="" data-format="R|2|,">
-      </div>
-
-      <div class="field required" data-type="email">
-        <label>Email:</label>
-        <input name="form_1[email]" type="email" value="" placeholder="e.g. john.doe@example.com">
-      </div>
-
-      <div class="field required" data-type="memo">
-        <label>Memo:</label>
-        <textarea name="form_1[memo]" rows="2" placeholder="Enter note here..."></textarea>
-      </div>
-
-      <div class="field required" data-type="checkbox">
-        <label>Single Checkbox:</label>
-        <input name="form_1[confirm]" type="checkbox" value="1" checked>
       </div>
 
       <div class="form-actions-bar">
@@ -59,6 +158,8 @@
         <button class="button primary" type="submit" name="refresh">Refresh</button>
         <button class="button primary" type="submit" name="delete-item" value="1" onclick="F1.confirm(this, event)">Delete Item</button>
       </div>
+
+      <div class="validation-summary hidden"></div>
 
     </fieldset>
 

@@ -4,10 +4,10 @@
   $page->title = 'Error 404 (Page Not Found)';
   $page->dir = $app->controllerPath;
   $page->id = 'page_' . $app->currentPage;
-  $page->state = $app->session->get($page->id, []);
-  $page->errors = $app->session->get('errors', []);
-  $page->alerts = $app->session->get('alerts', []);
-  $page->lastCsrfToken = $app->session->get('csrfToken');
+  $page->state = array_get($app->state, $page->id, []);
+  $page->errors = array_get($page->state, 'errors', []);
+  $page->alerts = array_get($page->state, 'alerts', []);
+  $page->lastCsrfToken = array_get($page->state, 'csrfToken');
   $page->basename = substr(__FILE__, 0, strlen(__FILE__)-4);
   $page->viewFilePath = $page->basename . '.html';
   $page->csrfToken = md5(uniqid(rand(), true)); //time();
@@ -49,6 +49,8 @@
     include $app->partialsPath . '/foot.html';
 
     // Save the APP-STATE before we exit.
-    $app->session->flash('csrfToken', $page->csrfToken);
-    $app->session->put($page->id, $page->state);
+    $page->state['errors'] = [];
+    $page->state['alerts'] = [];
+    $page->state = ['csrfToken' => $page->csrfToken];
+    $app->state[$page->id] = $page->state;
   }

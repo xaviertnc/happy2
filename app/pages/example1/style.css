@@ -1,57 +1,113 @@
 /* Page Styles Go Here... */
-.input-group {
+
+.form-column {
+	min-width: 260px;
+}
+
+.left-column {
+	margin-right: 4%;
+	width: 50%
+}
+
+.field > label,
+label.field > span {
   display: inline-block;
+  min-width: 90px;
 }
 
-.input-container {
-  display: inline-block;
-  margin-right: 0.3em;
-  vertical-align: top;
+.field > label {
+	margin-bottom: 0.15em;
 }
 
-.messages {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.fullname {
+	margin-bottom: 0;
 }
 
-.messages li {
-  color: silver;
-  display: block;
-  font-family: arial,"sans-serif";
-  font-size: 0.7em;
-  font-style: italic;
-  line-height: 1.3em;
+.fullname .small-text {
+	display: block;
+	font-size: 0.8em;
 }
 
-.messages .danger {
-  color: crimson;
+.fullname .input-group {
+	display: flex;
+	flex-wrap: wrap;
+	width: 100%;
 }
 
-.messages .warning {
-  color: darkorange;
+.fullname .input-zone {
+	max-width: 120px;
+	margin: 0 3px 1em 0;
 }
 
-.has-error > fieldset,
-.has-error > input,
-.has-error > textarea {
-  border-color: red;
+.birthday select {
+	margin-right: 3px;
 }
 
-.has-error > fieldset > legend,
-.has-error > label {
-  color: crimson;
+.number input {
+  width: 55px;
+  text-align: center;
 }
 
-input[type="text"],
-input[type="email"],
-textarea, select {
-  max-width: 280px;
-  width: 100%;
+.currency{
+	max-width: 180px;
 }
 
-input[type="number"]
-{
-  max-width: 50px;
-  width: 100%;
+.currency .prepend-text {
+	display: inline-block;
+	background: gainsboro;
+	font-size: 0.94em;
+	line-height: 1em;
+}
+
+.email, .memo, .select {
+  max-width: 400px;
+}
+
+.updown input {
+  width: 35px;
+  text-align: center;
+}
+
+.updown button {
+	display: inline-block;
+	padding: 0 0.5em 0;
+	background: gainsboro;
+	cursor: pointer;
+}
+
+.date button {
+	display: inline-block;
+	background: transparent;
+	border: 0;
+	padding: 0 3px;
+	margin: 0;
+}
+
+.date input {
+	width: 130px;
+}
+
+.birthday select {
+  width: 72px;
+  text-align: center;
+}
+
+.radiolist .input-group,
+.checklist .input-group {
+	font-size: 0.9em;
+}
+
+.radiolist input {
+	margin: 0;
+	width: 1.5em;
+}
+
+@media (max-width:767px) {
+	.form-column {
+		margin-right: 0;
+		width: 100%;
+	}
+  .fullname .input-zone {
+	  max-width: 136px;
+	}
 }

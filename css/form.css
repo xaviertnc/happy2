@@ -1,0 +1,104 @@
+fieldset {
+  padding: 1em;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.field {
+  display: flex;
+  margin-bottom: 1em;
+}
+
+.input-wrapper {
+  display: flex;
+}
+
+.input-prepend {
+  border: 1px solid silver;
+  border-right: 0;
+  position: relative;
+}
+
+.input-append {
+  border: 1px solid silver;
+  border-left: 0;
+}
+
+.no-border {
+  border: none;
+}
+
+.append-text,
+.prepend-text {
+  padding: 2px 0.3em;
+  line-height: 1.25em
+}
+
+input, .input {
+  border: 1px solid silver;
+  padding: 1px 3px;
+  max-width: 320px;
+  width: 100%;
+}
+
+input[type="checkbox"]
+{
+  width: 1em;
+}
+
+.messages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.message {
+  padding: 0;
+  margin: 0;
+  color: silver;
+  font-family: sans-serif;
+  font-size: 0.7em;
+  font-style: italic;
+  line-height: 1.3em;
+}
+
+.has-error > input,
+.has-error > .input,
+.has-error > fieldset {
+  border-color: red;
+}
+
+.error,
+.has-error > label,
+form.has-error > fieldset > legend {
+  color: crimson;
+}
+
+.warning {
+  color: darkorange;
+}
+
+.form-actions-bar {
+  padding: 1em 0 0;
+}
+
+
+@media (max-width:767px) {
+  .field > label,
+  label.field > span {
+    min-width: 140px;
+  }
+}
+
+@media (max-width:580px) {
+  .field {
+    display: block;
+  }
+  .field > label,
+  label.field > span {
+    display: block !important;
+  }
+}

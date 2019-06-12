@@ -84,7 +84,7 @@ $(document).ready(function() {
     siteName: 'Happy JS Demo',
     busyFaviconUrl: 'loading.ico',
     csrfTokenMetaName: 'X-CSRF-TOKEN',
-    viewports: ['#page-header', '#page-content'],
+    viewports: ['#site-header', '#page-content'],
     afterPageLoadSuccess: function () {
       console.log('Pjax.afterPageLoadSuccess()');
       F1.runScripts(F1.afterPageLoadScripts);
