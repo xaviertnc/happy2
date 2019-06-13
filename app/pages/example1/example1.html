@@ -155,7 +155,7 @@
 
       <div class="form-actions-bar">
         <button class="button primary" type="submit">Submit</button>
-        <button class="button primary" type="submit" name="refresh">Refresh</button>
+        <button class="button primary" type="submit" name="refresh" value="1">Refresh</button>
         <button class="button primary" type="submit" name="delete-item" value="1" onclick="F1.confirm(this, event)">Delete Item</button>
       </div>
 
@@ -166,3 +166,8 @@
   </form>
 
 </div>
+
+<details>
+  <summary>$app</summary>
+  <pre><?= print_r($app, true) ?></pre>
+</details>

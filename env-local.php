@@ -43,5 +43,6 @@ $app->email->bcc2name   = 'Manager';
 
 
 $app->auth = new stdClass();
-$app->auth->authname = 'admin';
+$app->auth->loggedIn = false;
+$app->auth->username = 'admin';
 $app->auth->password = 'admin';

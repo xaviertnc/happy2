@@ -30,20 +30,20 @@
 
       $alerts[] = ['info', 'Hey, you posted some data.', 3000];
 
-      if ($request->action == 'refresh') {
+      if ($request->action == 'refresh' or array_get($_POST, 'refresh')) {
         $alerts[] = ['success', 'Congrats on a nice refresh!', 5000];
         break;
       }
 
-      if ($request->action == 'delete-item') {
+      if ($request->action == 'delete-item' or array_get($_POST, 'delete-item')) {
         $alerts[] = ['danger', 'Aaww! You just deleted little Timmy #' . $request->params .' :-(', 0];
         break;
       }
 
     } while (0);
 
-    $page->state['errors'] = $errors;
     $page->state['alerts'] = $alerts;
+    $page->state['errors'] = $errors;
     $app->state[$page->id] = $page->state;
     $response->redirectTo = $request->back ?: $request->uri;
   }
@@ -58,8 +58,8 @@
     include $view->partialFile($app->page->dir, $app->page->viewFilePath, 'html', 3, null, '        ');
     include $app->partialsPath . '/foot.html';
 
-    $page->state['errors'] = [];
     $page->state['alerts'] = [];
-    $page->state = ['csrfToken' => $page->csrfToken];
+    $page->state['errors'] = [];
+    $page->state['csrfToken'] = $page->csrfToken;
     $app->state[$page->id] = $page->state;
   }

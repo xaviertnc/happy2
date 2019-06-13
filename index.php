@@ -1,25 +1,18 @@
-<?php // Ultra Simple PHP app...
-
-
-function array_get(array $array, $key, $default = null) {
-  return isset($array[$key]) ? $array[$key] : $default;
-}
+<?php // PJAX-APP Front Controller
 
 function full_url($baseUrl, $href) {
   if (strpos($href, 'http') === 0) { return $href; }
   return  $baseUrl . $href;
 }
 
-
-ob_start();
-
-session_start();
-
+function array_get(array $array, $key, $default = null) {
+  return isset($array[$key]) ? $array[$key] : $default;
+}
 
 register_shutdown_function(function() {
   if (error_get_last() !== null) {
     ob_clean();
-    http_response_code(500); // Could do a 202 error (if ajax request) and redirect to the relevant error page!
+    http_response_code(500);
     echo '<div class="error server-error"><h3>Oops, something went wrong!</h3>', PHP_EOL;
     if (__DEBUG__) { echo '<hr><pre>', print_r(error_get_last(), true), '</pre>'; }
     echo PHP_EOL, '</div>';
@@ -27,14 +20,40 @@ register_shutdown_function(function() {
 });
 
 
+ob_start();
+
+session_start();
+
+
 $app = new stdClass();
+
+// SERVER CONFIG
+require 'env-local.php';
+
+// APP CONFIG
 $app->id = 'HappyJsDemo';
 $app->siteName = 'HappyJS Demo';
+$app->siteSlogan = 'Validation that makes you smile!';
+$app->appPath = $app->rootPath . '/app';
+$app->configPath = $app->appPath . '/config';
+$app->modelsPath = $app->appPath . '/models';
+$app->vendorsPath = $app->appPath . '/vendors';
+$app->storagePath = $app->appPath . '/storage';
+$app->servicesPath = $app->appPath . '/services';
+$app->partialsPath = $app->appPath . '/partials';
+$app->componentsPath = $app->appPath . '/components';
+$app->pagesUri = 'app/pages';
 $app->homeUri = 'example1';
 
+date_default_timezone_set($app->timezone);
 
-// GET SERVER CONFIG
-require 'env-local.php';
+// MODULE CONFIGS
+// require $app->configPath . '/paypal.php';
+// require $app->configPath . '/mail.php';
+
+
+// APP SERVICES
+require $app->servicesPath . '/view.php';
 
 
 // HTTP REQUEST
@@ -53,73 +72,35 @@ $request->parts = explode('/', $request->pageref);
 $app->request = $request;
 
 
-// APP STRUCTURE
-$app->pagesUri = 'app/pages';
-$app->appPath = $app->rootPath . '/app';
-$app->configPath = $app->appPath . '/config';
-$app->modelsPath = $app->appPath . '/models';
-$app->vendorsPath = $app->appPath . '/vendors';
-$app->storagePath = $app->appPath . '/storage';
-$app->servicesPath = $app->appPath . '/services';
-$app->partialsPath = $app->appPath . '/partials';
-$app->componentsPath = $app->appPath . '/components';
+// APP RESPONSE
+$response = new stdClass();
+$app->response = $response;
+
+
+// GET PAGE CONTROLLER
 $app->currentPage = $request->parts[count($request->parts)-1];
 $app->controllerPath = $app->appPath . '/pages/' . $request->pageref;
 $app->controller = $app->controllerPath . '/' . $app->currentPage . '.php';
+
 if ( ! file_exists($app->controller)) {
   $app->controllerPath = $app->appPath . '/errors/404';
   $app->controller = $app->controllerPath . '/404.php';
 }
 
 
-// APP RESPONSE
-$response = new stdClass();
-$app->response = $response;
-
-
-// APP CONFIG
-// require $app->configPath . '/paypal.php';
-// require $app->configPath . '/mail.php';
-
-
-// SET TIMEZONE FOR CORRECT MYSQL TIMES
-date_default_timezone_set($app->timezone);
-
-
-// APP SERVICES
-require $app->servicesPath . '/view.php';
-
-
-// Get saved APP-STATE
+// RESTORE APP STATE
 $app->state = array_get($_SESSION, $app->id, []);
 
 
-// RUN APP!
+// RUN PAGE CONTROLLER
 require $app->controller;
 
 
-// Save the APP-STATE before we exit.
+// SAVE APP STATE
 $_SESSION[$app->id] = $app->state;
 
 
-// We might want to REDIRECT after a GET or POST request...
-//  After GET: Usually because the client requested a restricted page without authorisation.
-//  After POST: To redirect BACK to the form-view or goto a completely different page after login.
-//    - After login or when we intend to completely change the application layout, we should
-//      favour a HARD REDIRECT that reloads the entire page and NOT just the PJAX viewports.
-//
-// SOFT/PJAX vs. HARD REDIRECT:
-//   SOFT: We delay redirect and ask the client to handle "loading" the page we want to redirect to.
-//   HARD: We redirect immediately. If we HARD REDIRECT, the entire page reloads, which results in
-//         a loss of the FAST and SMOOTH action provided by PJAX. We also don't allow the client-side
-//         app to perform it's normal pre and post page logic which could result the application
-//         behaving inconsistantly. e.g. Features like the "loading indicator" might not
-//         work as expected.
-//
-// NOTE: AJAX requests where the client requests a HARD REDIRECT is NOT A THING. Only the server-side
-//       code should determine if a request should result in a HARD or SOFT redirect response.
-//       If the cleint wants a HARD REDIRECT, just make a normal NON-AJAX request!
-//
+// REDIRECT IF REQUIRED...
 if (isset($response->redirectTo))
 {
   // If you want a HARD REDIRECT after an AJAX POST, just
@@ -148,4 +129,6 @@ if (isset($response->redirectTo))
   exit;
 }
 
+
+// RENDER
 ob_end_flush();

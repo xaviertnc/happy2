@@ -45,8 +45,14 @@
 
     <div id="page">
 
-      <header id="site-header">
-        <h1 id="site-title"><?=$app->siteName?> - <?=$page->title?></h1>
+      <header id="site-masthead">
+        <div id="site-brand" class="container">
+          <img id="site-logo" src="img/happy-logo.png">
+          <div id="site-name">
+            <h1><?=$app->siteName?> - <?=$page->title?></h1>
+            <small><?=$app->siteSlogan?></small>
+          </div>
+        </div>
         <?php include $view->partialFile($app->partialsPath, $app->partialsPath . '/topnav.html'); ?>
       </header>
 
