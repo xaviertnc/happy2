@@ -18,13 +18,16 @@ details {
 }
 
 .field > label,
+.field > legend,
 label.field > span {
   display: inline-block;
+  margin-bottom: 0.15em;
   min-width: 90px;
 }
 
-.field > label {
-	margin-bottom: 0.15em;
+.field > legend {
+	float: left;
+	padding-inline: unset;
 }
 
 .fullname {
@@ -103,11 +106,6 @@ label.field > span {
 .radiolist .input-group,
 .checklist .input-group {
 	font-size: 0.9em;
-}
-
-.radiolist input {
-	margin: 0;
-	width: 1.5em;
 }
 
 @media (max-width:767px) {

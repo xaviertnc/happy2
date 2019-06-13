@@ -1,6 +1,6 @@
 <?php
   $page = new stdClass();
-  $page->title = 'Example1';
+  $page->title = 'Demo 3';
   $page->id = $app->currentPage;
   $page->dir = $app->controllerPath;
   $page->state = array_get($app->state, $page->id, []);
@@ -30,16 +30,6 @@
 
       $alerts[] = ['info', 'Hey, you posted some data.', 3000];
 
-      if ($request->action == 'refresh' or array_get($_POST, 'refresh')) {
-        $alerts[] = ['success', 'Congrats on a nice refresh!', 5000];
-        break;
-      }
-
-      if ($request->action == 'delete-item' or array_get($_POST, 'delete-item')) {
-        $alerts[] = ['danger', 'Aaww! You just deleted little Timmy #' . $request->params .' :-(', 0];
-        break;
-      }
-
     } while (0);
 
     $page->state['alerts'] = $alerts;
@@ -62,4 +52,5 @@
     $page->state['errors'] = [];
     $page->state['csrfToken'] = $page->csrfToken;
     $app->state[$page->id] = $page->state;
+
   }

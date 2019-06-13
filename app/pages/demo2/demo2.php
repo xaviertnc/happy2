@@ -1,6 +1,6 @@
 <?php
   $page = new stdClass();
-  $page->title = 'Example 3';
+  $page->title = 'Demo 2';
   $page->id = $app->currentPage;
   $page->dir = $app->controllerPath;
   $page->state = array_get($app->state, $page->id, []);

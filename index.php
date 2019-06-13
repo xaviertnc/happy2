@@ -32,7 +32,7 @@ require 'env-local.php';
 
 // APP CONFIG
 $app->id = 'HappyJsDemo';
-$app->siteName = 'HappyJS Demo';
+$app->siteName = 'HappyJS';
 $app->siteSlogan = 'Validation that makes you smile!';
 $app->appPath = $app->rootPath . '/app';
 $app->configPath = $app->appPath . '/config';
@@ -43,7 +43,7 @@ $app->servicesPath = $app->appPath . '/services';
 $app->partialsPath = $app->appPath . '/partials';
 $app->componentsPath = $app->appPath . '/components';
 $app->pagesUri = 'app/pages';
-$app->homeUri = 'example1';
+$app->homeUri = 'demo1';
 
 date_default_timezone_set($app->timezone);
 

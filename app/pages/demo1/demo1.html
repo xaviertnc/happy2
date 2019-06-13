@@ -12,8 +12,8 @@
 
         <div class="form-column left-column">
 
-          <div class="field fullname required has-error" data-type="multi-value">
-            <label>Name:</label>
+          <fieldset class="field fullname required has-error" data-type="multi-value">
+            <legend>Name:</legend>
             <div class="input-group">
               <div class="input-zone required has-error">
                 <label class="small-text">Firstname:</label>
@@ -28,11 +28,11 @@
               </div>
               <!-- <p class="message">User note: Provide both Firstname AND Lastname pls!</p> -->
             </div>
-          </div>
+          </fieldset>
 
           <div class="field email required" data-type="email">
             <label>Email:</label>
-            <input name="form1[email]" type="email" placeholder="e.g. john.doe@example.com">
+            <input name="form1[email]" type="email" placeholder="e.g. john.doe@demo.com">
           </div>
 
           <div class="field memo required" data-type="memo">
@@ -40,21 +40,23 @@
             <textarea class="input" name="form1[memo]" rows="3" placeholder="Enter memo here..."></textarea>
           </div>
 
-          <div class="field birthday required" data-type="birthday">
-            <label>Brithday:</label>
-            <select class="input" name="form1[b-day]">
-              <option>- day -</option>
-            </select>
-            <select class="input" name="form1[b-month]">
-              <option>- mth -</option>
-            </select>
-            <select class="input" name="form1[b-year]">
-              <option>- year -</option>
-            </select>
-          </div>
+          <fieldset class="field birthday required" data-type="birthday">
+            <legend>Brithday:</legend>
+            <div class="input-group">
+              <select class="input" name="form1[b-day]">
+                <option>- day -</option>
+              </select>
+              <select class="input" name="form1[b-month]">
+                <option>- mth -</option>
+              </select>
+              <select class="input" name="form1[b-year]">
+                <option>- year -</option>
+              </select>
+            </div>
+          </fieldset>
 
-          <div class="field radiolist" data-type="radiolist">
-            <label>Radiolist:</label>
+          <fieldset class="field radiolist" data-type="radiolist">
+            <legend>Radiolist:</legend>
             <div class="input-group">
               <label class="input-wrapper">
                 <input name="form1[radiolist]" type="radio" value="1">
@@ -69,19 +71,19 @@
                 <span>Option #3</span>
               </label>
             </div>
-          </div>
+          </fieldset>
 
           <label class="field check required" data-type="checkbox">
             <span>Checkbox:</span>
             <input name="form1[confirm]" type="checkbox" value="1" checked>
           </label>
 
-        </div>
+        </div> <!--/left-column-->
 
         <div class="form-column right-column">
 
-          <div class="field checklist" data-type="checklist">
-            <label>Checklist:</label>
+          <fieldset class="field checklist" data-type="checklist">
+            <legend>Checklist:</legend>
             <div class="input-group">
               <label class="input-wrapper">
                 <input name="form1[checklist][]" type="checkbox">
@@ -96,7 +98,7 @@
                 <span>Item #3</span>
               </label>
             </div>
-          </div>
+          </fieldset>
 
           <div class="field number required" data-type="number">
             <label>Number1:</label>

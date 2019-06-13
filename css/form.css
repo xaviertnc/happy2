@@ -1,4 +1,4 @@
-fieldset {
+form > fieldset {
   padding: 1em;
 }
 
@@ -8,8 +8,10 @@ fieldset {
 }
 
 .field {
+  border: none;
   display: flex;
-  margin-bottom: 1em;
+  margin: 0 0 1em 0;
+  padding: 0;
 }
 
 .input-wrapper {
@@ -44,8 +46,10 @@ input, .input {
   width: 100%;
 }
 
+input[type="radio"],
 input[type="checkbox"]
 {
+  margin: 0 0.3em 0 0;
   width: 1em;
 }
 
@@ -73,7 +77,7 @@ input[type="checkbox"]
 
 .error,
 .has-error > label,
-form.has-error > fieldset > legend {
+.has-error > fieldset > legend {
   color: crimson;
 }
 
@@ -88,6 +92,7 @@ form.has-error > fieldset > legend {
 
 @media (max-width:767px) {
   .field > label,
+  .field > legend,
   label.field > span {
     min-width: 140px;
   }
@@ -98,7 +103,12 @@ form.has-error > fieldset > legend {
     display: block;
   }
   .field > label,
+  .field > legend,
   label.field > span {
     display: block !important;
+  }
+  .input-group {
+    /* flexbox + fieldset hack. */
+    clear: left;
   }
 }
