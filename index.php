@@ -1,10 +1,15 @@
 <?php // Ultra Simple PHP app...
 
-define('__DEBUG__', true);
 
 function array_get(array $array, $key, $default = null) {
   return isset($array[$key]) ? $array[$key] : $default;
 }
+
+function full_url($baseUrl, $href) {
+  if (strpos($href, 'http') === 0) { return $href; }
+  return  $baseUrl . $href;
+}
+
 
 ob_start();
 
@@ -22,50 +27,75 @@ register_shutdown_function(function() {
 });
 
 
+$app = new stdClass();
+$app->id = 'HappyJsDemo';
+$app->siteName = 'HappyJS Demo';
+$app->homeUri = 'example1';
+
+
+// GET SERVER CONFIG
+require 'env-local.php';
+
+
+// HTTP REQUEST
 $request = new stdClass();
 $request->uri = $_SERVER['REQUEST_URI'];
-$request->host = '//happy.localhost';
-$request->uriBase = '/';
-$request->urlBase = $request->host . $request->uriBase;
+$request->protocol = isset($_SERVER['HTTPS']) ? 'https' : 'http';
+$request->host = array_get($_SERVER, 'HTTP_HOST', $app->defaultHost);
+$request->urlBase = $request->protocol . '://' . $request->host . $app->uriBase;
 $request->method = $_SERVER['REQUEST_METHOD'];
 $request->back = array_get($_SERVER, 'HTTP_REFERER');
 $request->isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']);
 $request->parts = explode('?', $request->uri);
 $request->query = isset($request->parts[1]) ? $request->parts[1] : '';
-$request->pageref = trim(substr($request->parts[0], strlen($request->uriBase)), '/') ?: 'example1';
+$request->pageref = trim(substr($request->parts[0], strlen($app->uriBase)), '/') ?: $app->homeUri;
 $request->parts = explode('/', $request->pageref);
-
-$response = new stdClass();
-
-$app = new stdClass();
-$app->id = 'HappyJsDemo';
 $app->request = $request;
-$app->response = $response;
-$app->homepage = 'example1';
-$app->siteName = 'HappyJS Demo';
-$app->currentPage = $request->pageref ?: $app->homepage;
-$app->state = array_get($_SESSION, $app->id, []);
-$app->rootPath = 'C:/Laragon/www/happy';
+
+
+// APP STRUCTURE
+$app->pagesUri = 'app/pages';
 $app->appPath = $app->rootPath . '/app';
+$app->configPath = $app->appPath . '/config';
+$app->modelsPath = $app->appPath . '/models';
+$app->vendorsPath = $app->appPath . '/vendors';
+$app->storagePath = $app->appPath . '/storage';
 $app->servicesPath = $app->appPath . '/services';
 $app->partialsPath = $app->appPath . '/partials';
 $app->componentsPath = $app->appPath . '/components';
 $app->currentPage = $request->parts[count($request->parts)-1];
 $app->controllerPath = $app->appPath . '/pages/' . $request->pageref;
 $app->controller = $app->controllerPath . '/' . $app->currentPage . '.php';
-
 if ( ! file_exists($app->controller)) {
   $app->controllerPath = $app->appPath . '/errors/404';
   $app->controller = $app->controllerPath . '/404.php';
 }
 
+
+// APP RESPONSE
+$response = new stdClass();
+$app->response = $response;
+
+
+// APP CONFIG
+// require $app->configPath . '/paypal.php';
+// require $app->configPath . '/mail.php';
+
+
+// SET TIMEZONE FOR CORRECT MYSQL TIMES
+date_default_timezone_set($app->timezone);
+
+
+// APP SERVICES
 require $app->servicesPath . '/view.php';
 
 
+// Get saved APP-STATE
+$app->state = array_get($_SESSION, $app->id, []);
+
+
+// RUN APP!
 require $app->controller;
-// echo '<pre>', print_r($app, true), '</pre>';
-// echo '<pre>', print_r($_SERVER, true), '</pre>';
-// echo '<pre>', print_r($_SESSION, true), '</pre>';
 
 
 // Save the APP-STATE before we exit.

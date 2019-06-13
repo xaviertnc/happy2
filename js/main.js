@@ -82,7 +82,7 @@ $(document).ready(function() {
 
   F1.pjax = new F1.Pjax({
     siteName: 'Happy JS Demo',
-    busyFaviconUrl: 'loading.ico',
+    busyFaviconUrl: 'img/loading.ico',
     csrfTokenMetaName: 'X-CSRF-TOKEN',
     viewports: ['#site-header', '#page-content'],
     afterPageLoadSuccess: function () {
