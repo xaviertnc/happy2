@@ -12,7 +12,7 @@
 
         <div class="form-column left-column">
 
-          <fieldset class="field fullname required has-error" data-type="multi-value">
+          <fieldset class="field fullname required has-error" data-type="fullname">
             <legend>Name:</legend>
             <div class="input-group">
               <div class="input-zone required has-error">
@@ -135,7 +135,7 @@
               <div class="input-append no-border">
                 <button type="button">
                   <img src="img/calendar.gif">
-                  <span class="hidden">Select</span>
+                  <span class="hidden">Select Date</span>
                 </button>
               </div>
             </div>
@@ -149,6 +149,19 @@
               <option value="2">Option #2</option>
               <option value="3">Option #3</option>
             </select>
+          </div>
+
+          <div class="field file required" data-type="file">
+            <label>File:</label>
+            <input name="form1[file]" type="file">
+          </div>
+
+          <div class="field captcha required" data-type="captcha">
+            <label>Captcha:</label>
+            <div class="input-group">
+              <img src="" alt="Captcha Beeld" style="border:1px solid seagreen;padding:0.1em 0.3em">
+              <input name="form1[captcha]" type="text">
+            </div>
           </div>
 
         </div>

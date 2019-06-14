@@ -24,13 +24,14 @@ class HappyItem {
 
     if ( ! this.el) { this.el = this.getDomElement(); }
 
-    this.name = this.el.id || HappyItem.nextId++;
+    this.id = this.type + HappyItem.nextId++;
 
     this.containerElement = this.getContainer();
 
     this.initialValue = null;
     this.value = null;
 
+    this.required = false;
     this.modified = false;
     this.happy = true;
 
@@ -43,8 +44,8 @@ class HappyItem {
 
   getDomElement()
   {
-    if (this.options.elementSelector) {
-      return document.querySelector(this.options.elementSelector);
+    if (this.options.selector) {
+      return document.querySelector(this.options.selector);
     }
   }
 
@@ -82,18 +83,31 @@ class HappyMessageGroup {
 
 
 
-class HappyInput {
+class HappyInput extends HappyItem  {
 
-  constructor(options) {
+  constructor(options)
+  {
+    super('input', options);
+    console.log('HappyInput::construct()', this);
   }
 
 }
 
 
 
-class HappyField {
+class HappyField extends HappyItem  {
 
-  constructor(options) {
+  constructor(options)
+  {
+    super('field', options);
+    this.fieldType = this.getType();
+    this.inputs = [];
+  }
+
+
+  getType()
+  {
+    return this.el.getAttribute('data-type');
   }
 
 }
@@ -102,20 +116,26 @@ class HappyField {
 
 class HappyForm extends HappyItem {
 
-  constructor(options) {
+  constructor(options)
+  {
     super('form', options);
     this.fields = [];
     console.log('HappyForm::construct()', this);
   }
 
 
-  addField(field) {
+  addFields(fieldDefs)
+  {
+    let form = this;
 
-  }
+    if (form.options.fieldSelector) {
+      form.fieldElements = document.querySelectorAll(form.options.fieldSelector);
+    }
 
-
-  addFieldsByType(fieldTypeDef) {
-
+    form.fieldElements.forEach(fieldElement => {
+      let field = new HappyField({ el: fieldElement, parent: form });
+      form.fields.push(field);
+    });
   }
 
 }
@@ -124,19 +144,16 @@ class HappyForm extends HappyItem {
 
 class HappyDoc extends HappyItem {
 
-  constructor(options) {
+  constructor(options)
+  {
     console.log('HappyDoc::construct(), options:', options);
     super('doc', options);
   }
 
 
-  addForm(form) {
-
-  }
-
-
-  addFormsByType(formTypeDef) {
-
+  addForms(formDefs)
+  {
+    console.log('HappyDoc::addForms()', formDefs);
   }
 
 }

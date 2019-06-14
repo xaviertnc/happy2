@@ -59,7 +59,7 @@ label.field > span {
   text-align: center;
 }
 
-.currency{
+.currency {
 	max-width: 180px;
 }
 
@@ -70,8 +70,12 @@ label.field > span {
 	line-height: 1em;
 }
 
-.email, .memo, .select {
+.email, .memo {
   max-width: 400px;
+}
+
+.select, .file, .captcha {
+  max-width: 320px;
 }
 
 .updown input {
