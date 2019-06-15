@@ -1,4 +1,4 @@
-/* globals window, F1, Happy2, HappyInput, HappyField */
+/* globals window, F1, HappyDoc, HappyField, HappyInput */
 /* eslint-env es6 */
 
 window.F1 = window.F1 || { afterPageLoadScripts: [] };
@@ -6,61 +6,65 @@ window.F1 = window.F1 || { afterPageLoadScripts: [] };
 
 F1.afterPageLoadScripts.push(function initPage1() {
 
-  let elHappyForm = document.body.querySelector('#form1');
+  class AgeInput extends HappyInput {
 
-  F1.clean = {
-  	date   : function() {},
-  	name   : function() {},
-  	number : function() {}
-  };
+    hello(name, age)
+    {
+      return 'Hello ' + name + '! Your age is: ' + age;
+    }
 
-  F1.validate = {
+  }
 
-  	fullname: function(field)
-  	{
-  		return false;
-  	},
 
-  	birthday: function(field)
-  	{
-  		return false;
-  	}
+  class MultiValueField extends HappyField {
 
-  };
+  }
 
-  F1.onSubmit = function(form, event)
-  {
-  	return false;
-  };
 
-  F1.happyForm = new HappyForm({
-  	el: elHappyForm,
-  	fieldSelector: '.field', // or fn()
-  	inputSelector: '.input',  // or fn()
-  	requiredText: 'required',
-  	onSubmit: F1.onSubmit
+  class BirthdayField extends MultiValueField {
+
+  }
+
+
+  F1.happyDoc = new HappyDoc({
+
+    debug: true,
+
+    customMessageTypes: {},
+
+    customMessageGroupTypes: {},
+
+    customInputTypes: {
+      age: AgeInput
+    },
+
+    customFieldTypes: {
+      multiValue : MultiValueField,
+      birthday   : BirthdayField
+    },
+
+    customFormTypes: {},
+
+    customValidators: {
+      fullname: function() { return false; },
+      birthday: function() { return false; }
+    },
+
+    customCleaners: {
+      name   : function() {},
+      date   : function() {},
+      number : function() {}
+    }
+
   });
 
-  F1.happyForm.addFields({
-  	'fullname': {
-  		clean: F1.clean.name,
-  		validate: F1.validate.fullname
-  	},
-  	'birthday': {
-  		clean: F1.clean.number,
-  		validate: F1.validate.birthday
-  	},
-  	'radiolist': {
-  	},
-  	'checklist': {
-  	},
-  	'checkbox': {
-  	},
-  	'select': {
-  	}
-  });
 
-  F1.console.log('F1 HappyForm Initialized:', F1.happyForm);
+  let elHappyDoc = document.querySelector('#happy2doc');
+
+  F1.console.log('elHappyDoc:', elHappyDoc);
+
+  F1.happyDoc.mount({ el: elHappyDoc });
+
   F1.console.log('This is AFTER Page 1 loaded succesfully!');
 
 });

@@ -1,4 +1,4 @@
-<div class="happy2doc">
+<div id="happy2doc">
 
   <form id="form1" class="pjax has-error" method="post" novalidate>
 
@@ -54,6 +54,16 @@
               </select>
             </div>
           </fieldset>
+
+          <div class="field select required" data-type="select">
+            <label>Select:</label>
+            <select class="input" name="form1[select]">
+              <option value="">- select something -</option>
+              <option value="1">Option #1</option>
+              <option value="2">Option #2</option>
+              <option value="3">Option #3</option>
+            </select>
+          </div>
 
           <fieldset class="field radiolist" data-type="radiolist">
             <legend>Radiolist:</legend>
@@ -141,16 +151,6 @@
             </div>
           </div>
 
-          <div class="field select required" data-type="select">
-            <label>Select:</label>
-            <select class="input" name="form1[select]">
-              <option value="">- select something -</option>
-              <option value="1">Option #1</option>
-              <option value="2">Option #2</option>
-              <option value="3">Option #3</option>
-            </select>
-          </div>
-
           <div class="field file required" data-type="file">
             <label>File:</label>
             <input name="form1[file]" type="file">
@@ -159,7 +159,9 @@
           <div class="field captcha required" data-type="captcha">
             <label>Captcha:</label>
             <div class="input-group">
-              <img src="" alt="Captcha Beeld" style="border:1px solid seagreen;padding:0.1em 0.3em">
+              <div style="background:url(img/white-wave.png);padding:1em;margin-bottom:3px">
+                CAPT<?=rand(1111, 9999)?>
+              </div>
               <input name="form1[captcha]" type="text">
             </div>
           </div>
@@ -184,5 +186,5 @@
 
 <details>
   <summary>$app</summary>
-  <pre><?= print_r($app, true) ?></pre>
+  <pre><?php //print_r($app, true) ?></pre>
 </details>
