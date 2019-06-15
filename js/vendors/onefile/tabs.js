@@ -14,7 +14,7 @@ F1.Tabs = function (options)
 {
   options = options || {};
   $.extend(this, options);
-  console.log('F1 Tabs Initialized:', this);
+  F1.console.log('F1 Tabs Initialized:', this);
 };
 
 

@@ -26,7 +26,7 @@ F1.afterPageLoadScripts.push(function initPage1() {
   }
 
 
-  F1.happyDoc = new HappyDoc({
+  F1.happy = new HappyDoc({
 
     debug: true,
 
@@ -59,12 +59,10 @@ F1.afterPageLoadScripts.push(function initPage1() {
   });
 
 
-  let elHappyDoc = document.querySelector('#happy2doc');
+  F1.elHappy  = document.querySelector('#happy2doc');
 
-  F1.console.log('elHappyDoc:', elHappyDoc);
+  F1.happy.mount({ el: F1.elHappy });
 
-  F1.happyDoc.mount({ el: elHappyDoc });
-
-  F1.console.log('This is AFTER Page 1 loaded succesfully!');
+  F1.console.log('Page 1 initialized - ok');
 
 });

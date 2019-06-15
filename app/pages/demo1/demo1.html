@@ -45,12 +45,21 @@
             <div class="input-group">
               <select class="input" name="form1[b-day]">
                 <option>- day -</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
               </select>
               <select class="input" name="form1[b-month]">
                 <option>- mth -</option>
+                <option value="1">Jan</option>
+                <option value="2">Feb</option>
+                <option value="3">Mar</option>
               </select>
               <select class="input" name="form1[b-year]">
                 <option>- year -</option>
+                <option value="2018">2018</option>
+                <option value="2019">2019</option>
+                <option value="2020">2020</option>
               </select>
             </div>
           </fieldset>
@@ -172,8 +181,10 @@
 
       <div class="form-actions-bar">
         <button class="button primary" type="submit">Submit</button>
-        <button class="button primary" type="submit" name="refresh" value="1">Refresh</button>
-        <button class="button primary" type="submit" name="delete-item" value="1" onclick="F1.confirm(this, event)">Delete Item</button>
+        <button class="button secondary" type="submit" name="refresh" value="1">Refresh</button>
+        <button class="button danger" type="submit" name="delete-item" value="1" onclick="F1.confirm(this, event)">Delete Item</button>
+        <button class="button pull-right" type="button" onclick="F1.happy.dismount()">HappyJS Dismount</button>
+        <button class="button pull-right" type="button" onclick="F1.happy.mount({ el: F1.elHappy })">HappyJS Mount</button>
       </div>
 
       <div class="validation-summary hidden"></div>

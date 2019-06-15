@@ -22,6 +22,13 @@ class HappyItem {
 
     this.options = options || {};
 
+    if ( ! this.parent) {
+      // Top level item only (i.e. do only once per view!)
+      HappyItem.nextId = 1;
+      HappyItem.currentField = undefined;
+      this.isTopLevel = true;
+    }
+
     this.id = this.getId();
 
     this.initialValue = null;
@@ -31,7 +38,7 @@ class HappyItem {
     this.modified = false;
     this.happy = true;
 
-    this.updateHandlers = [];
+    this.eventHandlers = [];
     this.children = [];
 
     this.prev = null;
@@ -87,47 +94,53 @@ class HappyItem {
   }
 
 
-  onUpdateEvent(event) {
+  // Here be dragons... You've been WARNED!
+  onUpdateHandler(event) {
     let happyItem = event.target.HAPPY;
     if ( ! happyItem || happyItem.happyType !== 'input') { return; }
+    let happyField = happyItem.parent;
     if (event.type === 'focus') {
-      if (happyItem.parent === HappyItem.currentField) { return; }
-      HappyItem.currentField = happyItem.parent;
-      if (happyItem.onFocus) { happyItem.onFocus(event); }
-      console.log('HappyItem::onUpdateEvent() focus', happyItem);
+      if (happyField === HappyItem.currentField && happyField.ignoreBlur()) {
+        return clearTimeout(happyField.delayBlurEventTimer);
+      }
+      HappyItem.currentField = happyField;
+      if (happyField.onFocus) { happyField.onFocus(event); }
+      console.log('HappyItem::onUpdateHandler() field focus', happyField.id);
       return;
     }
-    if (event.type === 'blur' && ! event.relatedTarget) {
-      console.log('HappyItem::onUpdateEvent() blur - Ignore!');
+    if (event.type === 'blur') {
+      // Checklists, Radiolists and Selects should ignore blur events.
+      if (happyField.ignoreBlur()) { return; }
+      // Delay the field-blur event to check if we actually left this field.
+      // The next input-focus event will clear the timer if we are still on the same field.
+      happyField.delayBlurEventTimer = setTimeout(function () {
+        console.log('HappyItem::onUpdateHandler() blur', happyItem.id);
+        happyField.update(event);
+      }, 150);
       return;
     }
-    let date = new Date();
-    let now = date.getTime();
-    if ((now - (happyItem.parent.lastUpdated || 0)) > 300) {
-      happyItem.parent.lastUpdated = now;
-      console.log('HappyItem::onUpdateEvent()', now,
-        happyItem.parent.lastUpdated, event.type, happyItem);
+    let date = new Date(), now = date.getTime();
+    if ((now - (happyItem.parent.lastUpdated || 0)) > 250) {
+      happyField.lastUpdated = now;
+      console.log('HappyItem::onUpdateHandler()', event.type, happyItem);
+      happyField.update(event);
     }
-    happyItem.update(event);
-    return happyItem;
   }
 
 
   bindEvents()
   {
-    if (this.parent) { return; }
-    this.updateHandlers = [];
-    this.updateHandlers.push(this.el.addEventListener('focus'  , this.onUpdateEvent, true));
-    this.updateHandlers.push(this.el.addEventListener('blur'  , this.onUpdateEvent, true));
-    this.updateHandlers.push(this.el.addEventListener('change', this.onUpdateEvent, true));
-    // this.updateHandlers.push(this.el.addEventListener('input', this.onUpdateEvent, true));
+    this.el.addEventListener('blur'   , this.onUpdateHandler, true),
+    this.el.addEventListener('focus'  , this.onUpdateHandler, true),
+    this.el.addEventListener('change' , this.onUpdateHandler, true)
   }
 
 
   unbindEvents()
   {
-    if (this.parent) { return; }
-    this.updateHandlers.forEach(handler => this.el.removeEventListener(handler));
+    this.el.removeEventListener('blur'   , this.onUpdateHandler, true),
+    this.el.removeEventListener('focus'  , this.onUpdateHandler, true),
+    this.el.removeEventListener('change' , this.onUpdateHandler, true)
   }
 
 
@@ -138,10 +151,10 @@ class HappyItem {
     let appendTo = options.appendTo;
     this.containerElement = this.getContainerElement();
     this.el = (this.el || this.getDomElement()) || options.el;
-    if ( ! this.el)
-    { // No existing element... Mount as rendered element
-      if ( ! appendTo)
-      { // Pick what to append the rendered element to (if not specified)
+    if ( ! this.el) {
+      // No existing element... Mount as rendered element
+      if ( ! appendTo) {
+        // Pick what to append the rendered element to (if not specified)
         appendTo = this.containerElement || parent.el || document.body;
       }
       this.el = this.render();
@@ -149,23 +162,29 @@ class HappyItem {
       this.isRenderedElement = true;
     }
     this.el.HAPPY = this;
-    this.bindEvents();
-    if ( ! this.parent) {
-      console.log('HappyItem[', this.happyType, ']::mount() - ok', this);
+    if (this.isTopLevel) {
+      this.bindEvents();
+      F1.console.log('Happy[', this.happyType, ']::mount() - ok', this);
     }
+    this.mounted = true;
   }
 
 
   dismount()
   {
-    if (this.isRenderedElement) {
+    if (this.el && this.isRenderedElement) {
       this.el.parentElement.removeChild(this.el);
+      this.el = undefined;
     } else {
-      if (this.unbindEvents) {
-        this.unbindEvents();
-      }
-      delete this.el.HAPPY;
+      if (this.isTopLevel) { this.unbindEvents(); }
+      if (this.el) { delete this.el.HAPPY; }
     }
+    if (this.children) {
+      this.children.forEach(child => child.dismount());
+      this.children = undefined;
+    }
+    this.mounted = false;
+    this.nextId = 1;
   }
 
 
@@ -194,28 +213,12 @@ class HappyItem {
 
 }
 
-// *** Hi - Don't forget about me! :) ***
-HappyItem.nextId = 1;
-HappyItem.currentField = undefined;
-
-
 
 class HappyMessage {
 
   constructor(options)
   {
-    console.log('HappyMessage::construct()');
-  }
-
-}
-
-
-
-class HappyMessageGroup {
-
-  constructor(options)
-  {
-    console.log('HappyMessageGroup::construct()');
+    F1.console.log('HappyMessage::construct()');
   }
 
 }
@@ -228,7 +231,7 @@ class HappyInput extends HappyItem  {
   {
     super('input', options);
     this.nextId = 1;
-    console.log('HappyInput::construct()');
+    F1.console.log('HappyInput::construct()');
   }
 
 
@@ -288,6 +291,7 @@ class HappyInput extends HappyItem  {
 
   mount(options)
   {
+    if (this.mounted) { return; }
     super.mount(options);
     this.inputType = this.getType();
   }
@@ -301,10 +305,10 @@ class HappyField extends HappyItem  {
   constructor(options)
   {
     super('field', options);
-    let defaultSelector = 'input:not([type="submit"]):not([type="hidden"]),textarea,select';
+    let defaultSelector = 'input:not(hidden):not([type="submit"]), textarea, select';
     this.setOpt('inputSelector', this.getOpt('inputSelector'), defaultSelector);
     this.nextId = 1;
-    console.log('HappyField::construct()');
+    F1.console.log('HappyField::construct()');
   }
 
 
@@ -370,6 +374,13 @@ class HappyField extends HappyItem  {
   }
 
 
+  ignoreBlur()
+  {
+    let ignoreBlurTypes = ['checkbox', 'checklist', 'radiolist', 'select', 'file'];
+    return ignoreBlurTypes.includes(this.fieldType);
+  }
+
+
   validate()
   {
 
@@ -378,6 +389,7 @@ class HappyField extends HappyItem  {
 
   mount(options)
   {
+    if (this.mounted) { return; }
     super.mount(options);
     this.fieldType = this.getType();
     this.inputs = this.getInputs();
@@ -385,6 +397,12 @@ class HappyField extends HappyItem  {
     this.inputs.forEach(input => input.mount());
   }
 
+
+  dismount()
+  {
+    super.dismount();
+    this.inputs = undefined;
+  }
 }
 
 
@@ -396,7 +414,7 @@ class HappyForm extends HappyItem {
     super('form', options);
     this.setOpt('fieldSelector', this.getOpt('fieldSelector'), '.field');
     this.nextId = 1;
-    console.log('HappyForm::construct()');
+    F1.console.log('HappyForm::construct()');
   }
 
 
@@ -452,12 +470,19 @@ class HappyForm extends HappyItem {
 
   mount(options)
   {
+    if (this.mounted) { return; }
     super.mount(options);
     this.fields = this.getFields();
     this.children = this.fields;
     this.fields.forEach(field => field.mount());
   }
 
+
+  dismount()
+  {
+    super.dismount();
+    this.fields = undefined;
+  }
 }
 
 
@@ -469,7 +494,7 @@ class HappyDoc extends HappyItem {
     super('doc', options);
     this.setOpt('formSelector', this.getOpt('formSelector'), 'form');
     this.nextId = 1;
-    console.log('HappyDoc::construct()');
+    F1.console.log('HappyDoc::construct()');
   }
 
 
@@ -525,10 +550,18 @@ class HappyDoc extends HappyItem {
 
   mount(options)
   {
+    if (this.mounted) { return; }
     super.mount(options);
     this.forms = this.getForms();
     this.children = this.forms;
     this.forms.forEach(form => form.mount());
+  }
+
+
+  dismount()
+  {
+    super.dismount();
+    this.forms = undefined;
   }
 
 }

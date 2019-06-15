@@ -10,13 +10,13 @@ F1.DEBUG = false;
 // leading edge, instead of the trailing.
 F1.debounce = function(func, wait, immediate) {
   var timeout;
-  console.log('Debounce Triggered');
+  F1.console.log('Debounce Triggered');
   return function() {
     var context = this, args = arguments;
     var later = function() {
       timeout = null;
       if (!immediate) {
-        console.log('Debounce: Executing the payload AFTER TIMER timeout.');
+        F1.console.log('Debounce: Executing the payload AFTER TIMER timeout.');
         func.apply(context, args);
       }
     };
@@ -24,7 +24,7 @@ F1.debounce = function(func, wait, immediate) {
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
     if (callNow) {
-      console.log('Debounce: Executing the payload AT TIMER START.');
+      F1.console.log('Debounce: Executing the payload AT TIMER START.');
       func.apply(context, args);
     }
   };
@@ -86,7 +86,7 @@ $(document).ready(function() {
     csrfTokenMetaName: 'X-CSRF-TOKEN',
     viewports: ['#site-masthead', '#page-content'],
     afterPageLoadSuccess: function () {
-      console.log('Pjax.afterPageLoadSuccess()');
+      F1.console.log('Pjax.afterPageLoadSuccess()');
       F1.runScripts(F1.afterPageLoadScripts);
       F1.afterPageLoadScripts = [];
       F1.pjax.bindViewports();

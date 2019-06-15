@@ -17,12 +17,12 @@ F1.Alerts = function (alertsContainerSelector, options)
   this.fadeDuration = 3000;
   $.extend(this, options);
   this.bind('init');
-  console.log('F1 Alerts Initialized:', this);
+  F1.console.log('F1 Alerts Initialized:', this);
 };
 
 
 F1.Alerts.prototype.bind = function(init) {
-  if ( ! init) { console.log('F1 Alerts Bind'); }
+  if ( ! init) { F1.console.log('F1 Alerts Bind'); }
   this.$elm = $(this.selector);
   this.$elm.find('.alert').each(function () {
     var $alert = $(this);

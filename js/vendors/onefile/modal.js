@@ -14,7 +14,7 @@ F1.Modal = function (options)
 {
   options = options || {};
   $.extend(this, options);
-  console.log('F1 Modal Initialized:', this);
+  F1.console.log('F1 Modal Initialized:', this);
 };
 
 
@@ -27,7 +27,7 @@ F1.Modal = function (options)
  */
 F1.Modal.prototype.show = function (modalSelector, event, resetForm)
 {
-  console.log('F1 Modal SHOW, resetForm:', resetForm);
+  F1.console.log('F1 Modal SHOW, resetForm:', resetForm);
   event.preventDefault();
   try {
     var $modal = $(modalSelector);
@@ -50,7 +50,7 @@ F1.Modal.prototype.show = function (modalSelector, event, resetForm)
       }
     }
   } catch(err) {
-    console.log('error:' + err.message);
+    F1.console.log('error:' + err.message);
   }
   $modal.removeClass('hidden');
   $inputs.first().focus();

@@ -21,7 +21,7 @@ F1.Back2Top = function (elementSelector, options)
   options = options || {};
   $.extend(this, options);
   $(window).on('scroll', this, this.scrollHandler.bind(this));
-  console.log('F1 Back2Top Initialized:', this);
+  F1.console.log('F1 Back2Top Initialized:', this);
 };
 
 
