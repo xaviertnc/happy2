@@ -14,7 +14,7 @@ class HappyItem {
 
   constructor(type, options)
   {
-    this.type = type;
+    this.happyType = type;
     this.parent = options.parent;
     this.el = options.el;
     delete options.parent;
@@ -31,6 +31,7 @@ class HappyItem {
     this.modified = false;
     this.happy = true;
 
+    this.updateHandlers = [];
     this.children = [];
 
     this.prev = null;
@@ -57,9 +58,9 @@ class HappyItem {
   getId()
   {
     if (this.parent && this.parent.nextId) {
-      return this.parent.id + '_' + this.type + this.parent.nextId++;
+      return this.parent.id + '_' + this.happyType + this.parent.nextId++;
     }
-    return this.type + HappyItem.nextId++;
+    return this.happyType + HappyItem.nextId++;
   }
 
 
@@ -86,15 +87,47 @@ class HappyItem {
   }
 
 
+  onUpdateEvent(event) {
+    let happyItem = event.target.HAPPY;
+    if ( ! happyItem || happyItem.happyType !== 'input') { return; }
+    if (event.type === 'focus') {
+      if (happyItem.parent === HappyItem.currentField) { return; }
+      HappyItem.currentField = happyItem.parent;
+      if (happyItem.onFocus) { happyItem.onFocus(event); }
+      console.log('HappyItem::onUpdateEvent() focus', happyItem);
+      return;
+    }
+    if (event.type === 'blur' && ! event.relatedTarget) {
+      console.log('HappyItem::onUpdateEvent() blur - Ignore!');
+      return;
+    }
+    let date = new Date();
+    let now = date.getTime();
+    if ((now - (happyItem.parent.lastUpdated || 0)) > 300) {
+      happyItem.parent.lastUpdated = now;
+      console.log('HappyItem::onUpdateEvent()', now,
+        happyItem.parent.lastUpdated, event.type, happyItem);
+    }
+    happyItem.update(event);
+    return happyItem;
+  }
+
+
   bindEvents()
   {
-
+    if (this.parent) { return; }
+    this.updateHandlers = [];
+    this.updateHandlers.push(this.el.addEventListener('focus'  , this.onUpdateEvent, true));
+    this.updateHandlers.push(this.el.addEventListener('blur'  , this.onUpdateEvent, true));
+    this.updateHandlers.push(this.el.addEventListener('change', this.onUpdateEvent, true));
+    // this.updateHandlers.push(this.el.addEventListener('input', this.onUpdateEvent, true));
   }
 
 
   unbindEvents()
   {
-
+    if (this.parent) { return; }
+    this.updateHandlers.forEach(handler => this.el.removeEventListener(handler));
   }
 
 
@@ -118,7 +151,7 @@ class HappyItem {
     this.el.HAPPY = this;
     this.bindEvents();
     if ( ! this.parent) {
-      console.log('HappyItem[' + this.type + ']::mount() - ok', this);
+      console.log('HappyItem[', this.happyType, ']::mount() - ok', this);
     }
   }
 
@@ -128,7 +161,9 @@ class HappyItem {
     if (this.isRenderedElement) {
       this.el.parentElement.removeChild(this.el);
     } else {
-      this.unbindEvents();
+      if (this.unbindEvents) {
+        this.unbindEvents();
+      }
       delete this.el.HAPPY;
     }
   }
@@ -161,6 +196,7 @@ class HappyItem {
 
 // *** Hi - Don't forget about me! :) ***
 HappyItem.nextId = 1;
+HappyItem.currentField = undefined;
 
 
 
@@ -195,6 +231,67 @@ class HappyInput extends HappyItem  {
     console.log('HappyInput::construct()');
   }
 
+
+  getType()
+  {
+    return this.el.type || this.el.getAttribute('data-type');
+  }
+
+
+  getLabel()
+  {
+
+  }
+
+
+  getMessages()
+  {
+
+  }
+
+
+  getMessageGroups()
+  {
+
+  }
+
+
+  getInitialValue()
+  {
+
+  }
+
+
+  getValue()
+  {
+
+  }
+
+
+  getHappyState()
+  {
+
+  }
+
+
+  getModifiedState()
+  {
+
+  }
+
+
+  validate()
+  {
+
+  }
+
+
+  mount(options)
+  {
+    super.mount(options);
+    this.inputType = this.getType();
+  }
+
 }
 
 
@@ -208,12 +305,6 @@ class HappyField extends HappyItem  {
     this.setOpt('inputSelector', this.getOpt('inputSelector'), defaultSelector);
     this.nextId = 1;
     console.log('HappyField::construct()');
-  }
-
-
-  getType()
-  {
-    return this.el.getAttribute('data-type');
   }
 
 
@@ -231,9 +322,64 @@ class HappyField extends HappyItem  {
   }
 
 
+  getType()
+  {
+    return this.el.getAttribute('data-type');
+  }
+
+
+  getLabel()
+  {
+
+  }
+
+
+  getMessages()
+  {
+
+  }
+
+
+  getMessageGroups()
+  {
+
+  }
+
+
+  getModifiedState()
+  {
+
+  }
+
+
+  getHappyState()
+  {
+
+  }
+
+
+  getInitialValue()
+  {
+
+  }
+
+
+  getValue()
+  {
+
+  }
+
+
+  validate()
+  {
+
+  }
+
+
   mount(options)
   {
     super.mount(options);
+    this.fieldType = this.getType();
     this.inputs = this.getInputs();
     this.children = this.inputs;
     this.inputs.forEach(input => input.mount());
@@ -265,6 +411,42 @@ class HappyForm extends HappyItem {
       });
     }
     return formFields;
+  }
+
+
+  getMessages()
+  {
+
+  }
+
+
+  getMessageGroups()
+  {
+
+  }
+
+
+  getModifiedState()
+  {
+
+  }
+
+
+  getHappyState()
+  {
+
+  }
+
+
+  getValue()
+  {
+
+  }
+
+
+  validate()
+  {
+
   }
 
 
@@ -302,6 +484,42 @@ class HappyDoc extends HappyItem {
       });
     }
     return docForms;
+  }
+
+
+  getMessages()
+  {
+
+  }
+
+
+  getMessageGroups()
+  {
+
+  }
+
+
+  getModifiedState()
+  {
+
+  }
+
+
+  getHappyState()
+  {
+
+  }
+
+
+  getValue()
+  {
+
+  }
+
+
+  validate()
+  {
+
   }
 
 
