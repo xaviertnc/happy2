@@ -1,4 +1,4 @@
-/* globals document, window */
+/* globals document, window, F1, HappyMessage, HappyInput, HappyForm, HappyDoc */
 /* eslint-env es7 */
 
 /**
@@ -38,11 +38,7 @@ class HappyItem {
     this.modified = false;
     this.happy = true;
 
-    this.eventHandlers = [];
     this.children = [];
-
-    this.prev = null;
-    this.next = null;
   }
 
 
@@ -94,53 +90,142 @@ class HappyItem {
   }
 
 
+  getNext(stepOver)
+  {
+    if (this.isTopLevel) { return; }
+    // console.log('HappyItem::getNext()', this.id);
+    let parent = this.parent;
+    let childCount = parent.children.length;
+    if (childCount < 2) {
+      if (parent.isTopLevel) { return; }
+      let nextParentParent = parent.parent.getNext();
+      // console.log('HappyItem::getNext(), nextParentParent:', nextParentParent);
+      if (nextParentParent && nextParentParent.children.length) {
+        return nextParentParent.children[0].children[0];
+      }
+    }
+    let index = parent.children.indexOf(this) + 1;
+    if (index >= childCount) {
+      if (stepOver) {
+        let nextParent = parent.getNext();
+        if (nextParent && nextParent.children.length) {
+          return nextParent.children[0];
+        }
+      }
+      return parent.children[0];
+    }
+    return parent.children[index];
+  }
+
+
+  getPrev(stepOver)
+  {
+    if (this.isTopLevel) { return; }
+    let childCount = this.parent.children.length;
+    if (childCount < 2) { return; }
+    let index = this.parent.children.indexOf(this);
+    if ( ! index) {
+      if (stepOver) {
+        let prevParent = this.parent.getPrev();
+        if (prevParent && prevParent.children.length) {
+          return prevParent.children[prevParent.children.length - 1];
+        }
+      }
+      return this.parent.children[childCount - 1];
+    }
+    return this.parent.children[index - 1];
+  }
+
+
   // Here be dragons... You've been WARNED!
   onUpdateHandler(event) {
     let happyItem = event.target.HAPPY;
+    // console.log('HappyItem::onUpdateHandler() event', event);
     if ( ! happyItem || happyItem.happyType !== 'input') { return; }
     let happyField = happyItem.parent;
     if (event.type === 'focus') {
+      // Checklists, Radiolists and Selects should ignore blur events between OWN inputs.
       if (happyField === HappyItem.currentField && happyField.ignoreBlur()) {
         return clearTimeout(happyField.delayBlurEventTimer);
       }
       HappyItem.currentField = happyField;
       if (happyField.onFocus) { happyField.onFocus(event); }
-      console.log('HappyItem::onUpdateHandler() field focus', happyField.id);
+      // console.log('HappyItem::onUpdateHandler() field focus', happyField.id);
       return;
     }
     if (event.type === 'blur') {
-      // Checklists, Radiolists and Selects should ignore blur events.
-      if (happyField.ignoreBlur()) { return; }
       // Delay the field-blur event to check if we actually left this field.
       // The next input-focus event will clear the timer if we are still on the same field.
       happyField.delayBlurEventTimer = setTimeout(function () {
-        console.log('HappyItem::onUpdateHandler() blur', happyItem.id);
-        happyField.update(event);
+        let date = new Date(), now = date.getTime();
+        if ((now - (happyField.lastUpdated || 0)) > 250) {
+          // console.log('HappyItem::onUpdateHandler() blur', happyItem.id);
+          happyField.lastUpdated = now;
+          happyField.update();
+        }
       }, 150);
       return;
     }
+    if (event.type === 'keydown') {
+      if (event.key === 'Enter' || event.when == 13 || event.keyCode == 13) {
+        event.stopImmediatePropagation();
+        event.preventDefault();
+        let nextHappyInput;
+        if (happyField.is(['checkbox','checklist','radiolist'])) {
+          happyItem.el.click();
+        }
+        if (happyField.fieldType === 'radiolist') {
+          let nextHappyField = happyField.getNext(true);
+          if (nextHappyField) {
+            nextHappyInput = nextHappyField.inputs[0];
+          }
+        } else {
+          nextHappyInput = happyItem.getNext(true);
+        }
+        if (nextHappyInput) { nextHappyInput.el.focus(); }
+      }
+      else if (event.key === 'ArrowUp' && happyField.is('checklist')) {
+        let prevHappyInput = happyItem.getPrev();
+        if (prevHappyInput) { prevHappyInput.el.focus(); }
+      }
+      else if (event.key === 'ArrowDown' && happyField.is('checklist')) {
+        let nextHappyInput = happyItem.getNext();
+        if (nextHappyInput) { nextHappyInput.el.focus(); }
+      }
+      return;
+    }
     let date = new Date(), now = date.getTime();
-    if ((now - (happyItem.parent.lastUpdated || 0)) > 250) {
+    if ((now - (happyField.lastUpdated || 0)) > 250) {
+      // console.log('HappyItem::onUpdateHandler()', event.type, happyItem.id);
       happyField.lastUpdated = now;
-      console.log('HappyItem::onUpdateHandler()', event.type, happyItem);
-      happyField.update(event);
+      happyField.update();
     }
   }
 
 
   bindEvents()
   {
-    this.el.addEventListener('blur'   , this.onUpdateHandler, true),
-    this.el.addEventListener('focus'  , this.onUpdateHandler, true),
-    this.el.addEventListener('change' , this.onUpdateHandler, true)
+    if (this.isTopLevel) {
+      this.el.addEventListener('blur'     , this.onUpdateHandler, true);
+      this.el.addEventListener('focus'    , this.onUpdateHandler, true);
+      this.el.addEventListener('change'   , this.onUpdateHandler, true);
+    }
+    if (this.happyType === 'form') {
+      this.el.addEventListener('keydown' , this.onUpdateHandler, true);
+    }
   }
 
 
   unbindEvents()
   {
-    this.el.removeEventListener('blur'   , this.onUpdateHandler, true),
-    this.el.removeEventListener('focus'  , this.onUpdateHandler, true),
-    this.el.removeEventListener('change' , this.onUpdateHandler, true)
+    if (this.happyType === 'form') {
+      this.el.removeEventListener('keydown' , this.onUpdateHandler, true);
+    }
+    if (this.isTopLevel) {
+      this.el.removeEventListener('change'   , this.onUpdateHandler, true);
+      this.el.removeEventListener('focus'    , this.onUpdateHandler, true);
+      this.el.removeEventListener('blur'     , this.onUpdateHandler, true);
+    }
   }
 
 
@@ -162,10 +247,8 @@ class HappyItem {
       this.isRenderedElement = true;
     }
     this.el.HAPPY = this;
-    if (this.isTopLevel) {
-      this.bindEvents();
-      F1.console.log('Happy[', this.happyType, ']::mount() - ok', this);
-    }
+    this.bindEvents();
+    if (this.isTopLevel) { F1.console.log('Happy[', this.happyType, ']::mount() - ok', this); }
     this.mounted = true;
   }
 
@@ -176,7 +259,7 @@ class HappyItem {
       this.el.parentElement.removeChild(this.el);
       this.el = undefined;
     } else {
-      if (this.isTopLevel) { this.unbindEvents(); }
+      this.unbindEvents();
       if (this.el) { delete this.el.HAPPY; }
     }
     if (this.children) {
@@ -218,7 +301,7 @@ class HappyMessage {
 
   constructor(options)
   {
-    F1.console.log('HappyMessage::construct()');
+    F1.console.log('HappyMessage::construct()', options);
   }
 
 }
@@ -312,7 +395,7 @@ class HappyField extends HappyItem  {
   }
 
 
-  getInputs(inputDefs)
+  getInputs()
   {
     let field = this, inputs = [];
     if (field.options.inputSelector) {
@@ -374,10 +457,16 @@ class HappyField extends HappyItem  {
   }
 
 
+  is(fieldType)
+  {
+    let fieldTypes = (typeof fieldType === 'string') ?  [fieldType] : fieldType;
+    return fieldTypes.includes(this.fieldType);
+  }
+
+
   ignoreBlur()
   {
-    let ignoreBlurTypes = ['checkbox', 'checklist', 'radiolist', 'select', 'file'];
-    return ignoreBlurTypes.includes(this.fieldType);
+    return this.is(['checkbox', 'checklist', 'radiolist', 'select', 'file']);
   }
 
 

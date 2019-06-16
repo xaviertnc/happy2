@@ -46,6 +46,10 @@ input, .input {
   width: 100%;
 }
 
+input:focus, textarea:focus, select:focus {
+  box-shadow: 0 0 3px 0 cornflowerblue;
+}
+
 input[type="radio"],
 input[type="checkbox"]
 {
