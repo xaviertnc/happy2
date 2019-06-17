@@ -28,7 +28,7 @@ HAPPY FIELD OBJECT API
   renderElm         // Create a completely new field html element.
 
   init						  // Import any user config + Parse the field HTML element if it exists + Bind events.
-  mount						  // Append the field HTML element to the docuent if it doesn't exist. (Like after render)
+  mount						  // Append the field HTML element to the document if it doesn't exist. (Like after render)
   validate          // Get the current value and state of the field + Run all validations + Update messages
   testModified      // Get current value/s + compare to initial value/s
   update					  // validate + testModified + Update local state, parent state + Update DOM

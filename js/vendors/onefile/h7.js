@@ -1,4 +1,4 @@
-/* globals document, window, F1, HappyMessage, HappyInput, HappyForm, HappyDoc */
+/* globals document, window, F1 */
 /* eslint-env es7 */
 
 /**
@@ -9,6 +9,48 @@
  * @date:  13 Jun 2019
  *
  */
+
+let HappyJS = {
+
+  config: {},
+
+  happyInstance: null,
+
+
+  configure: function(config)
+  {
+    this.config = config;
+  },
+
+
+  mergeOptions: function(options = {}, extraOptions = {})
+  {
+    Object.assign(options, extraOptions);
+    return options;
+  },
+
+
+  mount: function(type, selector)
+  {
+    el = document.body.querySelector(selector);
+    switch(type)
+    {
+      case 'doc'   : this.happyInstance = new HappyDoc(); break;
+      case 'form'  : this.happyInstance = new HappyForm(); break;
+      case 'field' : this.happyInstance = new HappyField(); break;
+    }
+    if (this.happyInstance) { this.happyInstance.mount(el); }
+  },
+
+
+  dismount: function()
+  {
+    if (this.happyInstance) { this.happyInstance.dismount(); }
+  }
+
+};
+
+
 
 class HappyItem {
 
@@ -64,6 +106,12 @@ class HappyItem {
       return this.parent.id + '_' + this.happyType + this.parent.nextId++;
     }
     return this.happyType + HappyItem.nextId++;
+  }
+
+
+  getName()
+  {
+    return this.el ? (this.el.name || this.el.getAttribute('data-name')) : 'noname';
   }
 
 
@@ -138,21 +186,23 @@ class HappyItem {
 
 
   // Here be dragons... You've been WARNED!
-  onUpdateHandler(event) {
+  onUpdateHandler(event)
+  {
     let happyItem = event.target.HAPPY;
-    // console.log('HappyItem::onUpdateHandler() event', event);
     if ( ! happyItem || happyItem.happyType !== 'input') { return; }
     let happyField = happyItem.parent;
+
     if (event.type === 'focus') {
       // Checklists, Radiolists and Selects should ignore blur events between OWN inputs.
       if (happyField === HappyItem.currentField && happyField.ignoreBlur()) {
         return clearTimeout(happyField.delayBlurEventTimer);
       }
       HappyItem.currentField = happyField;
-      if (happyField.onFocus) { happyField.onFocus(event); }
+      if (happyField.options.onFocus && happyField.options.onFocus(event)) { return; }
       // console.log('HappyItem::onUpdateHandler() field focus', happyField.id);
       return;
     }
+
     if (event.type === 'blur') {
       // Delay the field-blur event to check if we actually left this field.
       // The next input-focus event will clear the timer if we are still on the same field.
@@ -166,34 +216,49 @@ class HappyItem {
       }, 150);
       return;
     }
+
     if (event.type === 'keydown') {
+      if (happyField.options.onKeyDown && happyField.options.onKeyDown(event)) { return; }
+      // Focus on the NEXT FIELD or INPUT when we press ENTER
       if (event.key === 'Enter' || event.when == 13 || event.keyCode == 13) {
+        if (happyField.is(['memo'])) { return; }
         event.stopImmediatePropagation();
         event.preventDefault();
         let nextHappyInput;
         if (happyField.is(['checkbox','checklist','radiolist'])) {
+          // Also "Check/Select" the FIELD INPUT if it's in the list above.
           happyItem.el.click();
         }
+        if (happyField.options.onEnter && !happyField.options.onEnter(event)) { return; }
         if (happyField.fieldType === 'radiolist') {
+          // Jump to the NEXT FIELD's first input.
           let nextHappyField = happyField.getNext(true);
           if (nextHappyField) {
             nextHappyInput = nextHappyField.inputs[0];
           }
         } else {
+          // Jump to the NEXT INPUT
           nextHappyInput = happyItem.getNext(true);
         }
         if (nextHappyInput) { nextHappyInput.el.focus(); }
       }
-      else if (event.key === 'ArrowUp' && happyField.is('checklist')) {
-        let prevHappyInput = happyItem.getPrev();
-        if (prevHappyInput) { prevHappyInput.el.focus(); }
-      }
+
       else if (event.key === 'ArrowDown' && happyField.is('checklist')) {
+        // Focus on the NEXT INPUT if we press Arrow Down on a checklist field
         let nextHappyInput = happyItem.getNext();
         if (nextHappyInput) { nextHappyInput.el.focus(); }
       }
+
+      else if (event.key === 'ArrowUp' && happyField.is('checklist')) {
+        // Focus on the PREV INPUT if we press Arrow Up on a checklist field
+        let prevHappyInput = happyItem.getPrev();
+        if (prevHappyInput) { prevHappyInput.el.focus(); }
+      }
+
       return;
     }
+
+    // event.type = change, event.type = input
     let date = new Date(), now = date.getTime();
     if ((now - (happyField.lastUpdated || 0)) > 250) {
       // console.log('HappyItem::onUpdateHandler()', event.type, happyItem.id);
@@ -246,6 +311,7 @@ class HappyItem {
       appendTo.append(this.el);
       this.isRenderedElement = true;
     }
+    this.name = this.getName();
     this.el.HAPPY = this;
     this.bindEvents();
     if (this.isTopLevel) { F1.console.log('Happy[', this.happyType, ']::mount() - ok', this); }
@@ -312,7 +378,7 @@ class HappyInput extends HappyItem  {
 
   constructor(options)
   {
-    super('input', options);
+    super('input', HappyJS.mergeOptions(options, HappyJS.config.customInputOptions));
     this.nextId = 1;
     F1.console.log('HappyInput::construct()');
   }
@@ -387,7 +453,7 @@ class HappyField extends HappyItem  {
 
   constructor(options)
   {
-    super('field', options);
+    super('field', HappyJS.mergeOptions(options, HappyJS.config.customFieldOptions));
     let defaultSelector = 'input:not(hidden):not([type="submit"]), textarea, select';
     this.setOpt('inputSelector', this.getOpt('inputSelector'), defaultSelector);
     this.nextId = 1;
@@ -500,7 +566,7 @@ class HappyForm extends HappyItem {
 
   constructor(options)
   {
-    super('form', options);
+    super('form', HappyJS.mergeOptions(options, HappyJS.config.customFormOptions));
     this.setOpt('fieldSelector', this.getOpt('fieldSelector'), '.field');
     this.nextId = 1;
     F1.console.log('HappyForm::construct()');
@@ -580,7 +646,7 @@ class HappyDoc extends HappyItem {
 
   constructor(options)
   {
-    super('doc', options);
+    super('doc', HappyJS.mergeOptions(options, HappyJS.config.customDocOptions));
     this.setOpt('formSelector', this.getOpt('formSelector'), 'form');
     this.nextId = 1;
     F1.console.log('HappyDoc::construct()');
@@ -589,11 +655,11 @@ class HappyDoc extends HappyItem {
 
   getForms()
   {
-    let doc = this, docForms = [];
-    if (doc.options.formSelector) {
-      let formElements = doc.el.querySelectorAll(doc.options.formSelector);
+    let happyDoc = this, docForms = [];
+    if (happyDoc.options.formSelector) {
+      let formElements = happyDoc.el.querySelectorAll(happyDoc.options.formSelector);
       formElements.forEach(formElement => {
-        let form = new HappyForm({ parent: doc, el: formElement });
+        let form = new HappyForm({ el: formElement, parent: happyDoc });
         docForms.push(form);
       });
     }

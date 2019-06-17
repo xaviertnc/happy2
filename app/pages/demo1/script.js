@@ -6,15 +6,6 @@ window.F1 = window.F1 || { afterPageLoadScripts: [] };
 
 F1.afterPageLoadScripts.push(function initPage1() {
 
-  class AgeInput extends HappyInput {
-
-    hello(name, age)
-    {
-      return 'Hello ' + name + '! Your age is: ' + age;
-    }
-
-  }
-
 
   class MultiValueField extends HappyField {
 
@@ -26,24 +17,63 @@ F1.afterPageLoadScripts.push(function initPage1() {
   }
 
 
-  F1.happy = new HappyDoc({
+  class AgeInput extends HappyInput {
 
-    debug: true,
+    hello(name, age)
+    {
+      return 'Hello ' + name + '! Your age is: ' + age;
+    }
 
-    customMessageTypes: {},
+  }
 
-    customMessageGroupTypes: {},
 
-    customInputTypes: {
+  HappyJS.configure({
+
+    customDocOptions: {
+      formSelector : '.form',
+      summarySelector: '.docsummary',
+      requiredText: 'Value is required.',
+      errorText: 'Value is invalid.',
+      messagePlacement: 'append',
+    },
+
+    customFormOptions: {
+      fieldSelector : '.field',
+      summarySelector: '.formsummary',
+      model :  {
+        getFieldType: function(item) { return item.el.type; } // NB!
+      }
+    },
+
+    customFieldOptions: {
+      inputSelector : '.input',
+      model :  {
+        getInputType: function(item) { return item.el.type; }, // NB!
+        getValidators: function(item) {}
+      }
+    },
+
+    customInputOptions: {
+      model :  {
+        validate: function() {},
+        addMessage: function() {},
+        removeMessages: function() {},
+        getValidators: function(item) {
+          // Check attrs: data-validate, required, min, max, type, pattern...
+          // Also check field element for more validators...
+          return item.el.getAttribute('data-validate');
+        }
+      }
+    },
+
+    customFieldTypeClassMap: {
+      birthday: BirthdayField
+    },
+
+    // Map input element types to their HappyInput classes
+    customInputTypeClassMap: {
       age: AgeInput
     },
-
-    customFieldTypes: {
-      multiValue : MultiValueField,
-      birthday   : BirthdayField
-    },
-
-    customFormTypes: {},
 
     customValidators: {
       fullname: function() { return false; },
@@ -58,10 +88,8 @@ F1.afterPageLoadScripts.push(function initPage1() {
 
   });
 
+  HappyJS.mount('doc', '#happydoc');
 
-  F1.elHappy  = document.querySelector('#happy2doc');
-
-  F1.happy.mount({ el: F1.elHappy });
 
   F1.console.log('Page 1 initialized - ok');
 

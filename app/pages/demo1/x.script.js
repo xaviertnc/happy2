@@ -19,7 +19,7 @@ F1.afterPageLoadScripts.push(function initPage1()
 
 
   F1.happy2 = new Happy2({
-    
+
     debug: true,
 
     validators: {
