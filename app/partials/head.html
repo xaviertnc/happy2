@@ -10,7 +10,7 @@
     <link href="css/style.css" rel="stylesheet">
     <link href="css/form.css" rel="stylesheet">
 
-    <?php include $view->styleFile(); ?>
+    <?php if ($page->style = $view->styleFile()) include $page->style ?>
 
   </head>
 
