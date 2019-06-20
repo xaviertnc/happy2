@@ -1,7 +1,7 @@
 <?php // docs.php
 
   $page = new stdClass();
-  $page->title = 'Docs';
+  $page->title = 'Documentation';
   $page->id = $app->currentPage;
   $page->dir = $app->controllerPath;
   $page->state = array_get($app->state, $page->id, []);

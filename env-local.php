@@ -13,7 +13,7 @@ define('__ENV_PROD__', false);
 
 $app->uriBase = '/';
 $app->defaultHost = '//happy.localhost';
-$app->rootPath = 'C:/Laragon/www/happy';
+$app->rootPath = 'C:/laragon/www/happy2';
 $app->timezone = 'Africa/Johannesburg';
 
 

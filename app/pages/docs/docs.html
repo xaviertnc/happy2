@@ -1,75 +1,23 @@
 <article>
-  <h3>HappyJS Process</h3>
+  <h3>HappyJS Core Steps</h3>
   <ol>
     <li>
-      <h4>Choose a HappyJS config strategy</h4>
+      <h4>Choose a HappyJS strategy</h4>
       <ul>
-        <li>Auto Find Items: Provide item "finder" functions or CSS selector(s) per Happy Item category.</li>
-        <li>Manually Add Items: Provide DOMElement, UniqueID, Type, TabIndex (opt) per item</li>
-        <li>Combo: Manually add top-level items + Auto find child items</li>
-        <li>Combo: Auto find most items + Manually add items not covered by auto-finder(s)</li>
+        <li>
+          Plug and play: Design your HTML according to <a href="happyspec">HappyJS specifications</a>
+          and get auto validation out of the box!</li>
+        <li>
+          Plug and play (with custom config): Provide custom HappyJS Item "finder" functions,
+          custom CSS selector(s) and / or extend HappyJS Item Classes for auto validation on custom HTML.
+        </li>
+        <li>
+          Individually add and configure specific HappyJS Items while optionally auto-detecting the rest.
       </ul>
     </li>
     <li>
       <h4>Configure HappyJS</h4>
-      <p>
-        <code>
-          <pre>
-let happyForm1 = HAPPY.addHappyForm({ el: document.querySelector('#form1') });
-
-// happyForm1.setFieldOrder(['name', 'email', 'tel', 'message']);
-
-happyForm1.addFieldFinder(function() {
-  let fieldInfo = [], fieldElements = this.el.querySelector('.field');
-  fieldElements.forEach(function(el) {
-    let fieldType = el.getAttribute('data-type') || 'text'; // Optional
-    fieldInfo.push({ el: el, type: fieldType });
-  });
-  return fieldInfo;
-});
-
-happyForm1.addFieldSelector('#myfilefield');
-happyForm1.addFieldSelector('.myfield');
-
-
-/**
- * If we provide no "type" property, we rely on the default HappyField
- * class getter methods to extract any required field information!
- * If a field's HTML contains info on tab-order, we can override or
- * use HappyField::getTabOrder() to get the field's tab order.
- * The same applies to getters for ID, Name, Label etc.
- */
-happyForm1.addField({
-  el: document.querySelector('#fullname'),
-  getValue: function() {
-    return this.inputs[0].getValue() + ',' + this.inputs[1].value();
-  },
-  validate: function(event, isSubmit) {
-    let field = this, fieldValue = field.getValue(), happyMessages = [];
-    do {
-      if ( ! isSubmit) { break; }
-      if (field.isRequired && ! fieldValue) {
-        let happyMessage = new H7.HappyMessage('error', 'This field is required.');
-        happyMessages.push(happyMessage);
-        field.isHappy = false;
-        break;
-      }
-    } while(0);
-    return happyMessages;
-  },
-  tabOrder: 2
-});
-
-happyForm1.addField({
-  el: document.querySelector('#birthday-field'),
-  type: 'birthday'
-});
-
-
-happyForm1.mount();
-          </pre>
-        </code>
-      </p>
+      <pre><?php include $page->basename . '.js'; ?></pre>
     </li>
     <li>
       <h4>Start building a hierarchical structure of all the Happy Items on the page.</h4>
