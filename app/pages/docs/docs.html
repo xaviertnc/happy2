@@ -1,0 +1,97 @@
+<article>
+  <h3>HappyJS Process</h3>
+  <ol>
+    <li>
+      <h4>Choose a HappyJS config strategy</h4>
+      <ul>
+        <li>Auto Find Items: Provide item "finder" functions or CSS selector(s) per Happy Item category.</li>
+        <li>Manually Add Items: Provide DOMElement, UniqueID, Type, TabIndex (opt) per item</li>
+        <li>Combo: Manually add top-level items + Auto find child items</li>
+        <li>Combo: Auto find most items + Manually add items not covered by auto-finder(s)</li>
+      </ul>
+    </li>
+    <li>
+      <h4>Configure HappyJS</h4>
+      <p>
+        <code>
+          <pre>
+let happyForm1 = HAPPY.addHappyForm({ el: document.querySelector('#form1') });
+
+// happyForm1.setFieldOrder(['name', 'email', 'tel', 'message']);
+
+happyForm1.addFieldFinder(function() {
+  let fieldInfo = [], fieldElements = this.el.querySelector('.field');
+  fieldElements.forEach(function(el) {
+    let fieldType = el.getAttribute('data-type') || 'text'; // Optional
+    fieldInfo.push({ el: el, type: fieldType });
+  });
+  return fieldInfo;
+});
+
+happyForm1.addFieldSelector('#myfilefield');
+happyForm1.addFieldSelector('.myfield');
+
+
+/**
+ * If we provide no "type" property, we rely on the default HappyField
+ * class getter methods to extract any required field information!
+ * If a field's HTML contains info on tab-order, we can override or
+ * use HappyField::getTabOrder() to get the field's tab order.
+ * The same applies to getters for ID, Name, Label etc.
+ */
+happyForm1.addField({
+  el: document.querySelector('#fullname'),
+  getValue: function() {
+    return this.inputs[0].getValue() + ',' + this.inputs[1].value();
+  },
+  validate: function(event, isSubmit) {
+    let field = this, fieldValue = field.getValue(), happyMessages = [];
+    do {
+      if ( ! isSubmit) { break; }
+      if (field.isRequired && ! fieldValue) {
+        let happyMessage = new H7.HappyMessage('error', 'This field is required.');
+        happyMessages.push(happyMessage);
+        field.isHappy = false;
+        break;
+      }
+    } while(0);
+    return happyMessages;
+  },
+  tabOrder: 2
+});
+
+happyForm1.addField({
+  el: document.querySelector('#birthday-field'),
+  type: 'birthday'
+});
+
+
+happyForm1.mount();
+          </pre>
+        </code>
+      </p>
+    </li>
+    <li>
+      <h4>Start building a hierarchical structure of all the Happy Items on the page.</h4>
+    </li>
+    <li>
+      <h4>Loop through all the Happy Item CSS selectors and getElement() functions</h4>
+      <p>Collect all the Happy Item Dom Elements</p>
+    </li>
+    <li>
+      <h4>Determine if we should instantiate a decendant class.</h4>
+      <p>
+        Once we have a Happy Item's subtype, we can determine if we should instantiale a default
+        Happy Item or a decendant item with custom behaviours. A decendant item will have
+        method overrides to important methods like getId(), getIitialValue(), getValue(), validate(),
+        getTabOrder(), orderChildren(), render(), bindEvents(), onUpdateHandler(), update(),
+        clearMessages(), addMessages(), updateMessages(), setUnhappy(), setModified(),
+        getHappyState(),  getMofdifiedState(), etc.
+      </p>
+    </li>
+    <li>
+      <h4>Order child items with a custom or the default orderChildren() method.</h4>
+      <p>The default method orders children by Tab Index.</p>
+    </li>
+  </ol>
+</article>

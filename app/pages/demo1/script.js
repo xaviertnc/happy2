@@ -33,7 +33,7 @@ F1.afterPageLoadScripts.push(function initPage1() {
       formSelector : '.form',
       summarySelector: '.docsummary',
       requiredText: 'Value is required.',
-      errorText: 'Value is invalid.',
+      invalidText: 'Value is invalid.',
       messagePlacement: 'append',
     },
 
