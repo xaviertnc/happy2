@@ -373,8 +373,7 @@ class HappyMessageAnchor extends HappyItem {
   }
 
   _parseMessageElements() {
-    let messages = [],
-        happy2anchor = this;
+    let messages = [], happy2anchor = this;
     if ( ! this.childDOMElements.length) { return messages; }
     // console.log('HappyInput._parseMessageElements(), messageDOMElements:', this.messageDOMElements);
     this.childDOMElements.forEach(function createMessage(messageElement) {
@@ -454,8 +453,7 @@ class HappyField extends HappyCanValidate {
   }
 
   _parseInputElements() {
-    let happyInputs = [],
-        happy2field = this;
+    let happyInputs = [], happy2field = this;
     if (!this.childDOMElements.length) { return happyInputs; }
     this.childDOMElements.forEach(function createHappyInput(inputElement) {
       let inputOptions = { elm: inputElement };
@@ -513,8 +511,7 @@ class HappyForm extends HappyCanValidate {
   }
 
   _parseFieldElements() {
-    let happyFields = [],
-        happy2form = this;
+    let happyFields = [], happy2form = this;
     if (!this.fieldDOMElements.length) { return happyFields; }
     this.fieldDOMElements.forEach(function createHappyField(fieldElement) {
       let fieldOptions = { elm: fieldElement };
@@ -556,8 +553,7 @@ class HappyDocument extends HappyCanValidate {
   }
 
   _parseFormElements() {
-    let happyForms = [],
-        happy2doc = this;
+    let happyForms = [], happy2doc = this;
     if (!this.childDOMElements.length) { return happyForms; }
     this.childDOMElements.forEach(function createHappyForm(formElement) {
       let formOptions = { elm: formElement };

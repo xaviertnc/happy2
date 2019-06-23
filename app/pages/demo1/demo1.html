@@ -18,7 +18,7 @@
               <div class="input-zone required has-error">
                 <label class="small-text">Firstname:</label>
                 <input name="form1[firstname]" type="text" data-validate="required|minLength:3" data-format="name">
-                <ul class="messages">
+                <ul class="input-messages">
                   <li class="message error">Firstname is required.</li>
                 </ul>
               </div>
@@ -28,6 +28,9 @@
               </div>
               <!-- <p class="message">User note: Provide both Firstname AND Lastname pls!</p> -->
             </div>
+            <ul class="field-messages">
+              <li class="message error">Name is required.</li>
+            </ul>
           </fieldset>
 
           <div class="field email required" data-type="email">

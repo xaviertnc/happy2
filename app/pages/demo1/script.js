@@ -16,7 +16,7 @@ F1.afterPageLoadScripts.push(function initPage1() {
 
   HAPPY.typeClassMap.field.birthday = BirthdayField;
   HAPPY.typeClassMap.input.age = AgeInput;
-  HAPPY.addDoc({ el: document.body.querySelector('#happydoc') });
+  HAPPY.addDoc({ el: document.body.querySelector('#happydoc'), containerSelector: '.input-zone' });
   HAPPY.mount();
 
   F1.console.log('Page 1 initialized - ok');

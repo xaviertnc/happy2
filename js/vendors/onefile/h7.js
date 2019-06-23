@@ -14,34 +14,42 @@ class HP7 {
 
   constructor()
   {
-    this.docs   = [];
-    this.forms  = [];
-    this.fields = [];
-    this.inputs = [];
-    this.items  = [];
+    this.docs          = [];
+    this.forms         = [];
+    this.fields        = [];
+    this.inputs        = [];
+    this.messagegroups = [];
+    this.items         = [];
     this.topLevelItems = [];
-
-    this.typeClassMap = {
-      doc     : {},
-      form    : {},
-      field   : {},
-      input   : {},
-      message : {},
+    this.cleaners      = {};
+    this.validators    = {};
+    this.typeClassMap  = {
+      doc           : {},
+      form          : {},
+      field         : {},
+      input         : {},
+      message       : {},
+      messagegroup  : {},
     };
-
-    this.cleaners   = {};
-    this.validators = {};
   }
 
   addItem(happyType, options = {})
   {
-    let group = happyType.toLowerCase() + 's';
-    let TypeClass = options.TypeClass ? options.TypeClass : HP7[happyType];
+    if ( ! options.el) { return; }
+    let TypeClass, group = happyType.toLowerCase() + 's';
+    if (options.TypeClass)
+    {
+      TypeClass = options.TypeClass;
+      delete options.TypeClass;
+    }
+    else {
+      TypeClass = HP7[happyType];
+    }
     let happyItem = new TypeClass(options), happyGroup = this[group];
     if (happyItem.isTopLevel) { this.topLevelItems.push(happyItem); }
     if (happyGroup) { happyGroup.push(happyItem); }
     this.items.push(happyItem);
-    // F1.console.log('HP7::addItem()', happyType, options, group, TypeClass, this);
+    // F1.console.log('HP7::addItem()');
     return happyItem;
   }
 
@@ -57,15 +65,18 @@ class HP7 {
     return found;
   }
 
-  addDoc  (options) { return this.addItem('Doc'  , options); }
-  addForm (options) { return this.addItem('Form' , options); }
-  addField(options) { return this.addItem('Field', options); }
-  addInput(options) { return this.addItem('Input', options); }
+  addDoc     (options) { return this.addItem('Doc'     , options); }
+  addForm    (options) { return this.addItem('Form'    , options); }
+  addField   (options) { return this.addItem('Field'   , options); }
+  addInput   (options) { return this.addItem('Input'   , options); }
 
-  getDoc  (name) { return this.findItem(name, this.docs    ); }
-  getForm (name) { return this.findItem(name, this.forms   ); }
-  getField(name) { return this.findItem(name, this.fields  ); }
-  getInput(name) { return this.findItem(name, this.messages); }
+  getDoc     (name) { return this.findItem(name, this.docs    ); }
+  getForm    (name) { return this.findItem(name, this.forms   ); }
+  getField   (name) { return this.findItem(name, this.fields  ); }
+  getInput   (name) { return this.findItem(name, this.inputs  ); }
+
+  addMessageGroup(options) { return this.addItem('MessageGroup', options); }
+  getMessageGroup(name) { return this.findItem(name, this.messagegroups);  }
 
   mount() { this.topLevelItems.forEach(item => item.mount()); }
   dismount() { this.topLevelItems.forEach(item => item.dismount()); }
@@ -93,10 +104,8 @@ class HappyItem {
       this.isTopLevel = true;
     }
 
-    this.childSelectors = [];
-    this.messageSelectors = [];
-
     this.id = this.getId();
+    this.name = undefined;
 
     this.initialValue = null;
     this.value = null;
@@ -106,18 +115,9 @@ class HappyItem {
     this.happy = true;
 
     this.children = [];
-  }
 
-
-  addChildSelector(selector)
-  {
-    this.childSelectors.push(selector);
-  }
-
-
-  addMessageSelector(selector)
-  {
-    this.messageSelectors.push(selector);
+    this.nextId = 1;
+    this.nextMessagesId = 1;
   }
 
 
@@ -130,7 +130,7 @@ class HappyItem {
   getOpt(key, def)
   {
     if (this.options[key]) { return this.options[key]; }
-    if (this.parent) { return this.parent.getOpt(key); }
+    if (this.parent) { return this.parent.getOpt(key, def); }
     return def;
   }
 
@@ -154,7 +154,7 @@ class HappyItem {
 
   getName()
   {
-    return this.el ? (this.el.name || this.el.getAttribute('data-name')) : 'noname';
+    return this.el.name;
   }
 
 
@@ -170,14 +170,12 @@ class HappyItem {
 
   getContainerElement()
   {
-    if (this.options.containerElement) {
-      return this.options.containerElement;
-    }
-    let containerSelector = this.getOpt('containerSelector');
+    let containerSelector, elContainer;
+    containerSelector = this.getOpt('containerSelector');
     if (containerSelector) {
-      let parentElement = this.parent ? this.parent.el : document.body;
-      return parentElement.querySelector(containerSelector);
+      elContainer = this.el.parentElement.querySelector(containerSelector);
     }
+    return elContainer ? elContainer : this.el.parentElement;
   }
 
 
@@ -386,35 +384,79 @@ class HappyItem {
   }
 
 
-  beforeUpdate()
+  beforeUpdate(event, isSubmit)
   {
-
+    this.validate(event, isSubmit);
   }
 
 
   update()
   {
-
+    // Update DOM
   }
 
 
   afterUpdate()
   {
-
+    // Trigger parent update...
   }
 
 }
-
 
 
 class HappyMessage {
 
   constructor(options)
   {
-    F1.console.log('HappyMessage::construct()', options);
+    this.happyType = 'message';
+    this.parent = options.parent;
+    this.el = options.el;
+    delete options.parent;
+    delete options.el;
+
+    this.options = options || {};
+
+    this.id = this.getId();
+
+    // F1.console.log('HappyMessage::construct()');
+  }
+
+
+  getId()
+  {
+    return this.parent.id + '_msg' + this.parent.nextId++;
   }
 
 }
+
+
+class HappyMessageGroup {
+
+  constructor(options)
+  {
+    this.happyType = 'messagegroup';
+    this.parent = options.parent;
+    this.el = options.el;
+    delete options.parent;
+    delete options.el;
+
+    this.options = options || {};
+
+    this.id = this.getId();
+
+    this.nextId = 1;
+
+    // F1.console.log('HappyMessages::construct()');
+  }
+
+
+  getId()
+  {
+    return this.parent.id + '_mgrp' + this.parent.nextMessagesId++;
+  }
+
+}
+
 
 
 class HappyInput extends HappyItem {
@@ -422,9 +464,6 @@ class HappyInput extends HappyItem {
   constructor(options)
   {
     super('input', options);
-    this.nextId = 1;
-    this.messageFinders = [];
-    this.messageSelectors = [];
     F1.console.log('HappyInput::construct()');
   }
 
@@ -437,19 +476,22 @@ class HappyInput extends HappyItem {
 
   getLabel()
   {
-
+    let el = this.el.previousElementSibling;
+    if (el.nodeName === 'LABEL') { return el.innerText; }
   }
 
 
+  /**
+   * For removal of all server-side messages before update?
+   */
   getMessages()
   {
-
-  }
-
-
-  getMessageGroups()
-  {
-
+    // F1.console.log('HappyInput::getMessages()');
+    let containerElement = this.getContainerElement();
+    let messagesSelector = this.getOpt('messagesSelector', '.input-messages');
+    let messagesElement = containerElement.querySelector(messagesSelector);
+    let happyMsgGrp = HAPPY.addMessageGroup({ el: messagesElement, parent: this });
+    return happyMsgGrp;
   }
 
 
@@ -488,6 +530,7 @@ class HappyInput extends HappyItem {
     if (this.mounted) { return; }
     super.mount(options);
     this.inputType = this.getType();
+    this.messages = this.getMessages();
   }
 
 }
@@ -499,7 +542,6 @@ class HappyField extends HappyItem {
   constructor(options)
   {
     super('field', options);
-    this.nextId = 1;
     F1.console.log('HappyField::construct()');
   }
 
@@ -512,31 +554,15 @@ class HappyField extends HappyItem {
 
   getInputs()
   {
-    let happyField = this, fieldInputs = [];
-    if (happyField.options.inputFinder) {
-      let inputsFound = happyField.options.inputFinder();
-      inputsFound.forEach(function(inputInfo) {
-        let InputTypeClass = inputInfo.type ? HAPPY.typeClassMap.input[inputInfo.type] : undefined;
-        let fieldInput = HAPPY.addInput({ el: inputInfo.el, parent: happyField, TypeClass: InputTypeClass });
-        fieldInputs.push(fieldInput);
-      });
+    let happyField = this, happyInputs = [];
+    let inputSelector = happyField.getOpt('inputSelector',
+      'input:not(hidden):not([type="submit"]), textarea, select');
+    let inputElements = happyField.el.querySelectorAll(inputSelector);
+    for (let i = 0, n = inputElements.length; i < n; i++) {
+      let happyInput = HAPPY.addInput({ el: inputElements[i], parent: happyField });
+      happyInputs.push(happyInput);
     }
-    else {
-      if (happyField.options.inputSelector) {
-        happyField.childSelectors = [happyField.options.inputSelector].concat(happyField.childSelectors);
-      }
-      if ( ! happyField.childSelectors.length) {
-        happyField.addInputSelector('input:not(hidden):not([type="submit"]), textarea, select');
-      }
-      happyField.childSelectors.forEach(function(inputSelector) {
-        let fieldElements = happyField.el.querySelectorAll(inputSelector);
-        fieldElements.forEach(function(inputElement) {
-          let fieldInput = HAPPY.addInput({ el: inputElement, parent: happyField });
-          fieldInputs.push(fieldInput);
-        });
-      });
-    }
-    return fieldInputs;
+    return happyInputs;
   }
 
 
@@ -546,21 +572,25 @@ class HappyField extends HappyItem {
   }
 
 
+  getName()
+  {
+    return this.el.name || this.el.getAttribute('data-name');
+  }
+
+
   getLabel()
   {
-
+    return this.el.getAttribute('data-label');
   }
 
 
   getMessages()
   {
-
-  }
-
-
-  getMessageGroups()
-  {
-
+    // F1.console.log('HappyField::getMessages()');
+    let messagesSelector = this.getOpt('messagesSelector', '.field-messages');
+    let messagesElement = this.el.querySelector(messagesSelector);
+    let happyMsgGrp = HAPPY.addMessageGroup({ el: messagesElement, parent: this });
+    return happyMsgGrp;
   }
 
 
@@ -614,6 +644,7 @@ class HappyField extends HappyItem {
     this.fieldType = this.getType();
     this.inputs = this.getInputs();
     this.children = this.inputs;
+    this.messages = this.getMessages();
     this.inputs.forEach(input => input.mount());
   }
 
@@ -632,7 +663,6 @@ class HappyForm extends HappyItem {
   constructor(options)
   {
     super('form', options);
-    this.nextId = 1;
     F1.console.log('HappyForm::construct()');
   }
 
@@ -646,38 +676,17 @@ class HappyForm extends HappyItem {
   getFields()
   {
     let happyForm = this, formFields = [];
-    if (happyForm.options.formFinder) {
-      let fieldsFound = happyForm.options.fieldFinder();
-      fieldsFound.forEach(function(fieldInfo) {
-        let FieldTypeClass = fieldInfo.type ? HAPPY.typeClassMap.field[fieldInfo.type] : undefined;
-        let formField = HAPPY.addField({ el: fieldInfo.el, parent: happyForm, TypeClass: FieldTypeClass });
-        formFields.push(formField);
-      });
-    }
-    else {
-      if (happyForm.options.fieldSelector) {
-        happyForm.childSelectors = [happyForm.options.fieldSelector].concat(happyForm.childSelectors);
-      }
-      if (!happyForm.childSelectors.length) { happyForm.addFieldSelector('.field'); }
-      happyForm.childSelectors.forEach(function(fieldSelector) {
-        let formElements = happyForm.el.querySelectorAll(fieldSelector);
-        formElements.forEach(function(fieldElement) {
-          let formField = HAPPY.addField({ el: fieldElement, parent: happyForm });
-          formFields.push(formField);
-        });
-      });
+    let fieldSelector = happyForm.getOpt('fieldSelector', '.field');
+    let fieldElements = happyForm.el.querySelectorAll(fieldSelector);
+    for (let i = 0, n = fieldElements.length; i < n; i++) {
+      let happyField = HAPPY.addField({ el: fieldElements[i], parent: happyForm });
+      formFields.push(happyField);
     }
     return formFields;
   }
 
 
   getMessages()
-  {
-
-  }
-
-
-  getMessageGroups()
   {
 
   }
@@ -731,7 +740,6 @@ class HappyDoc extends HappyItem {
   constructor(options)
   {
     super('doc', options);
-    this.nextId = 1;
     F1.console.log('HappyDoc::construct()');
   }
 
@@ -746,38 +754,17 @@ class HappyDoc extends HappyItem {
   {
     F1.console.log('HappyDoc::getForms()');
     let happyDoc = this, docForms = [];
-    if (happyDoc.options.formFinder) {
-      let formsFound = happyDoc.options.formFinder();
-      formsFound.forEach(function(formInfo) {
-        let FormTypeClass = formInfo.type ? HAPPY.typeClassMap.form[formInfo.type] : undefined;
-        let docForm = HAPPY.addForm({ el: formInfo.el, parent: happyDoc, TypeClass: FormTypeClass });
-        docForms.push(docForm);
-      });
-    }
-    else {
-      if (happyDoc.options.formSelector) {
-        happyDoc.childSelectors = [happyDoc.options.formSelector].concat(happyDoc.childSelectors);
-      }
-      if (!happyDoc.childSelectors.length) { happyDoc.addFormSelector('form'); }
-      happyDoc.childSelectors.forEach(function(formSelector) {
-        let formElements = happyDoc.el.querySelectorAll(formSelector);
-        formElements.forEach(function(formElement) {
-          let docForm = HAPPY.addForm({ el: formElement, parent: happyDoc });
-          docForms.push(docForm);
-        });
-      });
+    let formSelector = happyDoc.getOpt('formSelector', 'form');
+    let formElements = happyDoc.el.querySelectorAll(formSelector);
+    for (let i = 0, n = formElements.length; i < n; i++) {
+      let happyForm = HAPPY.addForm({ el: formElements[i], parent: happyDoc });
+      docForms.push(happyForm);
     }
     return docForms;
   }
 
 
   getMessages()
-  {
-
-  }
-
-
-  getMessageGroups()
   {
 
   }
@@ -825,11 +812,12 @@ class HappyDoc extends HappyItem {
 
 }
 
-HP7.Item    = HappyItem;
-HP7.Doc     = HappyDoc;
-HP7.Form    = HappyForm;
-HP7.Field   = HappyField;
-HP7.Input   = HappyInput;
-HP7.Message = HappyMessage;
+HP7.Item     = HappyItem;
+HP7.Doc      = HappyDoc;
+HP7.Form     = HappyForm;
+HP7.Field    = HappyField;
+HP7.Input    = HappyInput;
+HP7.Message  = HappyMessage;
+HP7.MessageGroup = HappyMessageGroup;
 
 let HAPPY = new HP7();

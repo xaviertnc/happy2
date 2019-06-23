@@ -12,13 +12,12 @@ HAPPY.typeClassMap.field.birthday = BirthdayField;
 HAPPY.typeClassMap.input.age = AgeInput;
 
 HAPPY.customFieldFinder = function() {
-  let form = this, fieldInfoArray = [];
+  let form = this;
   let fieldElements = form.el.querySelectorAll('.field');
   fieldElements.forEach(function(el) {
     let fieldType = el.getAttribute('data-type') || 'text'; // Optional
-    fieldInfoArray.push({ el: el, type: fieldType });
+    HAPPY.addField({ el: el, TypeClass: HAPPY.typeClassMap.field[fieldType] });
   });
-  return fieldInfoArray;
 };
 
 HAPPY.validators = {
@@ -34,13 +33,13 @@ HAPPY.cleaners = {
 
 let myHappyForm = HAPPY.addForm({ el: document.querySelector('#myform') });
 
-// myHappyForm.addFieldSelector('.field');
+// myHappyForm.setOpt('fieldSelector', '.field');
 // -- AND/OR --
-// myHappyForm.addFieldSelector('#field1,#field2,#field3');
+// myHappyForm.setOpt('fieldSelector', '#field1,#field2,#field3');
 // -- AND/OR --
-myHappyForm.setOpt('fieldFinder', HAPPY.customFieldFinder);
+myHappyForm.extend({ getFields: HAPPY.customFieldFinder });
 
-myHappyForm.addField({ el: document.querySelector('#birthday'), type: 'birthday' });
+myHappyForm.addField({ el: document.querySelector('#birthday'), TypeClass: BirthdayField });
 
 /**
  * If we provide no "type" property, we rely on the default HappyField
