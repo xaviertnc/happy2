@@ -1,4 +1,4 @@
-/* globals document, F1, HAPPY */
+/* globals document, F1 */
 /* eslint-env es7 */
 
 /**
@@ -10,7 +10,7 @@
  *
  */
 
-class HP7 {
+class Happy {
 
   constructor()
   {
@@ -43,13 +43,13 @@ class HP7 {
       delete options.TypeClass;
     }
     else {
-      TypeClass = HP7[happyType];
+      TypeClass = Happy[happyType];
     }
-    let happyItem = new TypeClass(options), happyGroup = this[group];
+    let happyItem = new TypeClass(options, this), happyGroup = this[group];
     if (happyItem.isTopLevel) { this.topLevelItems.push(happyItem); }
     if (happyGroup) { happyGroup.push(happyItem); }
     this.items.push(happyItem);
-    // F1.console.log('HP7::addItem()');
+    // F1.console.log('Happy::addItem()');
     return happyItem;
   }
 
@@ -87,8 +87,9 @@ class HP7 {
 
 class HappyItem {
 
-  constructor(type, options)
+  constructor(type, options, happy$)
   {
+    this.happy$ = happy$;
     this.happyType = type;
     this.parent = options.parent;
     this.el = options.el;
@@ -97,11 +98,12 @@ class HappyItem {
 
     this.options = options || {};
 
-    if ( ! this.parent) {
-      // Top level item only (i.e. do only once per view!)
+    if ( ! this.parent) { this.isTopLevel = true; }
+
+    if ( ! HappyItem.initialized) {
       HappyItem.nextId = 1;
+      HappyItem.initialized = true;
       HappyItem.currentField = undefined;
-      this.isTopLevel = true;
     }
 
     this.id = this.getId();
@@ -252,7 +254,10 @@ class HappyItem {
         if ((now - (happyField.lastUpdated || 0)) > 250) {
           // console.log('HappyItem::onUpdateHandler() blur', happyItem.id);
           happyField.lastUpdated = now;
-          happyField.update();
+          let skipUpdate = happyField.beforeUpdate(event);
+          if (skipUpdate) { return; }
+          happyField.update(event);
+          happyField.afterUpdate(event);
         }
       }, 150);
       return;
@@ -304,33 +309,42 @@ class HappyItem {
     if ((now - (happyField.lastUpdated || 0)) > 250) {
       // console.log('HappyItem::onUpdateHandler()', event.type, happyItem.id);
       happyField.lastUpdated = now;
-      happyField.update();
+      let skipUpdate = happyField.beforeUpdate(event);
+      if (skipUpdate) { return; }
+      happyField.update(event);
+      happyField.afterUpdate(event);
     }
+  }
+
+
+  onSubmitHandler(event)
+  {
+    F1.console.log('HappyItem::onSubmitHandler()', event);
+    event.preventDefault();
+    event.stopPropagation();
   }
 
 
   bindEvents()
   {
     if (this.isTopLevel) {
-      this.el.addEventListener('blur'     , this.onUpdateHandler, true);
-      this.el.addEventListener('focus'    , this.onUpdateHandler, true);
-      this.el.addEventListener('change'   , this.onUpdateHandler, true);
-    }
-    if (this.happyType === 'form') {
+      this.el.addEventListener('blur'    , this.onUpdateHandler, true);
+      this.el.addEventListener('focus'   , this.onUpdateHandler, true);
+      this.el.addEventListener('change'  , this.onUpdateHandler, true);
       this.el.addEventListener('keydown' , this.onUpdateHandler, true);
+      this.el.addEventListener('submit'  , this.onSubmitHandler, true);
     }
   }
 
 
   unbindEvents()
   {
-    if (this.happyType === 'form') {
-      this.el.removeEventListener('keydown' , this.onUpdateHandler, true);
-    }
     if (this.isTopLevel) {
-      this.el.removeEventListener('change'   , this.onUpdateHandler, true);
-      this.el.removeEventListener('focus'    , this.onUpdateHandler, true);
-      this.el.removeEventListener('blur'     , this.onUpdateHandler, true);
+      this.el.removeEventListener('submit'  , this.onSubmitHandler, true);
+      this.el.removeEventListener('keydown' , this.onUpdateHandler, true);
+      this.el.removeEventListener('change'  , this.onUpdateHandler, true);
+      this.el.removeEventListener('focus'   , this.onUpdateHandler, true);
+      this.el.removeEventListener('blur'    , this.onUpdateHandler, true);
     }
   }
 
@@ -355,7 +369,8 @@ class HappyItem {
     this.name = this.getName();
     this.el.HAPPY = this;
     this.bindEvents();
-    if (this.isTopLevel) { F1.console.log('Happy[', this.happyType, ']::mount() - ok', this); }
+    if (this.isTopLevel) {
+      F1.console.log('Happy[', this.happyType, ']::mount() - ok', this); }
     this.mounted = true;
   }
 
@@ -446,7 +461,7 @@ class HappyMessageGroup {
 
     this.nextId = 1;
 
-    // F1.console.log('HappyMessages::construct()');
+    // F1.console.log('HappyMessageGroup::construct()');
   }
 
 
@@ -461,9 +476,9 @@ class HappyMessageGroup {
 
 class HappyInput extends HappyItem {
 
-  constructor(options)
+  constructor(options, happy$)
   {
-    super('input', options);
+    super('input', options, happy$);
     F1.console.log('HappyInput::construct()');
   }
 
@@ -490,7 +505,8 @@ class HappyInput extends HappyItem {
     let containerElement = this.getContainerElement();
     let messagesSelector = this.getOpt('messagesSelector', '.input-messages');
     let messagesElement = containerElement.querySelector(messagesSelector);
-    let happyMsgGrp = HAPPY.addMessageGroup({ el: messagesElement, parent: this });
+    let happyMsgGrp = this.happy$.addMessageGroup({
+      el: messagesElement, parent: this });
     return happyMsgGrp;
   }
 
@@ -539,9 +555,9 @@ class HappyInput extends HappyItem {
 
 class HappyField extends HappyItem {
 
-  constructor(options)
+  constructor(options, happy$)
   {
-    super('field', options);
+    super('field', options, happy$);
     F1.console.log('HappyField::construct()');
   }
 
@@ -559,7 +575,8 @@ class HappyField extends HappyItem {
       'input:not(hidden):not([type="submit"]), textarea, select');
     let inputElements = happyField.el.querySelectorAll(inputSelector);
     for (let i = 0, n = inputElements.length; i < n; i++) {
-      let happyInput = HAPPY.addInput({ el: inputElements[i], parent: happyField });
+      let happyInput = this.happy$.addInput({
+        el: inputElements[i], parent: happyField });
       happyInputs.push(happyInput);
     }
     return happyInputs;
@@ -589,7 +606,8 @@ class HappyField extends HappyItem {
     // F1.console.log('HappyField::getMessages()');
     let messagesSelector = this.getOpt('messagesSelector', '.field-messages');
     let messagesElement = this.el.querySelector(messagesSelector);
-    let happyMsgGrp = HAPPY.addMessageGroup({ el: messagesElement, parent: this });
+    let happyMsgGrp = this.happy$.addMessageGroup({
+      el: messagesElement, parent: this });
     return happyMsgGrp;
   }
 
@@ -660,9 +678,9 @@ class HappyField extends HappyItem {
 
 class HappyForm extends HappyItem {
 
-  constructor(options)
+  constructor(options, happy$)
   {
-    super('form', options);
+    super('form', options, happy$);
     F1.console.log('HappyForm::construct()');
   }
 
@@ -679,7 +697,8 @@ class HappyForm extends HappyItem {
     let fieldSelector = happyForm.getOpt('fieldSelector', '.field');
     let fieldElements = happyForm.el.querySelectorAll(fieldSelector);
     for (let i = 0, n = fieldElements.length; i < n; i++) {
-      let happyField = HAPPY.addField({ el: fieldElements[i], parent: happyForm });
+      let happyField = this.happy$.addField({
+        el: fieldElements[i], parent: happyForm });
       formFields.push(happyField);
     }
     return formFields;
@@ -737,9 +756,9 @@ class HappyForm extends HappyItem {
 
 class HappyDoc extends HappyItem {
 
-  constructor(options)
+  constructor(options, happy$)
   {
-    super('doc', options);
+    super('doc', options, happy$);
     F1.console.log('HappyDoc::construct()');
   }
 
@@ -757,7 +776,8 @@ class HappyDoc extends HappyItem {
     let formSelector = happyDoc.getOpt('formSelector', 'form');
     let formElements = happyDoc.el.querySelectorAll(formSelector);
     for (let i = 0, n = formElements.length; i < n; i++) {
-      let happyForm = HAPPY.addForm({ el: formElements[i], parent: happyDoc });
+      let happyForm = this.happy$.addForm({
+        el: formElements[i], parent: happyDoc });
       docForms.push(happyForm);
     }
     return docForms;
@@ -812,12 +832,12 @@ class HappyDoc extends HappyItem {
 
 }
 
-HP7.Item     = HappyItem;
-HP7.Doc      = HappyDoc;
-HP7.Form     = HappyForm;
-HP7.Field    = HappyField;
-HP7.Input    = HappyInput;
-HP7.Message  = HappyMessage;
-HP7.MessageGroup = HappyMessageGroup;
 
-let HAPPY = new HP7();
+
+Happy.Item         = HappyItem;
+Happy.Doc          = HappyDoc;
+Happy.Form         = HappyForm;
+Happy.Field        = HappyField;
+Happy.Input        = HappyInput;
+Happy.Message      = HappyMessage;
+Happy.MessageGroup = HappyMessageGroup;
