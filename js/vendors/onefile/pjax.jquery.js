@@ -51,8 +51,12 @@ F1.Pjax = function (options)
   }
 
   if (options.csrfTokenMetaName) {
-    this.elCsrfMeta = document.head.querySelector('meta[name=' + options.csrfTokenMetaName + ']');
-    this.csrfToken = this.elCsrfMeta.getAttribute('content');
+    this.$csrfMeta = $(document.head).find('meta[name=' + options.csrfTokenMetaName + ']');
+    this.csrfToken = this.$csrfMeta.attr('content');
+  }
+
+  if ( ! options.$busyIndicator && options.busyIndicatorSelector) {
+    this.$busyIndicator = $(options.busyIndicatorSelector);
   }
 
   $.extend(this, options);
@@ -61,7 +65,8 @@ F1.Pjax = function (options)
 
   window.onpopstate = this.popStateHandler.bind(this);
 
-  if (this.pageHasUnsavedChanges) {
+  if (this.pageHasUnsavedChanges)
+  { // Check if this function is defined, THEN set "onbeforeunload"!
     window.onbeforeunload = this.beforePageExit.bind(this);
   }
 
@@ -82,7 +87,6 @@ F1.Pjax = function (options)
  */
 F1.Pjax.prototype.setupViewports = function(viewportDefinitions)
 {
-  F1.console.log('F1 PJAX setupViewports:', viewportDefinitions);
   var viewports = [];
   if (viewportDefinitions)
   {
@@ -99,13 +103,12 @@ F1.Pjax.prototype.setupViewports = function(viewportDefinitions)
       {
         viewportSelector = viewportDefinition;
       }
-      // F1.console.log('F1 PJAX setupViewports add viewport:', this, viewportSelector, viewportOptions);
-      viewports[i] = new F1.Pjax.Viewport(this, viewportSelector, viewportOptions);
+      viewports[i] = new F1.Pjax.Viewport(viewportSelector, viewportOptions);
     }
   }
   else
   {
-    viewports.push(new F1.Pjax.Viewport(this)); // default viewport == <body>
+    viewports.push(new F1.Pjax.Viewport()); // default viewport == <body>
   }
   return viewports;
 };
@@ -120,20 +123,6 @@ F1.Pjax.prototype.stopDOMEvent = function(event, immediate)
     else { event.stopPropagation(); }
   }
   return false;
-};
-
-
-F1.Pjax.prototype.findDOMElement = function(selector, containerElement)
-{
-  var elContainer = (containerElement || document);
-  return elContainer.querySelector(selector);
-};
-
-
-F1.Pjax.prototype.findDOMElementAll = function(selector, containerElement)
-{
-  var elContainer = (containerElement || document);
-  return elContainer.querySelectorAll(selector);
 };
 
 
@@ -207,9 +196,9 @@ F1.Pjax.prototype.isCurrentLocation = function(testUrl)
 };
 
 
-F1.Pjax.prototype.isRedirectResponse = function(xhr)
+F1.Pjax.prototype.isRedirectResponse = function(jqXHR)
 {
-  return (xhr.status === 202);
+  return (jqXHR.status === 202);
 };
 
 
@@ -220,12 +209,19 @@ F1.Pjax.prototype.showBusyIndication = function()
   if (this.busyFaviconUrl && this.$favicon) {
     this.$favicon.attr('href', this.busyFaviconUrl);
   }
+  if (this.$busyIndicator) {
+    this.$busyIndicator.removeClass('hidden');
+  }
 };
 
 
 F1.Pjax.prototype.removeBusyIndication = function()
 {
   var self = this;
+  // console.log('Pjax.removeBusyIndication()');
+  if (this.$busyIndicator) {
+    this.$busyIndicator.addClass('hidden');
+  }
   if (this.busyFaviconUrl && this.$favicon) {
     setTimeout(function() {
       self.$favicon.attr('href', self.faviconUrl);
@@ -283,24 +279,23 @@ F1.Pjax.prototype.setPageTitle = function(newPageTitle)
 
 
 // Override me!
-F1.Pjax.prototype.setPageTitleUsingLink = function(elLink)
+F1.Pjax.prototype.setPageTitleUsingLink = function($link)
 {
-  var newPageTitle, elLinkText;
-  if ( ! elLink) { return false; }
-  newPageTitle = elLink.getAttribute('data-page-title');
+  var newPageTitle;
+  if ( ! $link) { return false; }
+  newPageTitle = $link.data('page-title');
   if ( ! newPageTitle) {
-    elLinkText = this.findDOMElement('span', elLink) || elLink;
-    newPageTitle = elLinkText.innerText;
+    newPageTitle = $link.find('span').first().text() || $link.text();
   }
   this.setPageTitle(newPageTitle);
 };
 
 
 // Define me if you want to check for unsaved changes!
-// F1.Pjax.prototype.pageHasUnsavedChanges = function() {};
+// F1.Pjax.prototype.pageHasUnsavedChanges = function () {}
 
 
-F1.Pjax.prototype.beforePageExit = function(event)
+F1.Pjax.prototype.beforePageExit = function (event)
 {
   // console.log('Pjax.beforePageExit()');
   if (this.pageHasUnsavedChanges && this.pageHasUnsavedChanges(event)) {
@@ -311,7 +306,7 @@ F1.Pjax.prototype.beforePageExit = function(event)
 };
 
 
-F1.Pjax.prototype.formSubmitHandler = function(event)
+F1.Pjax.prototype.formSubmitHandler = function (event)
 {
   var $form = $(this),
     pjax = event.data,
@@ -351,17 +346,22 @@ F1.Pjax.prototype.formSubmitHandler = function(event)
 
 
 // Override me!
-F1.Pjax.prototype.pageLinkClickHandler = function(event)
+F1.Pjax.prototype.pageLinkClickHandler = function (event)
 {
-  var elLink = event.target, linkUrl = elLink.href, pjax = this;
-  F1.console.log('F1.Pjax.pageLinkClickHandler(), link:', linkUrl, elLink);
+  var $link = $(this),
+    linkUrl = $link.attr('href'),
+    pjax = event.data;
+
+  // console.log('F1.Pjax.pageLinkClickHandler(), link:', this) //, ', event:', event);
+
   pjax.stopDOMEvent(event);
+
   if ( ! pjax.isCurrentLocation(linkUrl))
   {
     if ( ! pjax.beforePageExit()) { return false; }
     if (pjax.beforePageLoad && pjax.beforePageLoad(linkUrl, event) === 'abort') { return false; }
     pjax.showBusyIndication();
-    pjax.setPageTitleUsingLink(elLink);
+    pjax.setPageTitleUsingLink($link);
     pjax.pushState(linkUrl);
     setTimeout(function () {
       pjax.loadPage({ url: linkUrl });
@@ -371,88 +371,74 @@ F1.Pjax.prototype.pageLinkClickHandler = function(event)
 
 
 // Override me!
-F1.Pjax.prototype.updatePageHead = function(elNewHead)
+F1.Pjax.prototype.updatePageHead = function ($loadedHtml)
 {
-  if (elNewHead)
+  if ($loadedHtml)
   {
-    // F1.console.log('updatePageHead(), elNewHead:', elNewHead);
-    var elTitle = this.findDOMElement('title', elNewHead);
-    // F1.console.log('updatePageHead(), elTitle.innerText:', elTitle.innerText);
-    if (elTitle) { document.title = elTitle.innerText; }
-    if (this.elCsrfMeta) {
-      var elNewCsrfMeta = this.findDOMElement('meta[name="' + this.csrfTokenMetaName + '"]', elNewHead);
-      // F1.console.log('updatePageHead(), elCsrfMeta:', this.elCsrfMeta);
-      // F1.console.log('updatePageHead(), elNewCsrfMeta:', elNewCsrfMeta);
-      if (elNewCsrfMeta) {
-        this.csrfToken = elNewCsrfMeta.getAttribute('content');
-        this.elCsrfMeta.setAttribute('content', this.csrfToken);
-      } else {
-        this.elCsrfMeta.setAttribute('content', '');
-      }
+    // console.log('updatePageHead(), $loadedHtml:', $loadedHtml);
+
+    document.title = $loadedHtml.find('title').text();
+
+    if (this.$csrfMeta) {
+      this.csrfToken = $loadedHtml.find('meta[name="' + this.csrfTokenMetaName + '"]').attr('content');
+      this.$csrfMeta.attr('content', this.csrfToken);
     }
-    var elCurrentStyles = this.findDOMElement('[data-rel="page"]', document.head);
-    var elNewStyles = this.findDOMElement('[data-rel="page"]', elNewHead);
-    // F1.console.log('updatePageHead(), elCurrentStyles:', elCurrentStyles);
-    // F1.console.log('updatePageHead(), elNewStyles:', elNewStyles);
-    if (elCurrentStyles) {
-      if (elNewStyles) {
-        elCurrentStyles.innerHTML = elNewStyles.innerHTML;
+
+    var $pageStyles = $(document.head).find('[data-rel="page"]');
+    var $newPageStyles = $loadedHtml.find('style').first('[data-rel="page"]');
+
+    if ($pageStyles.length) {
+      if ($newPageStyles.length) {
+        $pageStyles.text($newPageStyles.text());
       }
       else {
-        elCurrentStyles.parentElement.removeChild(elCurrentStyles);
+        $pageStyles.remove();
       }
     }
-    else if (elCurrentStyles) {
-      document.head.append(elNewStyles);
+    else if ($newPageStyles.length) {
+      $(document.head).append($newPageStyles);
     }
   }
 };
 
 
-F1.Pjax.prototype.bindForms = function(viewport, formSubmitHandler)
+F1.Pjax.prototype.bindForms = function (viewport, formSubmitHandler)
 {
-  var _pjax = this, i, n, j, k, pjaxFormElements;
+  var _pjax = this;
   formSubmitHandler = formSubmitHandler || this.formSubmitHandler;
-  pjaxFormElements = this.findDOMElementAll('form.pjax', viewport.elm);
-  for (i=0, n=pjaxFormElements.length; i < n; i++) {
-    var elPjaxForm = pjaxFormElements[i];
-    // console.log('Binding PJAX form:', elPjaxForm);
-    elPjaxForm.addEventListener('submit', formSubmitHandler);
-    var submitButtons = this.findDOMElementAll('[type="submit"]', elPjaxForm);
-    for (j=0, k=submitButtons.length; j < k; j++) {
-      submitButtons[j].addEventListener('click', function(event) {
-        _pjax.showBusyIndication();
-        elPjaxForm.submitElement = this;
-        if (_pjax.beforeSubmit && _pjax.beforeSubmit(event, elPjaxForm) === 'abort') {
-          return false;
-        }
-      });
-    }
-  }
+  viewport.$elm.find('form.pjax').each(function() {
+    var $form = $(this);
+    // console.log('Binding PJAX form:', $form);
+    $form.on('submit', _pjax, formSubmitHandler);
+    $form.find('[type="submit"]').click(function(event) {
+      _pjax.showBusyIndication();
+      $form[0].submitElement = this;
+      if (_pjax.beforeSubmit && _pjax.beforeSubmit(event, $form) === 'abort') { return false; }
+    });
+  });
 };
 
 
 // Override me!
-F1.Pjax.prototype.bindPageLinks = function(viewport, pageLinkClickHandler)
+F1.Pjax.prototype.bindPageLinks = function (viewport, pageLinkClickHandler)
 {
-  var i, n, pageLinkElements;
+  var _pjax = this;
   pageLinkClickHandler = pageLinkClickHandler || this.pageLinkClickHandler;
-  pageLinkElements = this.findDOMElementAll('.pagelink',  viewport.el);
-  for (i=0,n=pageLinkElements.length; i < n; i++) {
-    var elPageLink = pageLinkElements[i];
-    // F1.console.log('Binding PJAX page link:', viewport, elPageLink);
-    elPageLink.addEventListener('click', pageLinkClickHandler.bind(this));
-  }
+  viewport.$elm.find('.pagelink').each(function() {
+    var $link = $(this);
+    // console.log('Binding PJAX link:', $link);
+    $link.on('click', _pjax, pageLinkClickHandler);
+  });
 };
 
 
-F1.Pjax.prototype.updateViewports = function(elNewBody)
+F1.Pjax.prototype.updateViewports = function ($loadedHtml, jqXHR)
 {
-  F1.console.log('Pjax.updateViewports(), elNewBody:', elNewBody);
+  // console.log('Pjax.updateViewports(), $loadedHtml:', $loadedHtml);
   var viewports = this.viewports, i, n = viewports.length;
-  for (i=0; i < n; i++) { viewports[i].beforeUpdate(this);      }
-  for (i=0; i < n; i++) { viewports[i].update(this, elNewBody); }
-  for (i=0; i < n; i++) { viewports[i].afterUpdate(this);       }
+  for (i=0; i < n; i++) { viewports[i].beforeUpdate(this, jqXHR);        }
+  for (i=0; i < n; i++) { viewports[i].update(this, $loadedHtml, jqXHR); }
+  for (i=0; i < n; i++) { viewports[i].afterUpdate(this, jqXHR);         }
 };
 
 
@@ -473,7 +459,7 @@ F1.Pjax.prototype.getMainViewport = function ()
 };
 
 
-F1.Pjax.prototype.showError = function(errorMessage)
+F1.Pjax.prototype.showError = function (errorMessage)
 {
   // console.error('Pjax.showError(), errorMessage =', errorMessage);
   var errorsContainerSelector = this.errorsContainerSelector || this.getMainViewport().selector || 'body';
@@ -482,15 +468,13 @@ F1.Pjax.prototype.showError = function(errorMessage)
 
 
 /* Override me! */
-F1.Pjax.prototype.getResponseErrorMessage = function(xhr)
+F1.Pjax.prototype.getResponseErrorMessage = function (jqXHR)
 {
-  var elResponseContainer = document.createElement('div');
-  elResponseContainer.innerHTML = xhr.response;
-  var elErrorContainer = this.findDOMElement('.server-error', elResponseContainer);
-  if (elErrorContainer) { return elErrorContainer.innerHTML; }
+  var $errorMessageContainer = $('<div></div>').append(jqXHR.responseText).find('.server-error');
+  if ($errorMessageContainer.length) { return $errorMessageContainer.html(); }
   return '<div class="error pjax-error">' +
            '<h3>Oops, something went wrong!</h3><hr>' +
-           '<p>Error ' + xhr.status + ' - ' + xhr.statusText + '</p>' +
+           '<p>Error ' + jqXHR.status + ' - ' + jqXHR.statusText + '</p>' +
          '</div>';
 };
 
@@ -510,12 +494,12 @@ F1.Pjax.prototype.getResponseErrorMessage = function(xhr)
  *   "{ 'redirect':'/some/page' }"
  *   "{ 'redirect':'http://some-external-page.com', 'external':1 }"
  *
- * @param {Object} xhr jQuery Ajax Response Object
+ * @param {Object} jqXHR jQuery Ajax Response Object
  */
-F1.Pjax.prototype.handleRedirect = function(xhr) {
+F1.Pjax.prototype.handleRedirect = function (jqXHR) {
   var extLink;
-  var resp = xhr.responseText;
-  var redirectUrl = xhr.getResponseHeader('X-REDIRECT-TO');
+  var resp = jqXHR.responseText;
+  var redirectUrl = jqXHR.getResponseHeader('X-REDIRECT-TO');
   if ( ! redirectUrl) {
     resp = (typeof resp === 'string') ? JSON.parse(resp) : resp;
     redirectUrl = resp.redirect || resp.url || '';
@@ -533,135 +517,96 @@ F1.Pjax.prototype.handleRedirect = function(xhr) {
 };
 
 
-F1.Pjax.prototype.loadSuccessHandler = function(xhr)
+F1.Pjax.prototype.loadSuccessHandler = function (resp, statusText, jqXHR)
 {
-  F1.console.log('F1.Pjax.loadSuccessHandler()');
-  if (this.onPageLoadSuccess && this.onPageLoadSuccess(xhr) === 'abort') { return; }
-  if (this.isRedirectResponse(xhr)) { return this.handleRedirect(xhr); }
-  var newDocument = document.implementation.createHTMLDocument();
-  newDocument.documentElement.innerHTML = xhr.response;
-  this.updatePageHead(newDocument.head);
-  this.updateViewports(newDocument.body);
-  if (this.afterPageLoadSuccess) {
-    this.afterPageLoadSuccess(xhr);
-  }
+  // console.log('F1.Pjax.loadSuccessHandler(), jqXHR:', jqXHR);
+  // console.log('F1.Pjax.loadSuccessHandler(), getAllResponseHeaders:', jqXHR.getAllResponseHeaders());
+  if (this.onPageLoadSuccess && this.onPageLoadSuccess(jqXHR) === 'abort') { return; }
+  if (this.isRedirectResponse(jqXHR)) { return this.handleRedirect(jqXHR); }
+  var $loadedHtml = $('<response></response>').html(resp); // Parse response
+  this.updatePageHead($loadedHtml, jqXHR);
+  this.updateViewports($loadedHtml, jqXHR);
+  if (this.afterPageLoadSuccess) { this.afterPageLoadSuccess($loadedHtml, jqXHR); }
 };
 
 
-F1.Pjax.prototype.loadFailedHandler = function(xhr)
+F1.Pjax.prototype.loadFailedHandler = function (jqXHR)
 {
-  // console.error('Pjax.loadFailedHandler(), xhr =', xhr);
-  var errorMessage = this.getResponseErrorMessage(xhr);
-  if (this.onPageLoadFail && this.onPageLoadFail(xhr, errorMessage) === 'abort') { return; }
+  // console.error('Pjax.loadFailedHandler(), jqXHR =', jqXHR);
+  var errorMessage = this.getResponseErrorMessage(jqXHR);
+  if (this.onPageLoadFail && this.onPageLoadFail(jqXHR, errorMessage) === 'abort') { return; }
   return this.showError(errorMessage);
 };
 
 
 // Override me!
-F1.Pjax.prototype.loadProgressHandler = function (progressEvent, xhr)
+F1.Pjax.prototype.alwaysAfterLoadHandler = function (resp, statusText, jqXHR)
 {
-  F1.console.log('Pjax.loadProgressHandler()');
-  return (progressEvent && xhr);
-};
-
-
-// Override me!
-F1.Pjax.prototype.alwaysAfterLoadHandler = function(xhr)
-{
-  // console.log('Pjax.alwaysAfterLoadHandler()'); //, xhr =', xhr);
-  if ( ! this.isRedirectResponse(xhr)) {
+  // console.log('Pjax.alwaysAfterLoadHandler()'); //, jqXHR =', jqXHR);
+  if ( ! this.isRedirectResponse(jqXHR)) {
     this.getCurrentPath('force-update'); // Also force-updates 'this.currentLocation'
     this.removeBusyIndication();
   }
 };
 
 
-F1.Pjax.prototype.loadPage = function(options)
+F1.Pjax.prototype.loadPage = function (options)
 {
   options = options || {};
-  var _pjax = this, xhr = new XMLHttpRequest();
-  xhr.open('GET', options.url);
-  xhr.onload = function() {
-    var xhr = this;
-    if (xhr.status === 200) { _pjax.loadSuccessHandler(xhr); }
-    else { _pjax.loadFailedHandler(xhr); }
-    _pjax.alwaysAfterLoadHandler(xhr);
-  };
-  xhr.onerror = function() {
-    var xhr = this;
-    _pjax.loadFailedHandler(xhr);
-    _pjax.alwaysAfterLoadHandler(xhr);
-  };
-  xhr.onprogress = function(progressEvent) {
-    _pjax.loadProgressHandler(progressEvent, this);
-  };
-  xhr.send();
+  options.async = true;
+  options.method = 'GET';
+  options.dataType = options.dataType || 'html';
+  options.cache = (typeof options.cache !== 'undefined') ? options.cache : false;
+  // console.log('Pjax.loadPage(), options:', options);
+  return $.ajax(options)
+    .done(this.loadSuccessHandler.bind(this))
+    .fail(this.loadFailedHandler.bind(this))
+    .always(this.alwaysAfterLoadHandler.bind(this));
 };
 
 
-F1.Pjax.prototype.postSuccessHandler = function(resp, statusText, xhr)
+F1.Pjax.prototype.postSuccessHandler = function (resp, statusText, jqXHR)
 {
-  // console.log('F1.Pjax.postSuccessHandler(), xhr:', xhr);
-  if (this.onPostSuccess && this.onPostSuccess(xhr) === 'abort') { return; }
-  return this.handleRedirect(xhr);
+  // console.log('F1.Pjax.postSuccessHandler(), jqXHR:', jqXHR);
+  if (this.onPostSuccess && this.onPostSuccess(jqXHR) === 'abort') { return; }
+  return this.handleRedirect(jqXHR);
 };
 
 
-F1.Pjax.prototype.postFailedHandler = function(xhr)
+F1.Pjax.prototype.postFailedHandler = function (jqXHR)
 {
-  // console.error('Pjax.postFailedHandler(), xhr =', xhr);
-  var errorMessage = this.getResponseErrorMessage(xhr);
-  if (this.onPostFail && this.onPostFail(xhr, errorMessage) === 'abort') { return; }
+  // console.error('Pjax.postFailedHandler(), jqXHR =', jqXHR);
+  var errorMessage = this.getResponseErrorMessage(jqXHR);
+  if (this.onPostFail && this.onPostFail(jqXHR, errorMessage) === 'abort') { return; }
   return this.showError(errorMessage);
 };
 
 
 // Override me!
-F1.Pjax.prototype.alwaysAfterPostHandler = function(resp, statusText, xhr)
+F1.Pjax.prototype.alwaysAfterPostHandler = function (resp, statusText, jqXHR)
 {
-  return resp && statusText && xhr;
+  return resp && statusText && jqXHR;
 };
 
 
-F1.Pjax.prototype.postPage = function(options)
+F1.Pjax.prototype.postPage = function (options)
 {
   options = options || {};
-  // options.data = options.data || {};
-  // options.method = (typeof options.method !== 'undefined') ? options.method : 'POST';
-  // options.dataType = options.dataType || 'json';
-  // options.cache = false;
-  // options.headers = {};
-  // if (this.csrfTokenMetaName) {
-  //   options.headers[this.csrfTokenMetaName] = this.csrfToken;
-  // }
-  // options.headers['X-HTTP-REFERER'] = this.getCurrentLocation();
-  // // console.log('Pjax.postPage(), options:', options);
-  // return $.ajax(options)
-  //   .done(this.postSuccessHandler.bind(this))
-  //   .fail(this.postFailedHandler.bind(this))
-  //   .always(this.alwaysAfterPostHandler.bind(this));
-
-  // var _pjax = this, xhr = new XMLHttpRequest();
-  // var files = document.querySelector('[type=file]').files;
-  // var formData = new FormData();
-  // for (let i = 0; i < files.length; i++) {
-  //   let file = files[i];
-  //   formData.append('files[]', file);
-  // }
-  // xhr.open('POST', options.url);
-  // xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-  // xhr.addEventListener('load', function(xhr) {
-  //   if (xhr.status === 200 && xhr.responseText !== newName) {
-  //     alert('Something went wrong.  Name is now ' + xhr.responseText);
-  //   }
-  //   else if (xhr.status !== 200) {
-  //     alert('Request failed.  Returned status of ' + xhr.status);
-  //   }
-  // });
-  // xhr.onerror = function() {
-  // }
-  // xhr.send(formData);
-  return options;
+  options.async = true;
+  options.data = options.data || {};
+  options.method = (typeof options.method !== 'undefined') ? options.method : 'POST';
+  options.dataType = options.dataType || 'json';
+  options.cache = false;
+  options.headers = {};
+  if (this.csrfTokenMetaName) {
+    options.headers[this.csrfTokenMetaName] = this.csrfToken;
+  }
+  options.headers['X-HTTP-REFERER'] = this.getCurrentLocation();
+  // console.log('Pjax.postPage(), options:', options);
+  return $.ajax(options)
+    .done(this.postSuccessHandler.bind(this))
+    .fail(this.postFailedHandler.bind(this))
+    .always(this.alwaysAfterPostHandler.bind(this));
 };
 
 
@@ -680,85 +625,51 @@ F1.Pjax.prototype.goBack = function(event, distance)
 // F1.Pjax.Viewport - Requires F1.Pjax
 //-------------------------------------
 
-F1.Pjax.Viewport = function(pjax, viewElementSelector, options)
+F1.Pjax.Viewport = function (viewElementSelector, options)
 {
   this.selector = viewElementSelector || 'body';
-  this.el = pjax.findDOMElement(this.selector);
-  F1.console.log('Viewport::construct()', this);
-  for (var optName in (options || {})) { this[optName] = options[optName]; }
+  this.$elm = $(this.selector);
+  options = options || {};
+  $.extend(this, options);
   if ( ! this.updateMethod) { this.updateMethod = 'innerHTML'; }
 };
 
 
-F1.Pjax.Viewport.prototype.nodeName = function(el, name)
-{
-  return el.nodeName && el.nodeName.toUpperCase() === name.toUpperCase();
-};
-
-
-F1.Pjax.Viewport.prototype.evalScriptElement = function(elScript)
-{
-  var data = (elScript.text || elScript.textContent || elScript.innerHTML || '');
-  var elTempScript = document.createElement('script');
-  elTempScript.appendChild(document.createTextNode(data));
-  document.head.insertBefore(elTempScript, document.head.firstChild);
-  document.head.removeChild(elTempScript);
-  if (elScript.parentNode) { elScript.parentNode.removeChild(elScript); }
-};
-
-
-F1.Pjax.Viewport.prototype.evalScripts = function(elHtmContent)
-{
-  var i, n, contentNodes = elHtmContent.childNodes, scriptElements = [];
-  for (i=0; contentNodes[i]; i++) {
-    var evalScript = (!contentNodes[i].type ||
-      contentNodes[i].type === 'text/javascript');
-    if (this.nodeName(contentNodes[i], 'script') && evalScript) {
-      scriptElements.push(contentNodes[i]);
-    }
-  }
-  for (i=0, n=scriptElements.length; i < n; i++) {
-    this.evalScriptElement(scriptElements[i]);
-  }
-};
-
-
 // Override me!
-F1.Pjax.Viewport.prototype.beforeUpdate = function(pjax)
+F1.Pjax.Viewport.prototype.beforeUpdate = function (pjax, jqXHR)
 {
   // check if update is allowed...?
-  F1.console.log('Viewport:', this.selector, '- Before Update HTML');
-  return pjax;
+  // console.log('Viewport:', this.selector, '- Before Update HTML');
+  return pjax && jqXHR;
 };
 
 
 // Override me!
-F1.Pjax.Viewport.prototype.update = function(pjax, elNewBody)
+F1.Pjax.Viewport.prototype.update = function (pjax, $loadedHtml) // , jqXHR
 {
-  var viewport = this, elNewViewport;
-  F1.console.log('Viewport:', viewport.selector, '- Update HTML');
-  if ( ! elNewBody) { return; }
+  var viewport = this, newContent;
+  // console.log('Viewport:', viewport.selector, '- Update HTML');
+  if ( ! $loadedHtml) { return; }
   switch (viewport.updateMethod) {
   case 'innerHTML':
   default:
-    elNewViewport = pjax.findDOMElement(viewport.selector, elNewBody);
-    viewport.el.innerHTML = elNewViewport.innerHTML;
-    this.evalScripts(elNewViewport);
+    newContent = $loadedHtml.find(viewport.selector).first().html();
+    return viewport.$elm.html(newContent);
   }
 };
 
 
 // Override me!
-F1.Pjax.Viewport.prototype.afterUpdate = function(pjax)
+F1.Pjax.Viewport.prototype.afterUpdate = function (pjax, jqXHR)
 {
   // modify default updates...?
   // console.log('Viewport:', this.selector, '- After Update HTML');
-  return pjax;
+  return pjax && jqXHR;
 };
 
 
 // Override me!
-F1.Pjax.Viewport.prototype.beforeBind = function(pjax)
+F1.Pjax.Viewport.prototype.beforeBind = function (pjax)
 {
   // console.log('Viewport:', this.selector, '- Before Bind');
   return pjax;
@@ -766,10 +677,10 @@ F1.Pjax.Viewport.prototype.beforeBind = function(pjax)
 
 
 // Override me!
-F1.Pjax.Viewport.prototype.bindEvents = function(pjax)
+F1.Pjax.Viewport.prototype.bindEvents = function (pjax)
 {
   var viewport = this;
-  F1.console.log('Viewport:', viewport.selector, '- Bind');
+  // console.log('Viewport:', viewport.selector, '- Bind');
   pjax.bindForms(viewport);
   pjax.bindPageLinks(viewport);
   return;
@@ -777,7 +688,7 @@ F1.Pjax.Viewport.prototype.bindEvents = function(pjax)
 
 
 // Override me!
-F1.Pjax.Viewport.prototype.afterBind = function(pjax)
+F1.Pjax.Viewport.prototype.afterBind = function (pjax)
 {
   // console.log('Viewport:', this.selector, '- After Bind');
   return pjax;
