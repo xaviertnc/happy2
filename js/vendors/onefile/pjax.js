@@ -1,4 +1,4 @@
-/* globals window, document, F1, $ */
+/* globals window, document, F1 */
 
 window.F1 = window.F1 || { afterPageLoadScripts: [] };
 
@@ -34,6 +34,11 @@ window.F1 = window.F1 || { afterPageLoadScripts: [] };
  */
 F1.Pjax = function (options)
 {
+  // Shallow extend
+  for (var propName in (options || {})) {
+    this[propName] = options[propName];
+  }
+
   //this.chrome   = navigator.userAgent.indexOf('Chrome') > -1;
   //this.explorer = navigator.userAgent.indexOf('MSIE') > -1;
   //this.firefox  = navigator.userAgent.indexOf('Firefox') > -1;
@@ -43,32 +48,178 @@ F1.Pjax = function (options)
   //if ((this.chrome) && (this.safari)) { this.safari = false; }
   //if ((this.chrome) && (this.opera)) { this.chrome = false; }
 
-  options = options || {};
-
-  if (options.busyFaviconUrl) {
-    this.$favicon = $(options.faviconSelector || '#favicon');
-    this.faviconUrl = options.faviconUrl || this.$favicon[0].href;
+  if (this.busyFaviconUrl) {
+    var faviconSelector = this.faviconSelector || '#favicon';
+    this.elFavicon = this.findDOMElement(faviconSelector, document.head);
+    this.faviconUrl = options.faviconUrl || this.elFavicon.href;
   }
 
-  if (options.csrfTokenMetaName) {
-    this.elCsrfMeta = this.findDOMElement('meta[name=' +
-      options.csrfTokenMetaName + ']', document.head);
+  if (this.csrfTokenMetaName) {
+    var csrfSelector = 'meta[name=' + this.csrfTokenMetaName + ']';
+    this.elCsrfMeta = this.findDOMElement(csrfSelector, document.head);
     this.csrfToken = this.elCsrfMeta.getAttribute('content');
   }
 
-  $.extend(this, options);
-
-  this.history = this.history || window.history;
-
   window.onpopstate = this.popStateHandler.bind(this);
 
-  if (this.pageHasUnsavedChanges) {
+  if (this.pageHasUnsavedChanges)
+  { // Check if this function is defined, THEN set "onbeforeunload"!
     window.onbeforeunload = this.beforePageExit.bind(this);
   }
 
   this.viewports = this.setupViewports(options.viewports);
 
+  this.history = this.history || window.history;
+
   // console.log('F1 PJAX Initialized:', this);
+};
+
+
+// Override me!
+F1.Pjax.prototype.parseDocHtml = function(docHtmlStr)
+{
+  var newDoc = document.implementation.createHTMLDocument();
+  newDoc.documentElement.innerHTML = docHtmlStr;
+  return newDoc;
+};
+
+
+F1.Pjax.prototype.addClass = function(el, className)
+{
+  el.classList.add(className);
+};
+
+
+F1.Pjax.prototype.removeClass = function(el, className)
+{
+  el.classList.remove(className);
+};
+
+
+F1.Pjax.prototype.findDOMElement = function(selector, containerElement)
+{
+  var elContainer = (containerElement || document);
+  return elContainer.querySelector(selector);
+};
+
+
+F1.Pjax.prototype.findDOMElement = function(selector, containerElement)
+{
+  var elContainer = (containerElement || document);
+  return elContainer.querySelector(selector);
+};
+
+
+F1.Pjax.prototype.findDOMElementAll = function(selector, containerElement)
+{
+  var elContainer = (containerElement || document);
+  return elContainer.querySelectorAll(selector);
+};
+
+
+F1.Pjax.prototype.stopDOMEvent = function(event, immediate)
+{
+  if (event) {
+    event.preventDefault();
+    event.cancelBubble = true;
+    if (immediate) { event.stopImmediatePropagation(); }
+    else { event.stopPropagation(); }
+  }
+  return false;
+};
+
+
+F1.Pjax.creteInputElement = function(type, name, value) {
+  var el = document.createElement('input');
+  el.type = type;
+  el.name = name;
+  el.value = value;
+  return el;
+};
+
+
+F1.Pjax.prototype.pushState = function(url, title)
+{
+  if ( ! this.history) {
+    // console.error('Pjax.pushState(), Error: Missing history service!');
+    return false;
+  }
+  if (this.beforePushState && this.beforePushState(url, this.history) === 'abort') {
+    return false;
+  }
+  // Note: 'title' not supported in most browsers!
+  var state = { 'url': url, 'title': title || '' };
+  this.history.pushState(state, state.title, state.url);
+  if (this.afterPushState) { this.afterPushState(url, this.history); }
+  return true;
+};
+
+
+// Override me!
+F1.Pjax.prototype.bindPageLinks = function(viewport, pageLinkClickHandler)
+{
+  var i, n, pageLinkElements;
+  pageLinkClickHandler = pageLinkClickHandler || this.pageLinkClickHandler;
+  pageLinkElements = this.findDOMElementAll('.pagelink',  viewport.el);
+  for (i=0,n=pageLinkElements.length; i < n; i++) {
+    var elPageLink = pageLinkElements[i];
+    // F1.console.log('Binding PJAX page link:', viewport, elPageLink);
+    elPageLink.addEventListener('click', pageLinkClickHandler.bind(this));
+  }
+};
+
+
+// Override me!
+F1.Pjax.prototype.bindForms = function(viewport, formSubmitHandler)
+{
+  var pjax = this, i, n, j, k, pjaxFormElements;
+  pjaxFormElements = this.findDOMElementAll('form.pjax', viewport.elm);
+  for (i=0, n=pjaxFormElements.length; i < n; i++) {
+    var elPjaxForm = pjaxFormElements[i];
+    // console.log('Binding PJAX form:', elPjaxForm);
+    elPjaxForm.addEventListener('submit', formSubmitHandler ||
+      function (event) { var elForm = this; pjax.formSubmitHandler(event, elForm); });
+    var submitButtons = this.findDOMElementAll('[type="submit"]', elPjaxForm);
+    for (j=0, k=submitButtons.length; j < k; j++) {
+      submitButtons[j].addEventListener('click', function(event) {
+        pjax.showBusyIndication();
+        elPjaxForm.submitElement = this;
+        if (pjax.beforeSubmit && pjax.beforeSubmit(event, elPjaxForm) === 'abort') {
+          return false; }
+      });
+    }
+  }
+};
+
+
+F1.Pjax.prototype.bindViewports = function ()
+{
+  // console.log('Pjax.bindEvents()');
+  var viewports = this.viewports, i, n = viewports.length;
+  for (i=0; i < n; i++) { viewports[i].beforeBind(this); }
+  for (i=0; i < n; i++) { viewports[i].bindEvents(this); }
+  for (i=0; i < n; i++) { viewports[i].afterBind(this);  }
+};
+
+
+F1.Pjax.prototype.setPageTitle = function(newPageTitle)
+{
+  if (this.siteName) { newPageTitle = newPageTitle + ' - ' + this.siteName; }
+  document.title = newPageTitle;
+};
+
+
+// Override me!
+F1.Pjax.prototype.setPageTitleUsingLink = function(elLink)
+{
+  var newPageTitle, elLinkText;
+  if ( ! elLink) { return false; }
+  newPageTitle = elLink.getAttribute('data-page-title');
+  if ( ! newPageTitle) {
+    elLinkText = this.findDOMElement('span', elLink) || elLink;
+    newPageTitle = elLinkText.innerText;
+  }
+  this.setPageTitle(newPageTitle);
 };
 
 
@@ -114,38 +265,91 @@ F1.Pjax.prototype.setupViewports = function(viewportDefinitions)
 };
 
 
-// Override me!
-F1.Pjax.prototype.parseDocHtml = function(docHtmlStr)
+F1.Pjax.prototype.showBusyIndication = function()
 {
-  var newDoc = document.implementation.createHTMLDocument();
-  newDoc.documentElement.innerHTML = docHtmlStr;
-  return newDoc;
-};
-
-
-F1.Pjax.prototype.findDOMElement = function(selector, containerElement)
-{
-  var elContainer = (containerElement || document);
-  return elContainer.querySelector(selector);
-};
-
-
-F1.Pjax.prototype.findDOMElementAll = function(selector, containerElement)
-{
-  var elContainer = (containerElement || document);
-  return elContainer.querySelectorAll(selector);
-};
-
-
-F1.Pjax.prototype.stopDOMEvent = function(event, immediate)
-{
-  if (event) {
-    event.preventDefault();
-    event.cancelBubble = true;
-    if (immediate) { event.stopImmediatePropagation(); }
-    else { event.stopPropagation(); }
+  // console.log('Pjax.showBusyIndication(), busyImageUrl:',
+  // this.busyImageUrl, ', elFavicon:', this.elFavicon);
+  this.addClass(document.body, 'busy');
+  if (this.busyFaviconUrl && this.elFavicon) {
+    this.elFavicon.setAttribute('href', this.busyFaviconUrl);
   }
-  return false;
+};
+
+
+F1.Pjax.prototype.removeBusyIndication = function()
+{
+  var pjax = this;
+  if (pjax.busyFaviconUrl && pjax.elFavicon) {
+    setTimeout(function() {
+      pjax.elFavicon.setAttribute('href', pjax.faviconUrl);
+      pjax.removeClass(document.body, 'busy');
+    }, 300);
+  }
+};
+
+
+F1.Pjax.prototype.updateViewports = function(elNewBody)
+{
+  F1.console.log('Pjax.updateViewports(), elNewBody:', elNewBody);
+  var viewports = this.viewports, i, n = viewports.length;
+  for (i=0; i < n; i++) { viewports[i].beforeUpdate(this);      }
+  for (i=0; i < n; i++) { viewports[i].update(this, elNewBody); }
+  for (i=0; i < n; i++) { viewports[i].afterUpdate(this);       }
+};
+
+
+// Override me!
+F1.Pjax.prototype.updateDocument = function(newDocHtmlStr)
+{
+  // Parse the the new HTML so we have a DOM model to work with.
+  var newDocument = this.parseDocHtml(newDocHtmlStr);
+  // Update Page Title, Page CSRF Token and Page Specific in-line Styles
+  if (newDocument.head)
+  {
+    // F1.console.log('updateDocumentHead(), newDocument.head:', newDocument.head);
+    var elTitle = this.findDOMElement('title', newDocument.head);
+    // F1.console.log('updateDocumentHead(), elTitle.innerText:', elTitle.innerText);
+    if (elTitle) { document.title = elTitle.innerText; }
+    if (this.elCsrfMeta) {
+      var elNewCsrfMeta = this.findDOMElement('meta[name="' +
+        this.csrfTokenMetaName + '"]', newDocument.head);
+      // F1.console.log('updateDocumentHead(), elCsrfMeta:', this.elCsrfMeta);
+      // F1.console.log('updateDocumentHead(), elNewCsrfMeta:', elNewCsrfMeta);
+      if (elNewCsrfMeta) {
+        this.csrfToken = elNewCsrfMeta.getAttribute('content');
+        this.elCsrfMeta.setAttribute('content', this.csrfToken);
+      } else {
+        this.elCsrfMeta.setAttribute('content', '');
+      }
+    }
+    var elCurrentStyles = this.findDOMElement('[data-rel="page"]', document.head);
+    var elNewStyles = this.findDOMElement('[data-rel="page"]', newDocument.head);
+    // F1.console.log('updateDocumentHead(), elCurrentStyles:', elCurrentStyles);
+    // F1.console.log('updateDocumentHead(), elNewStyles:', elNewStyles);
+    if (elCurrentStyles) {
+      if (elNewStyles) {
+        elCurrentStyles.innerHTML = elNewStyles.innerHTML;
+      }
+      else {
+        elCurrentStyles.parentElement.removeChild(elCurrentStyles);
+      }
+    }
+    else if (elCurrentStyles) {
+      document.head.append(elNewStyles);
+    }
+  }
+  // Update dynamic areas / viewports of the document body.
+  if (newDocument.body)
+  {
+    this.updateViewports(newDocument.body);
+  }
+};
+
+
+// Override me!
+F1.Pjax.prototype.getMainViewport = function ()
+{
+  return this.viewports[1];
 };
 
 
@@ -229,46 +433,6 @@ F1.Pjax.prototype.isRedirectResponse = function(xhr)
 };
 
 
-F1.Pjax.prototype.showBusyIndication = function()
-{
-  // console.log('Pjax.showBusyIndication(), busyImageUrl:',
-  // this.busyImageUrl, ', $favicon:', this.$favicon);
-  $(document.body).addClass('busy');
-  if (this.busyFaviconUrl && this.$favicon) {
-    this.$favicon.attr('href', this.busyFaviconUrl);
-  }
-};
-
-
-F1.Pjax.prototype.removeBusyIndication = function()
-{
-  var self = this;
-  if (this.busyFaviconUrl && this.$favicon) {
-    setTimeout(function() {
-      self.$favicon.attr('href', self.faviconUrl);
-      $(document.body).removeClass('busy');
-    }, 300);
-  }
-};
-
-
-F1.Pjax.prototype.pushState = function(url, title)
-{
-  if ( ! this.history) {
-    // console.error('Pjax.pushState(), Error: Missing history service!');
-    return false;
-  }
-  if (this.beforePushState && this.beforePushState(url, this.history) === 'abort') {
-    return false;
-  }
-  // Note: 'title' not supported in most browsers!
-  var state = { 'url': url, 'title': title || '' };
-  this.history.pushState(state, state.title, state.url);
-  if (this.afterPushState) { this.afterPushState(url, this.history); }
-  return true;
-};
-
-
 F1.Pjax.prototype.popStateHandler = function(event)
 {
   // console.log('Pjax.popState() - Start - event.state:', event.state);
@@ -297,82 +461,6 @@ F1.Pjax.prototype.popStateHandler = function(event)
 };
 
 
-F1.Pjax.prototype.setPageTitle = function(newPageTitle)
-{
-  if (this.siteName) { newPageTitle = newPageTitle + ' - ' + this.siteName; }
-  document.title = newPageTitle;
-};
-
-
-// Override me!
-F1.Pjax.prototype.setPageTitleUsingLink = function(elLink)
-{
-  var newPageTitle, elLinkText;
-  if ( ! elLink) { return false; }
-  newPageTitle = elLink.getAttribute('data-page-title');
-  if ( ! newPageTitle) {
-    elLinkText = this.findDOMElement('span', elLink) || elLink;
-    newPageTitle = elLinkText.innerText;
-  }
-  this.setPageTitle(newPageTitle);
-};
-
-
-// Define me if you want to check for unsaved changes!
-// F1.Pjax.prototype.pageHasUnsavedChanges = function() {};
-
-
-F1.Pjax.prototype.beforePageExit = function(event)
-{
-  // console.log('Pjax.beforePageExit()');
-  if (this.pageHasUnsavedChanges && this.pageHasUnsavedChanges(event)) {
-    return window.confirm(this.unsavedChangesMessage ||
-      'You have unsaved changes! Ignore?');
-  } else {
-    return true;
-  }
-};
-
-
-F1.Pjax.prototype.formSubmitHandler = function(event)
-{
-  var $form = $(this),
-    pjax = event.data,
-    serializedData,
-    submitElement,
-    submitAction,
-    submitParams;
-  // console.log('F1.Pjax.formSubmitHandler(), form:', this, ', event:', event);
-  submitElement = $form[0].submitElement;
-  // console.log('F1.Pjax.formSubmitHandler(), submitElement:', submitElement);
-  submitAction = submitElement.name || '';
-  if (submitElement.tagName.toLowerCase() === 'input') {
-    // INPUT[type="submit"] elements use "input.value" for the button label,
-    // so we have to define a "data-action-params" attribute if we need action params.
-    submitParams = $(submitElement).data('action-params');
-  } else {
-    submitParams = submitElement.value;
-  }
-  if ($form.is('.no-ajax-post')) {
-    if (submitAction) {
-      $form.append('<input type="hidden" name="__ACTION__" value="' + submitAction + '">');
-      $form.append('<input type="hidden" name="__PARAMS__" value="' + submitParams + '">');
-    }
-  } else {
-    pjax.stopDOMEvent(event);
-    serializedData = $form.serialize() || '';
-    if (submitAction) {
-      serializedData += serializedData.length ? '&' : '';
-      serializedData += '__ACTION__=' + submitAction + '&__PARAMS__=' + submitParams;
-    }
-    // console.log('F1.Pjax.formSubmitHandler(), serializedData:', serializedData);
-    var actionUrl = $form.attr('action');
-    actionUrl = actionUrl || pjax.getCurrentLocation();
-    pjax.postPage({ url: actionUrl, data: serializedData });
-  }
-};
-
-
 // Override me!
 F1.Pjax.prototype.pageLinkClickHandler = function(event)
 {
@@ -394,113 +482,42 @@ F1.Pjax.prototype.pageLinkClickHandler = function(event)
 };
 
 
-F1.Pjax.prototype.bindForms = function(viewport, formSubmitHandler)
+// override me!
+F1.Pjax.prototype.formSubmitHandler = function(event, elForm)
 {
-  var _pjax = this, i, n, j, k, pjaxFormElements;
-  formSubmitHandler = formSubmitHandler || this.formSubmitHandler;
-  pjaxFormElements = this.findDOMElementAll('form.pjax', viewport.elm);
-  for (i=0, n=pjaxFormElements.length; i < n; i++) {
-    var elPjaxForm = pjaxFormElements[i];
-    // console.log('Binding PJAX form:', elPjaxForm);
-    elPjaxForm.addEventListener('submit', formSubmitHandler);
-    var submitButtons = this.findDOMElementAll('[type="submit"]', elPjaxForm);
-    for (j=0, k=submitButtons.length; j < k; j++) {
-      submitButtons[j].addEventListener('click', function(event) {
-        _pjax.showBusyIndication();
-        elPjaxForm.submitElement = this;
-        if (_pjax.beforeSubmit && _pjax.beforeSubmit(event, elPjaxForm) === 'abort') {
-          return false; }
-      });
+  this.stopDOMEvent(event);
+  if (elForm.submitElement) {
+    // NOTE: elForm.submitElement is set in Pjax.bindForms() below
+    // via the submit element's onClick handler.
+    var submitAction = elForm.submitElement.name || '', submitParams;
+    if (elForm.submitElement.tagName.toLowerCase() === 'input') {
+      // INPUT[type="submit"] elements use "input.value" for the button label,
+      // so we have to define a "data-action-params" attribute if we need action params.
+      submitParams = elForm.submitElement.getAttribute('data-action-params');
+    } else {
+      submitParams = elForm.submitElement.value;
+    }
+    if (submitAction) {
+      elForm.append(this.createInputElement('hidden', '__ACTION__', submitAction));
+      elForm.append(this.createInputElement('hidden', '__PARAMS__', submitParams));
     }
   }
+  return this.postFormData(elForm);
 };
 
 
-// Override me!
-F1.Pjax.prototype.bindPageLinks = function(viewport, pageLinkClickHandler)
+// Define me if you want to check for unsaved changes!
+// F1.Pjax.prototype.pageHasUnsavedChanges = function() {};
+
+
+F1.Pjax.prototype.beforePageExit = function(event)
 {
-  var i, n, pageLinkElements;
-  pageLinkClickHandler = pageLinkClickHandler || this.pageLinkClickHandler;
-  pageLinkElements = this.findDOMElementAll('.pagelink',  viewport.el);
-  for (i=0,n=pageLinkElements.length; i < n; i++) {
-    var elPageLink = pageLinkElements[i];
-    // F1.console.log('Binding PJAX page link:', viewport, elPageLink);
-    elPageLink.addEventListener('click', pageLinkClickHandler.bind(this));
-  }
-};
-
-
-F1.Pjax.prototype.updateViewports = function(elNewBody)
-{
-  F1.console.log('Pjax.updateViewports(), elNewBody:', elNewBody);
-  var viewports = this.viewports, i, n = viewports.length;
-  for (i=0; i < n; i++) { viewports[i].beforeUpdate(this);      }
-  for (i=0; i < n; i++) { viewports[i].update(this, elNewBody); }
-  for (i=0; i < n; i++) { viewports[i].afterUpdate(this);       }
-};
-
-
-F1.Pjax.prototype.bindViewports = function ()
-{
-  // console.log('Pjax.bindEvents()');
-  var viewports = this.viewports, i, n = viewports.length;
-  for (i=0; i < n; i++) { viewports[i].beforeBind(this); }
-  for (i=0; i < n; i++) { viewports[i].bindEvents(this); }
-  for (i=0; i < n; i++) { viewports[i].afterBind(this);  }
-};
-
-
-// Override me!
-F1.Pjax.prototype.getMainViewport = function ()
-{
-  return this.viewports[1];
-};
-
-
-// Override me!
-F1.Pjax.prototype.updateDocument = function(newDocHtmlStr)
-{
-  // Parse the the new HTML so we have a DOM model to work with.
-  var newDocument = this.parseDocHtml(newDocHtmlStr);
-  // Update Page Title, Page CSRF Token and Page Specific in-line Styles
-  if (newDocument.head)
-  {
-    // F1.console.log('updateDocumentHead(), newDocument.head:', newDocument.head);
-    var elTitle = this.findDOMElement('title', newDocument.head);
-    // F1.console.log('updateDocumentHead(), elTitle.innerText:', elTitle.innerText);
-    if (elTitle) { document.title = elTitle.innerText; }
-    if (this.elCsrfMeta) {
-      var elNewCsrfMeta = this.findDOMElement('meta[name="' +
-        this.csrfTokenMetaName + '"]', newDocument.head);
-      // F1.console.log('updateDocumentHead(), elCsrfMeta:', this.elCsrfMeta);
-      // F1.console.log('updateDocumentHead(), elNewCsrfMeta:', elNewCsrfMeta);
-      if (elNewCsrfMeta) {
-        this.csrfToken = elNewCsrfMeta.getAttribute('content');
-        this.elCsrfMeta.setAttribute('content', this.csrfToken);
-      } else {
-        this.elCsrfMeta.setAttribute('content', '');
-      }
-    }
-    var elCurrentStyles = this.findDOMElement('[data-rel="page"]', document.head);
-    var elNewStyles = this.findDOMElement('[data-rel="page"]', newDocument.head);
-    // F1.console.log('updateDocumentHead(), elCurrentStyles:', elCurrentStyles);
-    // F1.console.log('updateDocumentHead(), elNewStyles:', elNewStyles);
-    if (elCurrentStyles) {
-      if (elNewStyles) {
-        elCurrentStyles.innerHTML = elNewStyles.innerHTML;
-      }
-      else {
-        elCurrentStyles.parentElement.removeChild(elCurrentStyles);
-      }
-    }
-    else if (elCurrentStyles) {
-      document.head.append(elNewStyles);
-    }
-  }
-  // Update dynamic areas / viewports of the document body.
-  if (newDocument.body)
-  {
-    this.updateViewports(newDocument.body);
+  // console.log('Pjax.beforePageExit()');
+  if (this.pageHasUnsavedChanges && this.pageHasUnsavedChanges(event)) {
+    return window.confirm(this.unsavedChangesMessage ||
+      'You have unsaved changes! Ignore?');
+  } else {
+    return true;
   }
 };
 
@@ -524,7 +541,7 @@ F1.Pjax.prototype.updateDocument = function(newDocHtmlStr)
  */
 F1.Pjax.prototype.handleRedirect = function(xhr) {
   var extLink;
-  var resp = xhr.responseText;
+  var resp = xhr.response;
   var redirectUrl = xhr.getResponseHeader('X-REDIRECT-TO');
   if ( ! redirectUrl) {
     resp = (typeof resp === 'string') ? JSON.parse(resp) : resp;
@@ -548,7 +565,8 @@ F1.Pjax.prototype.showError = function(errorMessage)
   // console.error('Pjax.showError(), errorMessage =', errorMessage);
   var errorsContainerSelector = this.errorsContainerSelector ||
     this.getMainViewport().selector || 'body';
-  $(errorsContainerSelector).html(errorMessage);
+  var el = this.findDOMElement(errorsContainerSelector);
+  el.innerHTML = errorMessage;
 };
 
 
@@ -609,21 +627,21 @@ F1.Pjax.prototype.alwaysAfterLoadHandler = function(xhr)
 F1.Pjax.prototype.loadPage = function(options)
 {
   options = options || {};
-  var _pjax = this, xhr = new XMLHttpRequest();
+  var pjax = this, xhr = new XMLHttpRequest();
   xhr.open('GET', options.url);
   xhr.onload = function() {
     var xhr = this;
-    if (xhr.status === 200) { _pjax.loadSuccessHandler(xhr); }
-    else { _pjax.loadFailedHandler(xhr); }
-    _pjax.alwaysAfterLoadHandler(xhr);
+    if (xhr.status === 200) { pjax.loadSuccessHandler(xhr); }
+    else { pjax.loadFailedHandler(xhr); }
+    pjax.alwaysAfterLoadHandler(xhr);
   };
   xhr.onerror = function() {
     var xhr = this;
-    _pjax.loadFailedHandler(xhr);
-    _pjax.alwaysAfterLoadHandler(xhr);
+    pjax.loadFailedHandler(xhr);
+    pjax.alwaysAfterLoadHandler(xhr);
   };
   xhr.onprogress = function(progressEvent) {
-    _pjax.loadProgressHandler(progressEvent, this);
+    pjax.loadProgressHandler(progressEvent, this);
   };
   xhr.send();
 };
@@ -653,45 +671,29 @@ F1.Pjax.prototype.alwaysAfterPostHandler = function(resp, statusText, xhr)
 };
 
 
-F1.Pjax.prototype.postPage = function(options)
+F1.Pjax.prototype.postFormData = function(elForm)
 {
-  options = options || {};
-  // options.data = options.data || {};
-  // options.method = (typeof options.method !== 'undefined') ? options.method : 'POST';
-  // options.dataType = options.dataType || 'json';
-  // options.cache = false;
-  // options.headers = {};
-  // if (this.csrfTokenMetaName) {
-  //   options.headers[this.csrfTokenMetaName] = this.csrfToken;
-  // }
-  // options.headers['X-HTTP-REFERER'] = this.getCurrentLocation();
-  // // console.log('Pjax.postPage(), options:', options);
-  // return $.ajax(options)
-  //   .done(this.postSuccessHandler.bind(this))
-  //   .fail(this.postFailedHandler.bind(this))
-  //   .always(this.alwaysAfterPostHandler.bind(this));
-
-  // var _pjax = this, xhr = new XMLHttpRequest();
-  // var files = document.querySelector('[type=file]').files;
-  // var formData = new FormData();
-  // for (let i = 0; i < files.length; i++) {
-  //   let file = files[i];
-  //   formData.append('files[]', file);
-  // }
-  // xhr.open('POST', options.url);
+  var pjax = this;
+  var xhr = new XMLHttpRequest();
+  var formData = new FormData(elForm);
+  var postUrl = elForm.action || pjax.getCurrentLocation();
+  xhr.open('post', postUrl);
+  // NOTE: FormData handles input serialization including file inputs!
+  // TODO: Should we check for files in submit and change the conent type accordingly?
   // xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-  // xhr.addEventListener('load', function(xhr) {
-  //   if (xhr.status === 200 && xhr.responseText !== newName) {
-  //     alert('Something went wrong.  Name is now ' + xhr.responseText);
-  //   }
-  //   else if (xhr.status !== 200) {
-  //     alert('Request failed.  Returned status of ' + xhr.status);
-  //   }
-  // });
-  // xhr.onerror = function() {
-  // }
-  // xhr.send(formData);
-  return options;
+  if (pjax.csrfTokenMetaName) {
+    xhr.setRequestHeader(pjax.csrfTokenMetaName, pjax.csrfToken); }
+  xhr.setRequestHeader('X-HTTP-REFERER', postUrl);
+  xhr.onload = function(xhr) {
+    if (xhr.status !== 200) {
+      pjax.postFailedHandler(xhr);
+    } else {
+      pjax.postSuccessHandler(xhr);
+    }
+    pjax.alwaysAfterPostHandler(xhr);
+  };
+  xhr.onerror = pjax.postFailedHandler;
+  return xhr.send(formData);
 };
 
 
