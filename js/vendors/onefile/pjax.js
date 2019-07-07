@@ -51,7 +51,8 @@ F1.Pjax = function (options)
   }
 
   if (options.csrfTokenMetaName) {
-    this.elCsrfMeta = document.head.querySelector('meta[name=' + options.csrfTokenMetaName + ']');
+    this.elCsrfMeta = this.findDOMElement('meta[name=' +
+      options.csrfTokenMetaName + ']', document.head);
     this.csrfToken = this.elCsrfMeta.getAttribute('content');
   }
 
@@ -76,7 +77,8 @@ F1.Pjax = function (options)
  *   Viewport definition types:
  *     string: The viewport's DOM selector string e.g. "#viewportElementId"
  *     object: { selector: '#mainview', opt1: opt1Val, ..., optN: optNVal }
- *   e.g. ['#vport1', '#vport2', ...] or [{ selector: '#vport1', 'updateMethod': 'replace' }, { ... }, ...]
+ *   e.g. ['#vport1', '#vport2', ...] or [{ selector: '#vport1',
+ *     'updateMethod': 'replace' }, { ... }, ...]
  *
  * @return {Array} of ViewPort objects
  */
@@ -99,7 +101,8 @@ F1.Pjax.prototype.setupViewports = function(viewportDefinitions)
       {
         viewportSelector = viewportDefinition;
       }
-      // F1.console.log('F1 PJAX setupViewports add viewport:', this, viewportSelector, viewportOptions);
+      // F1.console.log('F1 PJAX setupViewports add viewport:', this,
+      // viewportSelector, viewportOptions);
       viewports[i] = new F1.Pjax.Viewport(this, viewportSelector, viewportOptions);
     }
   }
@@ -111,15 +114,12 @@ F1.Pjax.prototype.setupViewports = function(viewportDefinitions)
 };
 
 
-F1.Pjax.prototype.stopDOMEvent = function(event, immediate)
+// Override me!
+F1.Pjax.prototype.parseDocHtml = function(docHtmlStr)
 {
-  if (event) {
-    event.preventDefault();
-    event.cancelBubble = true;
-    if (immediate) { event.stopImmediatePropagation(); }
-    else { event.stopPropagation(); }
-  }
-  return false;
+  var newDoc = document.implementation.createHTMLDocument();
+  newDoc.documentElement.innerHTML = docHtmlStr;
+  return newDoc;
 };
 
 
@@ -134,6 +134,18 @@ F1.Pjax.prototype.findDOMElementAll = function(selector, containerElement)
 {
   var elContainer = (containerElement || document);
   return elContainer.querySelectorAll(selector);
+};
+
+
+F1.Pjax.prototype.stopDOMEvent = function(event, immediate)
+{
+  if (event) {
+    event.preventDefault();
+    event.cancelBubble = true;
+    if (immediate) { event.stopImmediatePropagation(); }
+    else { event.stopPropagation(); }
+  }
+  return false;
 };
 
 
@@ -191,7 +203,8 @@ F1.Pjax.prototype.getCurrentPath = function(forceUpdate)
   var baseUri = this.getBaseUri(forceUpdate);
   var currentLocation = this.getCurrentLocation(forceUpdate);
   this.currentPath = currentLocation.substring(baseUri.length);
-  // console.log('Pjax.getCurrentPath(), this.currentLocation:', currentLocation, ', this.baseUri:', baseUri, ', path:', this.currentPath);
+  // console.log('Pjax.getCurrentPath(), this.currentLocation:', currentLocation, ',
+  // this.baseUri:', baseUri, ', path:', this.currentPath);
   return this.currentPath;
 };
 
@@ -199,10 +212,13 @@ F1.Pjax.prototype.getCurrentPath = function(forceUpdate)
 F1.Pjax.prototype.isCurrentLocation = function(testUrl)
 {
   var currentLocation = this.getCurrentLocation();
-  if (testUrl.length === currentLocation.length && testUrl === currentLocation) { return true; }
-  if (currentLocation.length > testUrl.length) { currentLocation = this.getCurrentPath(); }
+  if (testUrl.length === currentLocation.length && testUrl === currentLocation) {
+    return true; }
+  if (currentLocation.length > testUrl.length) {
+    currentLocation = this.getCurrentPath(); }
   var result = (testUrl === currentLocation);
-  // console.log('Pjax.isCurrentLocation(), testUrl:', testUrl, ', currentLocation:', currentLocation, ', result:', result);
+  // console.log('Pjax.isCurrentLocation(), testUrl:', testUrl, ',
+  // currentLocation:', currentLocation, ', result:', result);
   return result;
 };
 
@@ -215,7 +231,8 @@ F1.Pjax.prototype.isRedirectResponse = function(xhr)
 
 F1.Pjax.prototype.showBusyIndication = function()
 {
-  // console.log('Pjax.showBusyIndication(), busyImageUrl:', this.busyImageUrl, ', $favicon:', this.$favicon);
+  // console.log('Pjax.showBusyIndication(), busyImageUrl:',
+  // this.busyImageUrl, ', $favicon:', this.$favicon);
   $(document.body).addClass('busy');
   if (this.busyFaviconUrl && this.$favicon) {
     this.$favicon.attr('href', this.busyFaviconUrl);
@@ -241,8 +258,11 @@ F1.Pjax.prototype.pushState = function(url, title)
     // console.error('Pjax.pushState(), Error: Missing history service!');
     return false;
   }
-  if (this.beforePushState && this.beforePushState(url, this.history) === 'abort') { return false; }
-  var state = { 'url': url, 'title': title || '' }; // Note: 'title' not supported in most browsers!
+  if (this.beforePushState && this.beforePushState(url, this.history) === 'abort') {
+    return false;
+  }
+  // Note: 'title' not supported in most browsers!
+  var state = { 'url': url, 'title': title || '' };
   this.history.pushState(state, state.title, state.url);
   if (this.afterPushState) { this.afterPushState(url, this.history); }
   return true;
@@ -257,7 +277,8 @@ F1.Pjax.prototype.popStateHandler = function(event)
     return false;
   }
   var url = event.state ? event.state.url : '';
-  // console.log('Pjax.popState() - beforePopState:', this.beforePopState, ', url:', url);
+  // console.log('Pjax.popState() - beforePopState:', this.beforePopState,
+  // ', url:', url);
   if (this.beforePopState && this.beforePopState(url, this.history) === 'abort')
   {
     var state = { 'url': this.getCurrentLocation(), 'title': '' };
@@ -266,7 +287,8 @@ F1.Pjax.prototype.popStateHandler = function(event)
   }
   if ( ! this.isCurrentLocation(url))
   {
-    if (this.beforePageLoad && this.beforePageLoad(url, event) === 'abort') { return false; }
+    if (this.beforePageLoad && this.beforePageLoad(url, event) === 'abort') {
+      return false; }
     this.showBusyIndication();
     var self = this;
     setTimeout(function () { self.loadPage({ url: url }); }, 100);
@@ -304,7 +326,8 @@ F1.Pjax.prototype.beforePageExit = function(event)
 {
   // console.log('Pjax.beforePageExit()');
   if (this.pageHasUnsavedChanges && this.pageHasUnsavedChanges(event)) {
-    return window.confirm(this.unsavedChangesMessage || 'You have unsaved changes! Ignore?');
+    return window.confirm(this.unsavedChangesMessage ||
+      'You have unsaved changes! Ignore?');
   } else {
     return true;
   }
@@ -359,52 +382,14 @@ F1.Pjax.prototype.pageLinkClickHandler = function(event)
   if ( ! pjax.isCurrentLocation(linkUrl))
   {
     if ( ! pjax.beforePageExit()) { return false; }
-    if (pjax.beforePageLoad && pjax.beforePageLoad(linkUrl, event) === 'abort') { return false; }
+    if (pjax.beforePageLoad && pjax.beforePageLoad(linkUrl, event) === 'abort') {
+      return false; }
     pjax.showBusyIndication();
     pjax.setPageTitleUsingLink(elLink);
     pjax.pushState(linkUrl);
     setTimeout(function () {
       pjax.loadPage({ url: linkUrl });
     });
-  }
-};
-
-
-// Override me!
-F1.Pjax.prototype.updatePageHead = function(elNewHead)
-{
-  if (elNewHead)
-  {
-    // F1.console.log('updatePageHead(), elNewHead:', elNewHead);
-    var elTitle = this.findDOMElement('title', elNewHead);
-    // F1.console.log('updatePageHead(), elTitle.innerText:', elTitle.innerText);
-    if (elTitle) { document.title = elTitle.innerText; }
-    if (this.elCsrfMeta) {
-      var elNewCsrfMeta = this.findDOMElement('meta[name="' + this.csrfTokenMetaName + '"]', elNewHead);
-      // F1.console.log('updatePageHead(), elCsrfMeta:', this.elCsrfMeta);
-      // F1.console.log('updatePageHead(), elNewCsrfMeta:', elNewCsrfMeta);
-      if (elNewCsrfMeta) {
-        this.csrfToken = elNewCsrfMeta.getAttribute('content');
-        this.elCsrfMeta.setAttribute('content', this.csrfToken);
-      } else {
-        this.elCsrfMeta.setAttribute('content', '');
-      }
-    }
-    var elCurrentStyles = this.findDOMElement('[data-rel="page"]', document.head);
-    var elNewStyles = this.findDOMElement('[data-rel="page"]', elNewHead);
-    // F1.console.log('updatePageHead(), elCurrentStyles:', elCurrentStyles);
-    // F1.console.log('updatePageHead(), elNewStyles:', elNewStyles);
-    if (elCurrentStyles) {
-      if (elNewStyles) {
-        elCurrentStyles.innerHTML = elNewStyles.innerHTML;
-      }
-      else {
-        elCurrentStyles.parentElement.removeChild(elCurrentStyles);
-      }
-    }
-    else if (elCurrentStyles) {
-      document.head.append(elNewStyles);
-    }
   }
 };
 
@@ -424,8 +409,7 @@ F1.Pjax.prototype.bindForms = function(viewport, formSubmitHandler)
         _pjax.showBusyIndication();
         elPjaxForm.submitElement = this;
         if (_pjax.beforeSubmit && _pjax.beforeSubmit(event, elPjaxForm) === 'abort') {
-          return false;
-        }
+          return false; }
       });
     }
   }
@@ -473,25 +457,51 @@ F1.Pjax.prototype.getMainViewport = function ()
 };
 
 
-F1.Pjax.prototype.showError = function(errorMessage)
+// Override me!
+F1.Pjax.prototype.updateDocument = function(newDocHtmlStr)
 {
-  // console.error('Pjax.showError(), errorMessage =', errorMessage);
-  var errorsContainerSelector = this.errorsContainerSelector || this.getMainViewport().selector || 'body';
-  $(errorsContainerSelector).html(errorMessage);
-};
-
-
-/* Override me! */
-F1.Pjax.prototype.getResponseErrorMessage = function(xhr)
-{
-  var elResponseContainer = document.createElement('div');
-  elResponseContainer.innerHTML = xhr.response;
-  var elErrorContainer = this.findDOMElement('.server-error', elResponseContainer);
-  if (elErrorContainer) { return elErrorContainer.innerHTML; }
-  return '<div class="error pjax-error">' +
-           '<h3>Oops, something went wrong!</h3><hr>' +
-           '<p>Error ' + xhr.status + ' - ' + xhr.statusText + '</p>' +
-         '</div>';
+  // Parse the the new HTML so we have a DOM model to work with.
+  var newDocument = this.parseDocHtml(newDocHtmlStr);
+  // Update Page Title, Page CSRF Token and Page Specific in-line Styles
+  if (newDocument.head)
+  {
+    // F1.console.log('updateDocumentHead(), newDocument.head:', newDocument.head);
+    var elTitle = this.findDOMElement('title', newDocument.head);
+    // F1.console.log('updateDocumentHead(), elTitle.innerText:', elTitle.innerText);
+    if (elTitle) { document.title = elTitle.innerText; }
+    if (this.elCsrfMeta) {
+      var elNewCsrfMeta = this.findDOMElement('meta[name="' +
+        this.csrfTokenMetaName + '"]', newDocument.head);
+      // F1.console.log('updateDocumentHead(), elCsrfMeta:', this.elCsrfMeta);
+      // F1.console.log('updateDocumentHead(), elNewCsrfMeta:', elNewCsrfMeta);
+      if (elNewCsrfMeta) {
+        this.csrfToken = elNewCsrfMeta.getAttribute('content');
+        this.elCsrfMeta.setAttribute('content', this.csrfToken);
+      } else {
+        this.elCsrfMeta.setAttribute('content', '');
+      }
+    }
+    var elCurrentStyles = this.findDOMElement('[data-rel="page"]', document.head);
+    var elNewStyles = this.findDOMElement('[data-rel="page"]', newDocument.head);
+    // F1.console.log('updateDocumentHead(), elCurrentStyles:', elCurrentStyles);
+    // F1.console.log('updateDocumentHead(), elNewStyles:', elNewStyles);
+    if (elCurrentStyles) {
+      if (elNewStyles) {
+        elCurrentStyles.innerHTML = elNewStyles.innerHTML;
+      }
+      else {
+        elCurrentStyles.parentElement.removeChild(elCurrentStyles);
+      }
+    }
+    else if (elCurrentStyles) {
+      document.head.append(elNewStyles);
+    }
+  }
+  // Update dynamic areas / viewports of the document body.
+  if (newDocument.body)
+  {
+    this.updateViewports(newDocument.body);
+  }
 };
 
 
@@ -533,15 +543,35 @@ F1.Pjax.prototype.handleRedirect = function(xhr) {
 };
 
 
+F1.Pjax.prototype.showError = function(errorMessage)
+{
+  // console.error('Pjax.showError(), errorMessage =', errorMessage);
+  var errorsContainerSelector = this.errorsContainerSelector ||
+    this.getMainViewport().selector || 'body';
+  $(errorsContainerSelector).html(errorMessage);
+};
+
+
+/* Override me! */
+F1.Pjax.prototype.getResponseErrorMessage = function(xhr)
+{
+  var elResponseContainer = document.createElement('div');
+  elResponseContainer.innerHTML = xhr.response;
+  var elErrorContainer = this.findDOMElement('.server-error', elResponseContainer);
+  if (elErrorContainer) { return elErrorContainer.innerHTML; }
+  return '<div class="error pjax-error">' +
+           '<h3>Oops, something went wrong!</h3><hr>' +
+           '<p>Error ' + xhr.status + ' - ' + xhr.statusText + '</p>' +
+         '</div>';
+};
+
+
 F1.Pjax.prototype.loadSuccessHandler = function(xhr)
 {
   F1.console.log('F1.Pjax.loadSuccessHandler()');
   if (this.onPageLoadSuccess && this.onPageLoadSuccess(xhr) === 'abort') { return; }
   if (this.isRedirectResponse(xhr)) { return this.handleRedirect(xhr); }
-  var newDocument = document.implementation.createHTMLDocument();
-  newDocument.documentElement.innerHTML = xhr.response;
-  this.updatePageHead(newDocument.head);
-  this.updateViewports(newDocument.body);
+  this.updateDocument(xhr.response);
   if (this.afterPageLoadSuccess) {
     this.afterPageLoadSuccess(xhr);
   }
@@ -713,7 +743,7 @@ F1.Pjax.Viewport.prototype.evalScripts = function(elHtmContent)
   for (i=0; contentNodes[i]; i++) {
     var evalScript = (!contentNodes[i].type ||
       contentNodes[i].type === 'text/javascript');
-    if (this.nodeName(contentNodes[i], 'script') && evalScript) {
+    if (evalScript && this.nodeName(contentNodes[i], 'script')) {
       scriptElements.push(contentNodes[i]);
     }
   }
