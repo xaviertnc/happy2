@@ -23,31 +23,35 @@ class Happy {
     this.topLevelItems = [];
     this.cleaners      = {};
     this.validators    = {};
-    this.typeClassMap  = {
-      doc           : {},
-      form          : {},
-      field         : {},
-      input         : {},
-      message       : {},
-      messagegroup  : {},
+    this.customClasses = {
+      docs           : {},
+      forms          : {},
+      fields         : {},
+      inputs         : {},
+      messages       : {},
+      messagegroups  : {},
     };
   }
 
-  addItem(happyType, options = {})
+  addItem(baseType, options = {})
   {
-    if ( ! options.el) { return; }
-    let TypeClass, group = happyType.toLowerCase() + 's';
-    if (options.TypeClass)
-    {
-      TypeClass = options.TypeClass;
-      delete options.TypeClass;
+    let group = baseType + 's';
+    let specificType = options.type;
+    let HappyClass = options.CustomClass;
+    if (HappyClass) { delete options.CustomClass; }
+    if (specificType) {
+      HappyClass = this.customClasses[group][specificType];
+      options[baseType + 'Type'] = specificType;
+      delete options.type;
     }
-    else {
-      TypeClass = Happy[happyType];
-    }
-    let happyItem = new TypeClass(options, this), happyGroup = this[group];
+    if ( ! HappyClass) { HappyClass = Happy.classes[baseType]; }
+    // HappyClass can be a default Happy Item Class or a
+    // Custom Happy Item Class based on the specific type of the item
+    // and wether a corresponding custom class exists in `customClasses`!
+    // E.g. HappyClass === HappyField -OR- HappyClass === BirthdayField
+    let happyItem = new HappyClass(options, this);
     if (happyItem.isTopLevel) { this.topLevelItems.push(happyItem); }
-    if (happyGroup) { happyGroup.push(happyItem); }
+    if (this[group]) { this[group].push(happyItem); }
     this.items.push(happyItem);
     // F1.console.log('Happy::addItem()');
     return happyItem;
@@ -65,17 +69,17 @@ class Happy {
     return found;
   }
 
-  addDoc     (options) { return this.addItem('Doc'     , options); }
-  addForm    (options) { return this.addItem('Form'    , options); }
-  addField   (options) { return this.addItem('Field'   , options); }
-  addInput   (options) { return this.addItem('Input'   , options); }
+  addDoc     (options) { return this.addItem('doc'  , options); }
+  addForm    (options) { return this.addItem('form' , options); }
+  addField   (options) { return this.addItem('field', options); }
+  addInput   (options) { return this.addItem('input', options); }
 
-  getDoc     (name) { return this.findItem(name, this.docs    ); }
-  getForm    (name) { return this.findItem(name, this.forms   ); }
-  getField   (name) { return this.findItem(name, this.fields  ); }
-  getInput   (name) { return this.findItem(name, this.inputs  ); }
+  getDoc     (name) { return this.findItem(name, this.docs   ); }
+  getForm    (name) { return this.findItem(name, this.forms  ); }
+  getField   (name) { return this.findItem(name, this.fields ); }
+  getInput   (name) { return this.findItem(name, this.inputs ); }
 
-  addMessageGroup(options) { return this.addItem('MessageGroup', options); }
+  addMessageGroup(options) { return this.addItem('messageGroup', options); }
   getMessageGroup(name) { return this.findItem(name, this.messagegroups);  }
 
   mount() { this.topLevelItems.forEach(item => item.mount()); }
@@ -485,7 +489,7 @@ class HappyInput extends HappyItem {
 
   getType()
   {
-    return this.el.type || this.el.getAttribute('data-type');
+    return this.el.getAttribute('data-type') || this.el.type;
   }
 
 
@@ -545,7 +549,7 @@ class HappyInput extends HappyItem {
   {
     if (this.mounted) { return; }
     super.mount(options);
-    this.inputType = this.getType();
+    this.inputType = this.inputType || this.getType();
     this.messages = this.getMessages();
   }
 
@@ -562,9 +566,9 @@ class HappyField extends HappyItem {
   }
 
 
-  addInputSelector(selector)
+  getInputType(elInput)
   {
-    this.addChildSelector(selector);
+    return elInput.getAttribute('data-type') || elInput.type;
   }
 
 
@@ -575,8 +579,11 @@ class HappyField extends HappyItem {
       'input:not(hidden):not([type="submit"]), textarea, select');
     let inputElements = happyField.el.querySelectorAll(inputSelector);
     for (let i = 0, n = inputElements.length; i < n; i++) {
-      let happyInput = this.happy$.addInput({
-        el: inputElements[i], parent: happyField });
+      let elInput = inputElements[i];
+      let inputType = happyField.getInputType(elInput);
+      let happyInput = happyField.happy$.addInput({
+        el: elInput, type: inputType, parent: happyField
+      });
       happyInputs.push(happyInput);
     }
     return happyInputs;
@@ -638,7 +645,7 @@ class HappyField extends HappyItem {
 
   is(fieldType)
   {
-    let fieldTypes = (typeof fieldType === 'string') ?  [fieldType] : fieldType;
+    let fieldTypes = (typeof fieldType === 'string') ? [fieldType] : fieldType;
     return fieldTypes.includes(this.fieldType);
   }
 
@@ -659,7 +666,7 @@ class HappyField extends HappyItem {
   {
     if (this.mounted) { return; }
     super.mount(options);
-    this.fieldType = this.getType();
+    this.fieldType = this.fieldType || this.getType();
     this.inputs = this.getInputs();
     this.children = this.inputs;
     this.messages = this.getMessages();
@@ -685,9 +692,9 @@ class HappyForm extends HappyItem {
   }
 
 
-  addFieldSelector(selector)
+  getFieldType(elField)
   {
-    this.addChildSelector(selector);
+    return elField.getAttribute('data-type');
   }
 
 
@@ -697,8 +704,10 @@ class HappyForm extends HappyItem {
     let fieldSelector = happyForm.getOpt('fieldSelector', '.field');
     let fieldElements = happyForm.el.querySelectorAll(fieldSelector);
     for (let i = 0, n = fieldElements.length; i < n; i++) {
-      let happyField = this.happy$.addField({
-        el: fieldElements[i], parent: happyForm });
+      let elField = fieldElements[i];
+      let fieldType = happyForm.getFieldType(elField);
+      let happyField = happyForm.happy$.addField({
+        el: elField, type: fieldType, parent: happyForm });
       formFields.push(happyField);
     }
     return formFields;
@@ -763,9 +772,9 @@ class HappyDoc extends HappyItem {
   }
 
 
-  addFormSelector(selector)
+  getFormType(elForm)
   {
-    this.addChildSelector(selector);
+    return elForm.getAttribute('data-type');
   }
 
 
@@ -776,8 +785,11 @@ class HappyDoc extends HappyItem {
     let formSelector = happyDoc.getOpt('formSelector', 'form');
     let formElements = happyDoc.el.querySelectorAll(formSelector);
     for (let i = 0, n = formElements.length; i < n; i++) {
-      let happyForm = this.happy$.addForm({
-        el: formElements[i], parent: happyDoc });
+      let elForm = formElements[i];
+      let formType = happyDoc.getFormType(elForm);
+      let happyForm = happyDoc.happy$.addForm({
+        el: elForm, type: formType, parent: happyDoc
+      });
       docForms.push(happyForm);
     }
     return docForms;
@@ -833,11 +845,12 @@ class HappyDoc extends HappyItem {
 }
 
 
-
-Happy.Item         = HappyItem;
-Happy.Doc          = HappyDoc;
-Happy.Form         = HappyForm;
-Happy.Field        = HappyField;
-Happy.Input        = HappyInput;
-Happy.Message      = HappyMessage;
-Happy.MessageGroup = HappyMessageGroup;
+Happy.classes = {
+  item         : HappyItem,
+  doc          : HappyDoc,
+  form         : HappyForm,
+  field        : HappyField,
+  input        : HappyInput,
+  message      : HappyMessage,
+  messageGroup : HappyMessageGroup
+};

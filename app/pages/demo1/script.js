@@ -16,11 +16,11 @@ F1.afterPageLoadScripts.push(function initPage1() {
 
   F1.console.log('Start Page 1...');
 
-  let happy$ = new Happy();
-  happy$.typeClassMap.field.birthday = BirthdayField;
-  happy$.typeClassMap.input.age = AgeInput;
-  happy$.addDoc({ el: document.body.querySelector('#happydoc') });
-  happy$.mount();
+  let happy = new Happy();
+  happy.customClasses.fields.birthday = BirthdayField;
+  happy.customClasses.inputs.age = AgeInput;
+  happy.addDoc({ el: document.body.querySelector('#happydoc') });
+  happy.mount();
 
   F1.console.log('Page 1 initialized - ok');
 
