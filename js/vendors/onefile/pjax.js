@@ -129,7 +129,7 @@ F1.Pjax.prototype.stopDOMEvent = function(event, immediate)
 };
 
 
-F1.Pjax.creteInputElement = function(type, name, value) {
+F1.Pjax.prototype.createInputElement = function(type, name, value) {
   var el = document.createElement('input');
   el.type = type;
   el.name = name;
@@ -179,7 +179,7 @@ F1.Pjax.prototype.bindForms = function(viewport, formSubmitHandler)
     var elPjaxForm = pjaxFormElements[i];
     // F1.console.log('Binding PJAX form:', elPjaxForm);
     elPjaxForm.addEventListener('submit', formSubmitHandler ||
-      function (event) { var elForm = event.target; pjax.formSubmitHandler(event, elForm); });
+      function (event) { var elForm = this; pjax.formSubmitHandler(event, elForm); });
     var submitButtons = this.findDOMElementAll('[type="submit"]', elPjaxForm);
     for (j=0, k=submitButtons.length; j < k; j++) {
       submitButtons[j].addEventListener('click', function(event) {
@@ -335,8 +335,8 @@ F1.Pjax.prototype.updateDocument = function(newDocHtmlStr)
         elCurrentStyles.parentElement.removeChild(elCurrentStyles);
       }
     }
-    else if (elCurrentStyles) {
-      document.head.append(elNewStyles);
+    else if (elNewStyles) {
+      document.head.appendChild(elNewStyles);
     }
   }
   // Update dynamic areas / viewports of the document body.
@@ -487,12 +487,13 @@ F1.Pjax.prototype.pageLinkClickHandler = function(event)
 F1.Pjax.prototype.formSubmitHandler = function(event, elForm)
 {
   this.stopDOMEvent(event);
+  // F1.console.log('F1.Pjax.formSubmitHandler(), this:', this);
   // F1.console.log('F1.Pjax.formSubmitHandler(), event:', event);
   // F1.console.log('F1.Pjax.formSubmitHandler(), elForm:', elForm);
   if (elForm.submitElement) {
+    var submitParams, submitAction = elForm.submitElement.name || '';
     // NOTE: elForm.submitElement is set in Pjax.bindForms() below
     // via the submit element's onClick handler.
-    var submitAction = elForm.submitElement.name || '', submitParams;
     if (elForm.submitElement.tagName.toLowerCase() === 'input') {
       // INPUT[type="submit"] elements use "input.value" for the button label,
       // so we have to define a "data-action-params" attribute if we need action params.
@@ -501,8 +502,8 @@ F1.Pjax.prototype.formSubmitHandler = function(event, elForm)
       submitParams = elForm.submitElement.value;
     }
     if (submitAction) {
-      elForm.append(this.createInputElement('hidden', '__ACTION__', submitAction));
-      elForm.append(this.createInputElement('hidden', '__PARAMS__', submitParams));
+      elForm.appendChild(this.createInputElement('hidden', '__ACTION__', submitAction));
+      elForm.appendChild(this.createInputElement('hidden', '__PARAMS__', submitParams));
     }
   }
   return this.postFormData(elForm);
@@ -546,6 +547,8 @@ F1.Pjax.prototype.handleRedirect = function(xhr) {
   var extLink;
   var resp = xhr.response;
   var redirectUrl = xhr.getResponseHeader('X-REDIRECT-TO');
+  // F1.console.log('Pjax.handleRedirect(), redirectUrl =', redirectUrl);
+  // F1.console.log('Pjax.handleRedirect(), xhr =', xhr);
   if ( ! redirectUrl) {
     resp = (typeof resp === 'string') ? JSON.parse(resp) : resp;
     redirectUrl = resp.redirect || resp.url || '';
@@ -587,10 +590,10 @@ F1.Pjax.prototype.getResponseErrorMessage = function(xhr)
 };
 
 
-F1.Pjax.prototype.loadSuccessHandler = function(xhr)
+F1.Pjax.prototype.loadSuccessHandler = function(xhr, progressEvent)
 {
-  F1.console.log('F1.Pjax.loadSuccessHandler()');
-  if (this.onPageLoadSuccess && this.onPageLoadSuccess(xhr) === 'abort') { return; }
+  // F1.console.log('F1.Pjax.loadSuccessHandler()');
+  if (this.onPageLoadSuccess && this.onPageLoadSuccess(xhr, progressEvent) === 'abort') { return; }
   if (this.isRedirectResponse(xhr)) { return this.handleRedirect(xhr); }
   this.updateDocument(xhr.response);
   if (this.afterPageLoadSuccess) {
@@ -599,27 +602,28 @@ F1.Pjax.prototype.loadSuccessHandler = function(xhr)
 };
 
 
-F1.Pjax.prototype.loadFailedHandler = function(xhr)
+F1.Pjax.prototype.loadFailedHandler = function(xhr, progressEvent)
 {
   // console.error('Pjax.loadFailedHandler(), xhr =', xhr);
   var errorMessage = this.getResponseErrorMessage(xhr);
-  if (this.onPageLoadFail && this.onPageLoadFail(xhr, errorMessage) === 'abort') { return; }
+  if (this.onPageLoadFail && this.onPageLoadFail(xhr, progressEvent, errorMessage) === 'abort') { return; }
   return this.showError(errorMessage);
 };
 
 
 // Override me!
-F1.Pjax.prototype.loadProgressHandler = function (progressEvent, xhr)
+F1.Pjax.prototype.loadProgressHandler = function (xhr, progressEvent)
 {
-  F1.console.log('Pjax.loadProgressHandler()');
+  // F1.console.log('Pjax.loadProgressHandler()');
   return (progressEvent && xhr);
 };
 
 
 // Override me!
-F1.Pjax.prototype.alwaysAfterLoadHandler = function(xhr)
+F1.Pjax.prototype.alwaysAfterLoadHandler = function(xhr, progressEvent)
 {
   // console.log('Pjax.alwaysAfterLoadHandler()'); //, xhr =', xhr);
+  if (this.onAlwaysAfterLoad && this.onAlwaysAfterLoad(xhr, progressEvent) === 'abort') { return; }
   if ( ! this.isRedirectResponse(xhr)) {
     this.getCurrentPath('force-update'); // Also force-updates 'this.currentLocation'
     this.removeBusyIndication();
@@ -632,11 +636,12 @@ F1.Pjax.prototype.loadPage = function(options)
   options = options || {};
   var pjax = this, xhr = new XMLHttpRequest();
   xhr.open('GET', options.url);
-  xhr.onload = function() {
+  xhr.setRequestHeader('X-REQUESTED-WITH', 'PJAX');
+  xhr.onload = function(progressEvent) {
     var xhr = this;
-    if (xhr.status === 200) { pjax.loadSuccessHandler(xhr); }
-    else { pjax.loadFailedHandler(xhr); }
-    pjax.alwaysAfterLoadHandler(xhr);
+    if (xhr.status === 200) { pjax.loadSuccessHandler(xhr, progressEvent); }
+    else { pjax.loadFailedHandler(xhr, progressEvent); }
+    pjax.alwaysAfterLoadHandler(xhr, progressEvent);
   };
   xhr.onerror = function() {
     var xhr = this;
@@ -644,23 +649,23 @@ F1.Pjax.prototype.loadPage = function(options)
     pjax.alwaysAfterLoadHandler(xhr);
   };
   xhr.onprogress = function(progressEvent) {
-    pjax.loadProgressHandler(progressEvent, this);
+    pjax.loadProgressHandler(this, progressEvent);
   };
   xhr.send();
 };
 
 
-F1.Pjax.prototype.postSuccessHandler = function(resp, statusText, xhr)
+F1.Pjax.prototype.postSuccessHandler = function(xhr, progressEvent)
 {
-  // console.log('F1.Pjax.postSuccessHandler(), xhr:', xhr);
-  if (this.onPostSuccess && this.onPostSuccess(xhr) === 'abort') { return; }
+  // F1.console.log('F1.Pjax.postSuccessHandler(), xhr:', xhr);
+  if (this.onPostSuccess && this.onPostSuccess(xhr, progressEvent) === 'abort') { return; }
   return this.handleRedirect(xhr);
 };
 
 
-F1.Pjax.prototype.postFailedHandler = function(xhr)
+F1.Pjax.prototype.postFailedHandler = function(xhr, progressEvent)
 {
-  // console.error('Pjax.postFailedHandler(), xhr =', xhr);
+  F1.console.error('Pjax.postFailedHandler(), xhr =', xhr, ', progressEvent =', progressEvent);
   var errorMessage = this.getResponseErrorMessage(xhr);
   if (this.onPostFail && this.onPostFail(xhr, errorMessage) === 'abort') { return; }
   return this.showError(errorMessage);
@@ -668,9 +673,9 @@ F1.Pjax.prototype.postFailedHandler = function(xhr)
 
 
 // Override me!
-F1.Pjax.prototype.alwaysAfterPostHandler = function(resp, statusText, xhr)
+F1.Pjax.prototype.alwaysAfterPostHandler = function(xhr, progressEvent)
 {
-  return resp && statusText && xhr;
+  return xhr && progressEvent;
 };
 
 
@@ -687,13 +692,15 @@ F1.Pjax.prototype.postFormData = function(elForm)
   if (pjax.csrfTokenMetaName) {
     xhr.setRequestHeader(pjax.csrfTokenMetaName, pjax.csrfToken); }
   xhr.setRequestHeader('X-HTTP-REFERER', postUrl);
-  xhr.onload = function(xhr) {
-    if (xhr.status !== 200) {
-      pjax.postFailedHandler(xhr);
+  xhr.setRequestHeader('X-REQUESTED-WITH', 'PJAX');
+  xhr.onload = function(progressEvent) {
+    var xhr = this;
+    if (xhr.status === 200 || xhr.status === 202) {
+      pjax.postSuccessHandler(xhr, progressEvent);
     } else {
-      pjax.postSuccessHandler(xhr);
+      pjax.postFailedHandler(xhr, progressEvent);
     }
-    pjax.alwaysAfterPostHandler(xhr);
+    pjax.alwaysAfterPostHandler(xhr, progressEvent);
   };
   xhr.onerror = pjax.postFailedHandler;
   return xhr.send(formData);
@@ -762,7 +769,7 @@ F1.Pjax.Viewport.prototype.evalScripts = function(elHtmContent)
 F1.Pjax.Viewport.prototype.beforeUpdate = function(pjax)
 {
   // check if update is allowed...?
-  F1.console.log('Viewport:', this.selector, '- Before Update HTML');
+  // F1.console.log('Viewport:', this.selector, '- Before Update HTML');
   return pjax;
 };
 
@@ -771,7 +778,7 @@ F1.Pjax.Viewport.prototype.beforeUpdate = function(pjax)
 F1.Pjax.Viewport.prototype.update = function(pjax, elNewBody)
 {
   var viewport = this, elNewViewport;
-  F1.console.log('Viewport:', viewport.selector, '- Update HTML');
+  // F1.console.log('Viewport:', viewport.selector, '- Update HTML');
   if ( ! elNewBody) { return; }
   switch (viewport.updateMethod) {
   case 'innerHTML':
@@ -787,7 +794,7 @@ F1.Pjax.Viewport.prototype.update = function(pjax, elNewBody)
 F1.Pjax.Viewport.prototype.afterUpdate = function(pjax)
 {
   // modify default updates...?
-  // console.log('Viewport:', this.selector, '- After Update HTML');
+  // F1.console.log('Viewport:', this.selector, '- After Update HTML');
   return pjax;
 };
 
@@ -795,7 +802,7 @@ F1.Pjax.Viewport.prototype.afterUpdate = function(pjax)
 // Override me!
 F1.Pjax.Viewport.prototype.beforeBind = function(pjax)
 {
-  // console.log('Viewport:', this.selector, '- Before Bind');
+  // F1.console.log('Viewport:', this.selector, '- Before Bind');
   return pjax;
 };
 
