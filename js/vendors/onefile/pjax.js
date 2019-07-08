@@ -173,12 +173,13 @@ F1.Pjax.prototype.bindPageLinks = function(viewport, pageLinkClickHandler)
 F1.Pjax.prototype.bindForms = function(viewport, formSubmitHandler)
 {
   var pjax = this, i, n, j, k, pjaxFormElements;
-  pjaxFormElements = this.findDOMElementAll('form.pjax', viewport.elm);
+  pjaxFormElements = this.findDOMElementAll('form.pjax', viewport.el);
+  // F1.console.log('Binding PJAX viewport.elm:', viewport.el);
   for (i=0, n=pjaxFormElements.length; i < n; i++) {
     var elPjaxForm = pjaxFormElements[i];
-    // console.log('Binding PJAX form:', elPjaxForm);
+    // F1.console.log('Binding PJAX form:', elPjaxForm);
     elPjaxForm.addEventListener('submit', formSubmitHandler ||
-      function (event) { var elForm = this; pjax.formSubmitHandler(event, elForm); });
+      function (event) { var elForm = event.target; pjax.formSubmitHandler(event, elForm); });
     var submitButtons = this.findDOMElementAll('[type="submit"]', elPjaxForm);
     for (j=0, k=submitButtons.length; j < k; j++) {
       submitButtons[j].addEventListener('click', function(event) {
@@ -486,6 +487,8 @@ F1.Pjax.prototype.pageLinkClickHandler = function(event)
 F1.Pjax.prototype.formSubmitHandler = function(event, elForm)
 {
   this.stopDOMEvent(event);
+  // F1.console.log('F1.Pjax.formSubmitHandler(), event:', event);
+  // F1.console.log('F1.Pjax.formSubmitHandler(), elForm:', elForm);
   if (elForm.submitElement) {
     // NOTE: elForm.submitElement is set in Pjax.bindForms() below
     // via the submit element's onClick handler.
