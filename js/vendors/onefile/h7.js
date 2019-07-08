@@ -324,8 +324,9 @@ class HappyItem {
   onSubmitHandler(event)
   {
     F1.console.log('HappyItem::onSubmitHandler()', event);
-    event.preventDefault();
-    event.stopPropagation();
+    // Run validations + Stop event if validation fails...
+    // event.preventDefault();
+    // event.stopPropagation();
   }
 
 
