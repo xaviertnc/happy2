@@ -726,7 +726,7 @@ F1.Pjax.Viewport = function(pjax, viewElementSelector, options)
 {
   this.selector = viewElementSelector || 'body';
   this.el = pjax.findDOMElement(this.selector);
-  F1.console.log('Viewport::construct()', this);
+  // F1.console.log('Viewport::construct()', this);
   for (var optName in (options || {})) { this[optName] = options[optName]; }
   if ( ! this.updateMethod) { this.updateMethod = 'innerHTML'; }
 };
@@ -811,7 +811,7 @@ F1.Pjax.Viewport.prototype.beforeBind = function(pjax)
 F1.Pjax.Viewport.prototype.bindEvents = function(pjax)
 {
   var viewport = this;
-  F1.console.log('Viewport:', viewport.selector, '- Bind');
+  // F1.console.log('Viewport:', viewport.selector, '- Bind');
   pjax.bindForms(viewport);
   pjax.bindPageLinks(viewport);
   return;
