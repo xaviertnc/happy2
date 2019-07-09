@@ -19,7 +19,7 @@ F1.afterPageLoadScripts.push(function initPage1() {
   let happy = new Happy();
   happy.customClasses.fields.birthday = BirthdayField;
   happy.customClasses.inputs.age = AgeInput;
-  happy.addDoc({ el: document.body.querySelector('#happydoc') });
+  happy.addDocument({ el: document.body.querySelector('#happydoc') });
   happy.mount();
 
   F1.console.log('Page 1 initialized - ok');

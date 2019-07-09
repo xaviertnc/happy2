@@ -69,12 +69,12 @@ class Happy {
     return found;
   }
 
-  addDoc     (options) { return this.addItem('doc'  , options); }
+  addDocument(options) { return this.addItem('doc'  , options); }
   addForm    (options) { return this.addItem('form' , options); }
   addField   (options) { return this.addItem('field', options); }
   addInput   (options) { return this.addItem('input', options); }
 
-  getDoc     (name) { return this.findItem(name, this.docs   ); }
+  getDocument(name) { return this.findItem(name, this.docs   ); }
   getForm    (name) { return this.findItem(name, this.forms  ); }
   getField   (name) { return this.findItem(name, this.fields ); }
   getInput   (name) { return this.findItem(name, this.inputs ); }
