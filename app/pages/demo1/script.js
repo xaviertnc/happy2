@@ -19,9 +19,14 @@ F1.afterPageLoadScripts.push(function initPage1() {
   let happy = new Happy();
   happy.customClasses.inputs.age = AgeInput;
   happy.customClasses.fields.birthday = BirthdayField;
-  happy.addDocument({ el: document.body.querySelector('#happydoc') });
-  happy.mount();
+  let happyItem = happy.mount(document.body.querySelector('form'));
 
   F1.console.log('Page 1 initialized - ok');
+
+  let errorMessages = happyItem.getMessages();
+  if (errorMessages.length) {
+    F1.console.log('Page 1 - Error Messages :', errorMessages);
+    F1.console.log('Page 1 - First Unhappy Field :', errorMessages[0].parent.id);
+  }
 
 });

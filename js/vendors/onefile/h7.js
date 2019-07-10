@@ -19,7 +19,6 @@ class Happy {
     this.forms         = [];
     this.fields        = [];
     this.inputs        = [];
-    this.messageGroups = [];
     this.items         = [];
     this.topLevelItems = [];
     this.cleaners      = {}; // and|or formatters
@@ -45,19 +44,29 @@ class Happy {
     window.Happy.instance = this;
   }
 
+  getClass(baseType, specificType) {
+    let HappyClass, baseGroup = baseType + 's';
+    if (specificType) { HappyClass = this.customClasses[baseGroup][specificType]; }
+    HappyClass = HappyClass || this.baseClasses[baseType];
+    // F1.console.log('Happy::getClass()', HappyClass, ', baseType:', baseType,
+    //   ', specificType:', specificType);
+    return HappyClass;
+  }
+
+  guessElementHappyType(el) {
+    return (el.nodeName.toLowerCase() === 'form') ? 'form' : 'doc';
+  }
+
   addItem(baseType, options = {})
   {
     // F1.console.log('Happy::addItem()');
     let baseGroup = baseType + 's';
     let specificType = options.type;
-    let HappyClass = options.CustomClass;
-    if (HappyClass) { delete options.CustomClass; }
+    let HappyClass = options.CustomClass || this.getClass(baseType, specificType);
+    delete options.CustomClass;
     if (specificType) {
-      HappyClass = this.customClasses[baseGroup][specificType];
-      options[baseType + 'Type'] = specificType;
-      delete options.type;
+      options[baseType + 'Type'] = specificType; delete options.type;
     }
-    if ( ! HappyClass) { HappyClass = this.baseClasses[baseType]; }
     // HappyClass can be a default Happy Item Class or a
     // Custom Happy Item Class based on the specific type of the item
     // and wether a corresponding custom class exists in `customClasses`!
@@ -69,39 +78,40 @@ class Happy {
     return happyItem;
   }
 
-  findItem(itemId, list = this.items)
+  // happy.find('fullname')  - OR -
+  // happy.find('fullname', happy.fields)
+  find(name, list = this.items)
   {
     let found, itemIndex = 0;
     let itemCount = list.length; if (!itemCount) { return; }
     while (!found && itemIndex < itemCount) {
       let item = list[itemIndex];
-      if (item.id === itemId || item.name === itemId) { found = item; }
+      if (item.id === name || item.name === name) { found = item; }
       itemIndex++;
     }
     return found;
   }
 
-  addDocument    (options) { return this.addItem('doc'         , options); }
-  addForm        (options) { return this.addItem('form'        , options); }
-  addField       (options) { return this.addItem('field'       , options); }
-  addInput       (options) { return this.addItem('input'       , options); }
-  addMessageGroup(options) { return this.addItem('messageGroup', options); }
+  extractMessageType(elMessage)
+  {
+    if (elMessage.classList.contains('error')) { return 'error'; }
+    return 'info';
+  }
 
-  getDocument    (name) { return this.findItem(name, this.docs         ); }
-  getForm        (name) { return this.findItem(name, this.forms        ); }
-  getField       (name) { return this.findItem(name, this.fields       ); }
-  getInput       (name) { return this.findItem(name, this.inputs       ); }
-  getMessageGroup(name) { return this.findItem(name, this.messageGroups); }
-
-  mount()    { this.topLevelItems.forEach(item => item.mount());    }
-  dismount() { this.topLevelItems.forEach(item => item.dismount()); }
-
-  firstUnhappyField() {
-    for (let i=0,n=this.fields.length; i < n; i++) {
-      let field = this.fields[i];
-      if ( ! field.happy) { return field; }
+  mount(elHappyItem, baseType, options = {})
+  {
+    if ( ! this.items.length) {
+      options.el = elHappyItem;
+      baseType = baseType || this.guessElementHappyType(elHappyItem);
+      let item = this.addItem(baseType, options);
+      item.mount();
+      return item;
+    } else {
+      this.topLevelItems.forEach(item => item.mount());
     }
   }
+
+  dismount() { this.topLevelItems.forEach(item => item.dismount()); }
 
 }
 
@@ -127,7 +137,7 @@ class HappyItem {
     this.value = this.options.value;
     this.initialValue = this.options.initialValue;
 
-    this.id = this.options.id || this.getId();
+    this.id = this.options.id || this.extractId();
 
     this.mounted = false;
 
@@ -140,6 +150,14 @@ class HappyItem {
   extend(extendWithObj = {})
   {
     return Object.assign(this, extendWithObj);
+  }
+
+
+  hasType(typeList)
+  {
+    let typePropName = this.happyType + 'Type';
+    if (typeof typeList === 'string') { typeList = [typeList]; }
+    return typeList.includes(this[typePropName]);
   }
 
 
@@ -159,7 +177,7 @@ class HappyItem {
   }
 
 
-  getId()
+  extractId()
   {
     if (this.parent && this.parent.nextId) {
       return this.parent.id + '_' + this.happyType + this.parent.nextId++;
@@ -168,9 +186,15 @@ class HappyItem {
   }
 
 
-  getName()
+  extractName()
   {
-    return this.el.name;
+    return this.el.getAttribute('data-name') || this.el.name || this.el.id;
+  }
+
+
+  extractType()
+  {
+    return this.el.getAttribute('data-type') || this.el.type;
   }
 
 
@@ -184,27 +208,45 @@ class HappyItem {
   }
 
 
-  getContainerElement()
+  /**
+   * A Message Zone is the DOM context within which
+   * we will search for messages for this item.
+   * INPUTS elements can't have messages as children,
+   * so we use the PARENT ITEM element as a message zone.
+   * HIGHER LEVEL ITEM elements can be their own message zone.
+   */
+  getMessageZoneElement()
   {
-    let containerSelector, elContainer;
-    containerSelector = this.getOpt('containerSelector');
-    if (containerSelector) {
-      elContainer = this.el.parentElement.querySelector(containerSelector);
+    let elMessagesZone;
+    let msgZoneSelector = this.getOpt('messageZoneSelector');
+    if (msgZoneSelector) {
+      if (this.isTopLevel) {
+        elMessagesZone = document.querySelector(msgZoneSelector);
+      } else {
+        elMessagesZone = this.parent.el.querySelector(msgZoneSelector);
+      }
     }
-    return elContainer ? elContainer : this.el.parentElement;
+    if ( ! elMessagesZone) {
+      if (this.happyType === 'input') {
+        elMessagesZone = this.el.parentElement;
+      } else {
+        elMessagesZone = this.el;
+      }
+    }
+    return elMessagesZone;
   }
 
 
   getNext(stepOver)
   {
     if (this.isTopLevel) { return; }
-    // console.log('HappyItem::getNext()', this.id);
+    // F1.console.log('HappyItem::getNext()', this.id);
     let parent = this.parent;
     let childCount = parent.children.length;
     if (childCount < 2) {
       if (parent.isTopLevel) { return; }
       let nextParentParent = parent.parent.getNext();
-      // console.log('HappyItem::getNext(), nextParentParent:', nextParentParent);
+      // F1.console.log('HappyItem::getNext(), nextParentParent:', nextParentParent);
       if (nextParentParent && nextParentParent.children.length) {
         return nextParentParent.children[0].children[0];
       }
@@ -254,19 +296,15 @@ class HappyItem {
     if (this.mounted) { return; }
     let parent = this.parent || {};
     let appendTo = options.appendTo;
-    this.containerElement = this.getContainerElement();
     this.el = (this.el || this.getDomElement()) || options.el;
     if ( ! this.el) {
       // No existing element... Mount as rendered element
-      if ( ! appendTo) {
-        // Pick what to append the rendered element to (if not specified)
-        appendTo = this.containerElement || parent.el || document.body;
-      }
+      if ( ! appendTo) { appendTo = parent.el || document.body; }
       this.el = this.render();
       appendTo.append(this.el);
       this.isRenderedElement = true;
     }
-    this.name = this.getName();
+    this.name = this.extractName();
     this.el.HAPPY = this;
     this.mounted = true;
     if (this.isTopLevel) {
@@ -305,21 +343,14 @@ class HappyMessage extends HappyItem {
   constructor(options, happy$)
   {
     super('message', options, happy$);
-    this.messageType = this.options.type || this.getType();
+    this.messageType = this.options.type || happy$.extractMessageType(this.el);
     // F1.console.log('HappyMessage::construct()');
   }
 
 
-  getId()
+  extractId()
   {
     return this.el.id || (this.parent.id + '_msg' + this.parent.nextId++);
-  }
-
-
-  getType()
-  {
-    if (this.el.classList.contains('error')) { return 'error'; }
-    return 'info';
   }
 
 }
@@ -332,43 +363,37 @@ class HappyMessageGroup extends HappyItem {
   {
     // F1.console.log('HappyMessageGroup::construct()');
     super('messageGroup', options, happy$);
+    this.messageGroupType = this.options.type || this.extractType();
   }
 
 
-  getId()
+  extractId()
   {
     let id = this.el ? this.el.id : undefined;
     return id || (this.parent.id + '_mgrp' + this.parent.nextMessagesId++);
   }
 
 
-  getMessages()
+  extractMessages()
   {
-    let self = this, messages = [];
+    this.messages = [];
+    let self = this, happy$ = this.happy$;
     let messageSelector = this.getOpt('messageSelector', '.message');
     let messageElements = this.el.querySelectorAll(messageSelector);
-    messageElements.forEach(function(elMessage) {
-      messages.push(new HappyMessage({ el: elMessage, parent: self }));
+    messageElements.forEach(function(elMsg) {
+      let msgType = happy$.extractMessageType(elMsg);
+      let MsgClass = happy$.getClass('message', msgType);
+      let msg = new MsgClass({ el: elMsg, type: msgType, parent: self },
+        happy$);
+      self.messages.push(msg);
     });
-    return messages;
+    this.children = this.messages;
   }
 
 
   getErrorMessages()
   {
-    let errorMessages = [];
-    this.messages.forEach(function(message) {
-      if (message.type === 'error') { errorMessages.push(message); }
-    });
-    return errorMessages;
-  }
-
-  mount(options) {
-    super.mount(options);
-    this.messages = this.getMessages();
-    this.messages.forEach(message => message.mount());
-    this.errors = this.getErrorMessages();
-    this.children = this.messages;
+    return this.messages.filter(message => message.messageType === 'error');
   }
 
 }
@@ -522,40 +547,88 @@ class HappyCanValidate extends HappyItem {
   }
 
 
+  extractHappyState()
+  {
+
+  }
+
+
+  extractModifiedState()
+  {
+
+  }
+
+
+  extractMessageGroupType(elMsgGroup) {
+    return elMsgGroup.getAttribute('data-type') || 'default';
+  }
+
+
   /**
    * For removal of all server-side messages before update?
    * To check if we have any errors direct from server-side HTML?
    */
-  getMessageGroups(defaultSelector, elContainer)
+  extractMessageGroups()
   {
-    // F1.console.log('HappyField::getMessages()');
-    let happyField = this, messageGroups = [];
-    let msgGroupSelector = this.getOpt('fieldMessageGroupSelector', defaultSelector);
-    let msgGroupElements = elContainer.querySelectorAll(msgGroupSelector);
+    this.messageGroups = [];
+    let happyItem = this, happy$ = this.happy$;
+    let elMessageZone = happyItem.getMessageZoneElement();
+    let msgGrpSelector = this.options.messageGroupSelector; // MUST be a local option!
+    if ( ! msgGrpSelector) { return; } // A selector MUST be defined!
+    let msgGroupElements = elMessageZone.querySelectorAll(msgGrpSelector);
     msgGroupElements.forEach(function(msgGroupElement)
     {
-      let messageGroup = happyField.happy$.addMessageGroup({
-        el: msgGroupElement, parent: happyField
-      });
-      messageGroups.push(messageGroup);
+      let groupType = happyItem.extractMessageGroupType(msgGroupElement);
+      let MsgGrpClass = happy$.getClass('messageGroup', groupType);
+      let msgGrp = new MsgGrpClass({
+        el: msgGroupElement, type: groupType, parent: happyItem
+      }, happy$);
+      happyItem.messageGroups.push(msgGrp);
+      msgGrp.extractMessages();
     });
-    return messageGroups;
+    if ( ! msgGroupElements.length) {
+      // Add a default message group, if we can't find one!
+      let msgGrp = new HappyMessageGroup ({
+        el: elMessageZone, type: 'default', parent: happyItem
+      }, happy$);
+      happyItem.messageGroups.push(msgGrp);
+      msgGrp.extractMessages();
+    }
   }
 
 
   getMessages()
   {
+    // F1.console.log('HappyCanValidate::getErrorMessages()');
     let messages = [];
-    this.messageGroups.forEach(function(messageGroup) {
-      messages = messages.concat(messageGroup.messages);
+    this.messageGroups.forEach(function(msgGroup) {
+      messages = messages.concat(msgGroup.messages);
+    });
+    this.children.forEach(function(child) {
+      messages = messages.concat(child.getMessages());
     });
     return messages;
+  }
+
+
+  getErrorMessages()
+  {
+    // F1.console.log('HappyCanValidate::getErrorMessages()');
+    let errorMessages = [];
+    this.messageGroups.forEach(function(msgGroup) {
+      errorMessages = errorMessages.concat(msgGroup.getErrorMessages());
+    });
+    this.children.forEach(function(child) {
+      errorMessages = errorMessages.concat(child.getErrorMessages());
+    });
+    return errorMessages;
   }
 
 
   mount(options)
   {
     super.mount(options);
+    this.extractMessageGroups();
     this.bindEvents();
   }
 
@@ -578,38 +651,20 @@ class HappyInput extends HappyCanValidate {
   }
 
 
-  getType()
-  {
-    return this.el.getAttribute('data-type') || this.el.type;
-  }
-
-
-  getLabel()
+  extractLabel()
   {
     let el = this.el.previousElementSibling;
     if (el.nodeName === 'LABEL') { return el.innerText; }
   }
 
 
-  getInitialValue()
+  extractInitialValue()
   {
 
   }
 
 
-  getValue()
-  {
-
-  }
-
-
-  getHappyState()
-  {
-
-  }
-
-
-  getModifiedState()
+  extractValue()
   {
 
   }
@@ -623,12 +678,13 @@ class HappyInput extends HappyCanValidate {
 
   mount(options)
   {
+    // We need to force a default here, since we use this option
+    // in a generic method that is NOT type dependant!
+    this.setOpt('messageGroupSelector',
+      this.getOpt('messageGroupSelector', '.input-messages')
+    );
     super.mount(options);
-    this.inputType = this.inputType || this.getType();
-    let elContainer = this.getContainerElement();
-    this.messageGroups = this.getMessageGroups('.input-messages', elContainer);
-    this.messageGroups.forEach(messageGroup => messageGroup.mount());
-    this.messages = this.getMessages();
+    this.inputType = this.inputType || this.extractType();
   }
 
 }
@@ -644,13 +700,13 @@ class HappyField extends HappyCanValidate {
   }
 
 
-  getInputType(elInput)
+  extractInputType(elInput)
   {
     return elInput.getAttribute('data-type') || elInput.type;
   }
 
 
-  getInputs()
+  extractInputs()
   {
     let happyField = this, happyInputs = [];
     let inputSelector = happyField.getOpt('inputSelector',
@@ -658,8 +714,8 @@ class HappyField extends HappyCanValidate {
     let inputElements = happyField.el.querySelectorAll(inputSelector);
     for (let i = 0, n = inputElements.length; i < n; i++) {
       let elInput = inputElements[i];
-      let inputType = happyField.getInputType(elInput);
-      let happyInput = happyField.happy$.addInput({
+      let inputType = happyField.extractInputType(elInput);
+      let happyInput = happyField.happy$.addItem('input', {
         el: elInput, type: inputType, parent: happyField
       });
       happyInputs.push(happyInput);
@@ -668,58 +724,27 @@ class HappyField extends HappyCanValidate {
   }
 
 
-  getType()
+  extractName()
   {
-    return this.el.getAttribute('data-type');
+    return this.el.name;
   }
 
 
-  getName()
-  {
-    return this.el.name || this.el.getAttribute('data-name');
-  }
-
-
-  getLabel()
+  extractLabel()
   {
     return this.el.getAttribute('data-label');
   }
 
 
-  getModifiedState()
+  extractValue()
   {
 
-  }
-
-
-  getHappyState()
-  {
-
-  }
-
-
-  getInitialValue()
-  {
-
-  }
-
-
-  getValue()
-  {
-
-  }
-
-
-  is(fieldType)
-  {
-    let fieldTypes = (typeof fieldType === 'string') ? [fieldType] : fieldType;
-    return fieldTypes.includes(this.fieldType);
   }
 
 
   ignoreBlur()
   {
-    return this.is(['checkbox', 'checklist', 'radiolist', 'select', 'file']);
+    return this.hasType(['checkbox', 'checklist', 'radiolist', 'select', 'file']);
   }
 
 
@@ -731,14 +756,14 @@ class HappyField extends HappyCanValidate {
 
   mount(options)
   {
+    this.setOpt('messageGroupSelector',
+      this.getOpt('messageGroupSelector', '.field-messages')
+    );
     super.mount(options);
-    this.fieldType = this.fieldType || this.getType();
-    this.inputs = this.getInputs();
+    this.fieldType = this.fieldType || this.extractType();
+    this.inputs = this.extractInputs();
     this.children = this.inputs;
     this.inputs.forEach(input => input.mount());
-    this.messageGroups = this.getMessageGroups('.field-messages', this.el);
-    this.messageGroups.forEach(messageGroup => messageGroup.mount());
-    this.messages = this.getMessages();
   }
 
 
@@ -751,7 +776,7 @@ class HappyField extends HappyCanValidate {
 
 
 
-class HappyForm extends HappyItem {
+class HappyForm extends HappyCanValidate {
 
   constructor(options, happy$)
   {
@@ -760,21 +785,21 @@ class HappyForm extends HappyItem {
   }
 
 
-  getFieldType(elField)
+  extractFieldType(elField)
   {
     return elField.getAttribute('data-type');
   }
 
 
-  getFields()
+  extractFields()
   {
     let happyForm = this, formFields = [];
     let fieldSelector = happyForm.getOpt('fieldSelector', '.field');
     let fieldElements = happyForm.el.querySelectorAll(fieldSelector);
     for (let i = 0, n = fieldElements.length; i < n; i++) {
       let elField = fieldElements[i];
-      let fieldType = happyForm.getFieldType(elField);
-      let happyField = happyForm.happy$.addField({
+      let fieldType = happyForm.extractFieldType(elField);
+      let happyField = happyForm.happy$.addItem('field', {
         el: elField, type: fieldType, parent: happyForm });
       formFields.push(happyField);
     }
@@ -782,25 +807,7 @@ class HappyForm extends HappyItem {
   }
 
 
-  getMessages()
-  {
-
-  }
-
-
-  getModifiedState()
-  {
-
-  }
-
-
-  getHappyState()
-  {
-
-  }
-
-
-  getValue()
+  extractValue()
   {
 
   }
@@ -815,7 +822,7 @@ class HappyForm extends HappyItem {
   mount(options)
   {
     super.mount(options);
-    this.fields = this.getFields();
+    this.fields = this.extractFields();
     this.children = this.fields;
     this.fields.forEach(field => field.mount());
   }
@@ -839,22 +846,22 @@ class HappyDoc extends HappyCanValidate {
   }
 
 
-  getFormType(elForm)
+  extractFormType(elForm)
   {
     return elForm.getAttribute('data-type');
   }
 
 
-  getForms()
+  extractForms()
   {
-    F1.console.log('HappyDoc::getForms()');
+    F1.console.log('HappyDoc::extractForms()');
     let happyDoc = this, docForms = [];
     let formSelector = happyDoc.getOpt('formSelector', 'form');
     let formElements = happyDoc.el.querySelectorAll(formSelector);
     for (let i = 0, n = formElements.length; i < n; i++) {
       let elForm = formElements[i];
-      let formType = happyDoc.getFormType(elForm);
-      let happyForm = happyDoc.happy$.addForm({
+      let formType = happyDoc.extractFormType(elForm);
+      let happyForm = happyDoc.happy$.addItem('form', {
         el: elForm, type: formType, parent: happyDoc
       });
       docForms.push(happyForm);
@@ -863,25 +870,8 @@ class HappyDoc extends HappyCanValidate {
   }
 
 
-  getMessages()
-  {
 
-  }
-
-
-  getModifiedState()
-  {
-
-  }
-
-
-  getHappyState()
-  {
-
-  }
-
-
-  getValue()
+  extractValue()
   {
 
   }
@@ -895,8 +885,9 @@ class HappyDoc extends HappyCanValidate {
 
   mount(options)
   {
+    F1.console.log('HappyDoc::mount()');
     super.mount(options);
-    this.forms = this.getForms();
+    this.forms = this.extractForms();
     this.children = this.forms;
     this.forms.forEach(form => form.mount());
   }
