@@ -57,8 +57,7 @@ input[type="checkbox"]
   width: 1em;
 }
 
-.field-messages,
-.input-messages {
+.messages {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -84,6 +83,23 @@ input[type="checkbox"]
 .has-error > label,
 .has-error > fieldset > legend {
   color: crimson;
+}
+
+.happy > input,
+.happy > .input,
+.field.happy > legend,
+.field.happy > fieldset {
+  color: seagreen;
+}
+
+.happy > label,
+.happy > fieldset > legend {
+  color: seagreen;
+}
+
+.modified > input,
+.modified > .input {
+  background: yellow;
 }
 
 .warning {

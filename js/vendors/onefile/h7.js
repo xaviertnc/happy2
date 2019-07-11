@@ -66,14 +66,13 @@ class Happy {
     let specificType = options.type;
     let HappyClass = options.CustomClass || this.getClass(baseType, specificType);
     delete options.CustomClass;
-    if (specificType) {
-      options[baseType + 'Type'] = specificType; delete options.type;
-    }
+    delete options.type;
     // HappyClass can be a default Happy Item Class or a
     // Custom Happy Item Class based on the specific type of the item
     // and wether a corresponding custom class exists in `customClasses`!
     // E.g. HappyClass === HappyField -OR- HappyClass === BirthdayField (custom)
     let happyItem = new HappyClass(options, this);
+    if (specificType) { happyItem[baseType + 'Type'] = specificType; }
     if (happyItem.isTopLevel) { this.topLevelItems.push(happyItem); }
     if (this[baseGroup]) { this[baseGroup].push(happyItem); }
     this.items.push(happyItem);
@@ -95,11 +94,13 @@ class Happy {
   }
 
 
-  mount(elHappyItem, baseType, options = {})
+  mount(options = {})
   {
+    if ( ! options.el) { throw new Error('A mount element is required!'); }
     if ( ! this.items.length) {
-      options.el = elHappyItem;
-      baseType = baseType || this.guessElementHappyType(elHappyItem);
+      let baseType = options.type;
+      if (baseType) { delete options.type; }
+      else { baseType = this.guessElementHappyType(options.el); }
       let item = this.addItem(baseType, options);
       item.mount();
       return item;
@@ -130,27 +131,25 @@ class HappyRule {
 
 class HappyItem {
 
-  constructor(type, options = {}, happy$)
+  constructor(happyType, options = {}, happy$)
   {
-    // F1.console.log('HappyItem::construct(), type =', type);
-    this.happy$ = happy$;
-    this.happyType = type;
-    this.parent = options.parent;
+    // F1.console.log('HappyItem::construct(), happyType =', happyType);
     this.el = options.el;
+    this.parent = options.parent;
+    this.happyType = happyType;
     delete options.parent;
     delete options.el;
 
     this.options = options;
+    this.happy$ = happy$;
 
     if ( ! this.parent) { this.isTopLevel = true; }
 
     this.name = this.options.name;
-    this.value = this.options.value;
-    this.initialValue = this.options.initialValue;
-
     this.id = this.options.id || this.extractId();
 
     this.mounted = false;
+    this.happy = true;
 
     this.children = [];
 
@@ -162,7 +161,9 @@ class HappyItem {
   {
     let typePropName = this.happyType + 'Type';
     if (typeof typeList === 'string') { typeList = [typeList]; }
-    return typeList.includes(this[typePropName]);
+    let ok = typeList.includes(this[typePropName]);
+    F1.console.log('HappyItem::isType():', ok, typePropName, this[typePropName], typeList, this);
+    return ok;
   }
 
 
@@ -174,7 +175,7 @@ class HappyItem {
 
   isHappy()
   {
-    return !this.messages || this.messages.length > 0;
+    return ! this.messages || ! this.messages.length;
   }
 
 
@@ -248,13 +249,40 @@ class HappyItem {
   }
 
 
+  /**
+   * E.g. <div data-format="currency">
+   */
+  extractCleaners()
+  {
+    let cleanersAsString = this.el.getAttribute('data-format');
+    if ( ! cleanersAsString) { return; }
+    this.cleaners = cleanersAsString.split('|');
+    // F1.console.log('HappyItem::extractCleaners(), cleaners:', this.cleaners);
+  }
+
+
+  clean(raw)
+  {
+    // F1.console.log('HappyItem::clean(),', this.id, ', raw:', raw);
+    if ( ! raw) { return raw; }
+    let val = raw.trim();
+    if ( ! this.cleaners) { return val; }
+    for (let i = 0, n = this.cleaners.length; i < n; i++) {
+      let fnCleaner = this.happy$.cleaners[this.cleaners[i]];
+      if (fnCleaner) { val = fnCleaner.call(this, val); }
+    }
+    F1.console.log('HappyItem::clean(), clean:', val);
+    return val;
+  }
+
+
   bindEvents()
   {
     if (this.isTopLevel) {
       this.el.addEventListener('focus'   , this.onFocusHandler   , true);
+      this.el.addEventListener('keydown' , this.onKeyDownHandler , true);
       this.el.addEventListener('blur'    , this.onBlurHandler    , true);
       this.el.addEventListener('change'  , this.onChangeHandler  , true);
-      this.el.addEventListener('keydown' , this.onKeyDownHandler , true);
       this.el.addEventListener('submit'  , this.onSubmitHandler  , true);
     }
   }
@@ -264,38 +292,66 @@ class HappyItem {
   {
     if (this.isTopLevel) {
       this.el.removeEventListener('submit'  , this.onSubmitHandler  , true);
-      this.el.removeEventListener('keydown' , this.onKeyDownHandler , true);
       this.el.removeEventListener('change'  , this.onChangeHandler  , true);
       this.el.removeEventListener('blur'    , this.onBlurHandler    , true);
+      this.el.removeEventListener('keydown' , this.onKeyDownHandler , true);
       this.el.removeEventListener('focus'   , this.onFocusHandler   , true);
     }
   }
 
 
+  /**
+   * NOTE: Only HappyFields should call this method!
+   */
   validate(event, reason)
   {
-    F1.console.log('HappyItem::validate(), reason:', reason);
-    let messages = [], fnCustomValidate = this.getOpt('validate');
+    F1.console.log('HappyItem::validate(),', this.id, reason, ', val =', this.value);
+    let validateResults = [], fnCustomValidate = this.getOpt('validate');
     if (fnCustomValidate) {
-      messages = fnCustomValidate(event, reason);
+      validateResults = fnCustomValidate(event, reason);
     } else {
-      for (let i = 0, n = this.rules.length; i < n; i++) {
-        let rule = this.rules[i];
-        let validator = this.happy$.validators[rule.name];
-        if (validator) {
-          rule.reason = reason;
-          // NOTE: We call  the validator with "this" item's context!
-          // We therefore have access to all the item's props inside the
-          // validator. E.g. this.type, this.el, this.value, etc.
-          let validateResult = validator.call(this, rule);
-          if (validateResult) {
-            messages.push(validateResult);
+      let inputsWithRules = [], happy$ = this.happy$;
+      // If we have child inputs, first test any input level rules!
+      for (let i = 0, n = this.inputs.length; i < n; i++) {
+        let input = this.inputs[i];
+        F1.console.log('HappyItem::validate(), input.rules:', input.rules);
+        for (let r in input.rules) {
+          if (input.rules.hasOwnProperty(r)) {
+            inputsWithRules.push(input);
             break;
           }
         }
       }
+      F1.console.log('HappyItem::validate(), inputsWithRules:', inputsWithRules);
+      for (let i = 0, n = inputsWithRules.length; i < n; i++) {
+        let input = this.inputs[i];
+        for (let r in input.rules) {
+          let ruleInfo = input.rules[r];
+          F1.console.log('HappyItem::validate(), ruleInfo:', ruleInfo);
+          let validator = happy$.validators[ruleInfo.name];
+          if (validator) {
+            ruleInfo.reason = reason;
+            // NOTE: We call the validator with HappyInput context!
+            let message = validator.call(input, ruleInfo);
+            if (message) { validateResults.push({ item: input, message: message }); }
+          }
+        }
+      }
+      // Now test the field level rules.
+      for (let r in this.rules) {
+        let ruleInfo = this.rules[r];
+        let validator = happy$.validators[ruleInfo.name];
+        if (validator) {
+          ruleInfo.reason = reason;
+          // NOTE: We call the validator with "this" === HappyField context!
+          // We therefore have access to all field properties inside the
+          // validator. E.g. this.happy$, this.type, this.el, this.value, etc.
+          let message = validator.call(this, ruleInfo);
+          if (message) { validateResults.push({ item: this, message: message }); }
+        }
+      }
     }
-    return messages;
+    return validateResults;
   }
 
 
@@ -350,14 +406,14 @@ class HappyItem {
 
   onKeyDownHandler(event)
   {
-    // F1.console.log('HappyItem::onKeyDownHandler()', event);
+    F1.console.log('HappyItem::onKeyDownHandler()', event);
     let happyInput = event.target.HAPPY;
     if ( ! happyInput || happyInput.happyType !== 'input') { return; }
     let happyField = happyInput.parent;
-    if (happyField.options.onKeyDown && happyField.options.onKeyDown(event)) { return; }
+    F1.console.log('HappyItem::onKeyDownHandler(), happyField', happyField);
     // Focus on the NEXT FIELD or INPUT when we press ENTER
     if (event.key === 'Enter' || event.when == 13 || event.keyCode == 13) {
-      if (happyField.isType(['memo'])) { return; }
+      if (happyField.isType('memo')) { return; }
       event.stopImmediatePropagation();
       event.preventDefault();
       let nextHappyInput;
@@ -365,7 +421,6 @@ class HappyItem {
         // Also "Check/Select" the FIELD INPUT if it's in the list above.
         happyInput.el.click();
       }
-      if (happyField.options.onEnter && !happyField.options.onEnter(event)) { return; }
       if (happyField.fieldType === 'radiolist') {
         // Jump to the NEXT FIELD's first input.
         let nextHappyField = happyField.getNext(true);
@@ -452,55 +507,109 @@ class HappyItem {
   }
 
 
-  addMessage(message)
+  getValue(init)
   {
-    this.messages = this.messages || [];
-    let elMessageZone = (this.happyType === 'input')
-      ? this.el.parentElement
-      : this.el;
-    let elMsg = document.createElement('span');
-    elMsg.className = this.getOpt('messageClass', 'message');
-    elMsg.innerHTML = message;
-    elMessageZone.appendChild(elMsg);
-    this.messages.push({ el: elMsg, elParent: elMessageZone, text: message });
+    var rawValue = this.extractValue();
+    let val = this.clean(rawValue);
+    if (init) { this.initialValue = val; }
+    return val;
   }
 
 
-  addMessages(messages)
+  render()
   {
-    messages.forEach(message => this.addMessage(message));
+    return document.createElement('div');
   }
 
 
-  removeMessage(message)
+  renderState()
   {
-    message.elParent.remove(message.el);
+    let happyClass = this.getOpt('happyClass', 'happy');
+    let unhappyClass = this.getOpt('unhappyClass', 'unhappy');
+    let elStateZone = (this.happyType === 'input') ? this.el.parentElement : this.el;
+    F1.console.log('HappyItem::renderState(),', this.id, this.happy, elStateZone);
+    if (this.happy) {
+      elStateZone.classList.add(happyClass);
+      elStateZone.classList.remove(unhappyClass);
+    }
+    else {
+      elStateZone.classList.add(unhappyClass);
+      elStateZone.classList.remove(happyClass);
+    }
+    let modifiedClass = this.getOpt('modifiedClass', 'modified');
+    if (this.modified) { elStateZone.classList.add(modifiedClass); }
+    else { elStateZone.classList.remove(modifiedClass); }
+  }
+
+
+  addMessages(validateResults)
+  {
+    F1.console.log('HappyItem::addMessages(), validateResults:', validateResults);
+    let message, elMsg, elMessageZone, validateResult, happyItem;
+    let msgGrpClass = this.getOpt('messageGroupClass', 'messages');
+    let msgClass = this.getOpt('messageClass', 'message error');
+    for (let i = 0, n = validateResults.length; i < n; i++) {
+      validateResult = validateResults[i];
+      happyItem = validateResult.item || this;
+      happyItem.messages = happyItem.messages || [];
+      if (happyItem.elMsgGrp) { continue; }
+      elMsg = document.createElement('li');
+      elMsg.className = msgClass;
+      elMessageZone = (happyItem.happyType === 'input')
+        ? happyItem.el.parentElement
+        : happyItem.el;
+      if ( ! happyItem.elMsgGrp) {
+        happyItem.elMsgGrp = document.createElement('ul');
+        happyItem.elMsgGrp.className = msgGrpClass;
+        elMessageZone.appendChild(happyItem.elMsgGrp);
+      }
+      message = validateResult.message;
+      elMsg.innerHTML = message;
+      happyItem.elMsgGrp.appendChild(elMsg);
+      happyItem.messages.push({ el: elMsg, elParent: elMessageZone, text: message });
+    }
+    for (let i = 0, n = validateResults.length; i < n; i++) {
+      validateResult = validateResults[i];
+      if (validateResult.item) { delete validateResult.item.elMsgGrp; }
+    }
+    delete this.elMsgGrp;
   }
 
 
   removeMessages()
   {
-    this.messages.forEach(message => this.removeMessage(message));
+    let elMessageZone = this.el;
+    let msgGrpSelector = '.' + this.getOpt('messageGroupClass', 'messages');
+    let msgGrpElements = elMessageZone.querySelectorAll(msgGrpSelector);
+    F1.console.log('HappyItem::removeMessages(), msgGrpElements', msgGrpElements);
+    msgGrpElements.forEach(elMsgGrp => elMsgGrp.parentElement.removeChild(elMsgGrp));
+    this.inputs.forEach(input => input.messages = []);
     this.messages = [];
   }
 
 
   update(event, reason)
   {
-    F1.console.log('HappyItem::update(), reason:', reason);
-    this.value = this.extractValue();
-    let messages = this.validate(event, reason) || [];
-    this.removeMessages();
-    this.addMessages(messages);
+    F1.console.log('HappyItem::update(),', this.id, reason);
+    this.value = this.getValue();
     this.modified = this.isModified();
+    if (reason !== 'isParent') { // I.e. Update A FIELD
+      let validateResults = this.validate(event, reason) || [];
+      this.removeMessages();
+      this.addMessages(validateResults);
+      for (let i = 0, n = this.inputs.length; i < n; i++) {
+        let input = this.inputs[i];
+        input.happy = input.isHappy();
+        input.modified = input.isModified();
+        input.renderState();
+      }
+    }
     this.happy = this.isHappy();
+    this.renderState();
     if ( ! this.isTopLevel) {
       this.parent.update(event, 'isParent');
     }
   }
-
-
-  render() { return document.createElement('div'); }
 
 
   mount(options = {})
@@ -523,7 +632,6 @@ class HappyItem {
       F1.console.log('Happy[', this.happyType, ']::mount() - ok', this);
     }
     this.mounted = true;
-    this.extractRules();
     this.bindEvents();
   }
 
@@ -596,7 +704,9 @@ class HappyInput extends HappyItem {
   mount(options)
   {
     super.mount(options);
-    this.inputType = this.inputType || this.extractType();
+    this.extractRules();
+    this.extractCleaners();
+    this.value = this.getValue('init');
   }
 
 }
@@ -618,6 +728,18 @@ class HappyField extends HappyItem {
   }
 
 
+  extractName()
+  {
+    return this.el.name;
+  }
+
+
+  extractLabel()
+  {
+    return this.el.getAttribute('data-label');
+  }
+
+
   extractInputs()
   {
     let happyField = this; happyField.inputs = [];
@@ -636,21 +758,34 @@ class HappyField extends HappyItem {
   }
 
 
-  extractName()
+  isModified()
   {
-    return this.el.name;
+    for (let i=0, n=this.inputs.length; i < n; i++) {
+      if (this.inputs[i].modified) { return true; }
+    }
   }
 
 
-  extractLabel()
+  isHappy()
   {
-    return this.el.getAttribute('data-label');
+    for (let i=0, n=this.inputs.length; i < n; i++) {
+      if ( ! this.inputs[i].happy) { return false; }
+    }
+    return true;
   }
 
 
-  extractValue()
+  getValue(init)
   {
-
+    let inputValues = [];
+    for (let i = 0, n = this.inputs.length; i < n; i++) {
+      let input = this.inputs[i];
+      input.value = input.getValue(init);
+      if (input.value || input.value === 0) { inputValues.push(input.value); }
+    }
+    let fieldValue = inputValues.join(',');
+    if (init) { this.initialValue = fieldValue; }
+    return fieldValue;
   }
 
 
@@ -663,9 +798,11 @@ class HappyField extends HappyItem {
   mount(options)
   {
     super.mount(options);
-    this.fieldType = this.fieldType || this.extractType();
+    this.extractRules();
+    this.extractCleaners();
     this.extractInputs();
     this.inputs.forEach(input => input.mount());
+    this.value = this.getValue('init');
   }
 
 
@@ -709,9 +846,32 @@ class HappyForm extends HappyItem {
   }
 
 
-  extractValue()
+  isModified()
   {
+    for (let i=0, n=this.fields.length; i < n; i++) {
+      if (this.fields[i].modified) { return true; }
+    }
+  }
 
+
+  isHappy()
+  {
+    F1.console.log('HappyForm::isHappy()');
+    for (let i=0, n=this.fields.length; i < n; i++) {
+      if ( ! this.fields[i].happy) { return false; }
+    }
+    return true;
+  }
+
+
+  getValue()
+  {
+    let val = {};
+    for (let i=0, n=this.fields.length; i < n; i++) {
+      let field = this.fields[i];
+      val[field.id] = field.value;
+    }
+    return val;
   }
 
 
@@ -765,9 +925,20 @@ class HappyDoc extends HappyItem {
   }
 
 
-  extractValue()
+  isModified()
   {
+    for (let i=0, n=this.forms.length; i < n; i++) {
+      if (this.forms[i].modified) { return true; }
+    }
+  }
 
+
+  isHappy()
+  {
+    for (let i=0, n=this.forms.length; i < n; i++) {
+      if ( ! this.forms[i].happy) { return false; }
+    }
+    return true;
   }
 
 
