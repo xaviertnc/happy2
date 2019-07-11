@@ -17,14 +17,18 @@
             <div class="input-group">
               <div class="input-zone required has-error">
                 <label class="small-text">Firstname:</label>
-                <input name="form1[firstname]" type="text" data-validate="required|minLength:3" data-format="name">
+                <input name="form1[firstname]" type="text"
+                  data-validate="required|minLength:3"
+                  data-format="name">
                 <ul class="input-messages">
                   <li class="message error">Firstname is required.</li>
                 </ul>
               </div>
               <div class="input-zone">
                 <label class="small-text">Lastname:</label>
-                <input name="form1[lastname]" type="text" data-validate="minLength:3" data-format="lastname">
+                <input name="form1[lastname]" type="text"
+                  data-validate="minLength:3:Enter at least $1 characters"
+                  data-format="lastname">
               </div>
               <!-- <p class="message">User note: Provide both Firstname AND Lastname pls!</p> -->
             </div>
@@ -140,17 +144,17 @@
             </div>
           </div>
 
-          <div class="field currency required" data-type="currency">
+          <div class="field currency" data-type="currency">
             <label>Currency:</label>
             <div class="input-wrapper">
               <div class="input-prepend">
                 <span class="prepend-text">R</span>
               </div>
-              <input name="form1[amount]" type="text" data-format="R|2|," value="0">
+              <input name="form1[amount]" type="text" data-format="R|2|," value="0" required>
             </div>
           </div>
 
-          <div class="field date required" data-type="date">
+          <div class="field date" data-type="date">
             <label>Date:</label>
             <div class="input-wrapper">
               <input name="form1[date]" type="text">
@@ -163,7 +167,7 @@
             </div>
           </div>
 
-          <div class="field file required" data-type="file">
+          <div class="field file" data-type="file">
             <label>File:</label>
             <input name="form1[file]" type="file">
           </div>

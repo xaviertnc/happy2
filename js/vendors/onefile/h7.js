@@ -12,10 +12,10 @@
 
 class Happy {
 
-  constructor()
+  constructor(options = {})
   {
     this.nextId        = 1;
-    this.docs          = [];
+    this.documents     = [];
     this.forms         = [];
     this.fields        = [];
     this.inputs        = [];
@@ -23,25 +23,27 @@ class Happy {
     this.topLevelItems = [];
     this.cleaners      = {}; // and|or formatters
     this.validators    = {};
-    this.baseClasses = {
+    this.baseClasses   = {
       item        : HappyItem,
-      doc         : HappyDoc,
+      document    : HappyDoc,
       form        : HappyForm,
       field       : HappyField,
-      input       : HappyInput,
-      message     : HappyMessage,
-      messageGroup: HappyMessageGroup
+      input       : HappyInput
     };
     this.customClasses = {
-      docs         : {},
-      forms        : {},
-      fields       : {},
-      inputs       : {},
-      messages     : {},
-      messageGroups: {},
+      documents   : {},
+      forms       : {},
+      fields      : {},
+      inputs      : {}
     };
+    this.extend(options);
     this.currentField = undefined;
     window.Happy.instance = this;
+  }
+
+  extend(extendWithObj = {})
+  {
+    return Object.assign(this, extendWithObj);
   }
 
   getClass(baseType, specificType) {
@@ -92,11 +94,6 @@ class Happy {
     return found;
   }
 
-  extractMessageType(elMessage)
-  {
-    if (elMessage.classList.contains('error')) { return 'error'; }
-    return 'info';
-  }
 
   mount(elHappyItem, baseType, options = {})
   {
@@ -147,13 +144,7 @@ class HappyItem {
   }
 
 
-  extend(extendWithObj = {})
-  {
-    return Object.assign(this, extendWithObj);
-  }
-
-
-  hasType(typeList)
+  isType(typeList)
   {
     let typePropName = this.happyType + 'Type';
     if (typeof typeList === 'string') { typeList = [typeList]; }
@@ -205,35 +196,6 @@ class HappyItem {
       let parentElement = this.parent ? this.parent.el : document.body;
       return parentElement.querySelector(this.options.selector);
     }
-  }
-
-
-  /**
-   * A Message Zone is the DOM context within which
-   * we will search for messages for this item.
-   * INPUTS elements can't have messages as children,
-   * so we use the PARENT ITEM element as a message zone.
-   * HIGHER LEVEL ITEM elements can be their own message zone.
-   */
-  getMessageZoneElement()
-  {
-    let elMessagesZone;
-    let msgZoneSelector = this.getOpt('messageZoneSelector');
-    if (msgZoneSelector) {
-      if (this.isTopLevel) {
-        elMessagesZone = document.querySelector(msgZoneSelector);
-      } else {
-        elMessagesZone = this.parent.el.querySelector(msgZoneSelector);
-      }
-    }
-    if ( ! elMessagesZone) {
-      if (this.happyType === 'input') {
-        elMessagesZone = this.el.parentElement;
-      } else {
-        elMessagesZone = this.el;
-      }
-    }
-    return elMessagesZone;
   }
 
 
@@ -335,68 +297,21 @@ class HappyItem {
   update()       {/* Override me */}
 
 }
+// end: HappyItem
 
 
 
-class HappyMessage extends HappyItem {
+class HappyRule {
 
-  constructor(options, happy$)
-  {
-    super('message', options, happy$);
-    this.messageType = this.options.type || happy$.extractMessageType(this.el);
-    // F1.console.log('HappyMessage::construct()');
-  }
-
-
-  extractId()
-  {
-    return this.el.id || (this.parent.id + '_msg' + this.parent.nextId++);
+  constructor(ruleDef) {
+    let args = ruleDef.split(':');
+    this.name = args.shift();
+    this.args = args;
+    this.arg = args.length ? args[0] : undefined;
   }
 
 }
-
-
-
-class HappyMessageGroup extends HappyItem {
-
-  constructor(options, happy$)
-  {
-    // F1.console.log('HappyMessageGroup::construct()');
-    super('messageGroup', options, happy$);
-    this.messageGroupType = this.options.type || this.extractType();
-  }
-
-
-  extractId()
-  {
-    let id = this.el ? this.el.id : undefined;
-    return id || (this.parent.id + '_mgrp' + this.parent.nextMessagesId++);
-  }
-
-
-  extractMessages()
-  {
-    this.messages = [];
-    let self = this, happy$ = this.happy$;
-    let messageSelector = this.getOpt('messageSelector', '.message');
-    let messageElements = this.el.querySelectorAll(messageSelector);
-    messageElements.forEach(function(elMsg) {
-      let msgType = happy$.extractMessageType(elMsg);
-      let MsgClass = happy$.getClass('message', msgType);
-      let msg = new MsgClass({ el: elMsg, type: msgType, parent: self },
-        happy$);
-      self.messages.push(msg);
-    });
-    this.children = this.messages;
-  }
-
-
-  getErrorMessages()
-  {
-    return this.messages.filter(message => message.messageType === 'error');
-  }
-
-}
+// end: HappyRule
 
 
 
@@ -406,9 +321,6 @@ class HappyCanValidate extends HappyItem {
   {
     // F1.console.log('HappyCanValidate::construct()');
     super(type, options, happy$);
-    this.happy = true;
-    this.modified = false;
-    this.required = false;
     this.nextMessagesId = 1;
   }
 
@@ -416,11 +328,11 @@ class HappyCanValidate extends HappyItem {
   bindEvents()
   {
     if (this.isTopLevel) {
-      this.el.addEventListener('submit'  , this.onSubmitHandler   , true);
-      this.el.addEventListener('blur'    , this.onValidateHandler , true);
-      this.el.addEventListener('change'  , this.onValidateHandler , true);
-      this.el.addEventListener('keydown' , this.onKeyDownHandler  , true);
-      this.el.addEventListener('focus'   , this.onFocusHandler    , true);
+      this.el.addEventListener('submit'  , this.onSubmitHandler  , true);
+      this.el.addEventListener('blur'    , this.onBlurHandler    , true);
+      this.el.addEventListener('change'  , this.onChangeHandler  , true);
+      this.el.addEventListener('keydown' , this.onKeyDownHandler , true);
+      this.el.addEventListener('focus'   , this.onFocusHandler   , true);
     }
   }
 
@@ -428,11 +340,11 @@ class HappyCanValidate extends HappyItem {
   unbindEvents()
   {
     if (this.isTopLevel) {
-      this.el.removeEventListener('focus'   , this.onFocusHandler    , true);
-      this.el.removeEventListener('keydown' , this.onKeyDownHandler  , true);
-      this.el.removeEventListener('change'  , this.onValidateHandler , true);
-      this.el.removeEventListener('blur'    , this.onValidateHandler , true);
-      this.el.removeEventListener('submit'  , this.onSubmitHandler   , true);
+      this.el.removeEventListener('focus'   , this.onFocusHandler   , true);
+      this.el.removeEventListener('keydown' , this.onKeyDownHandler , true);
+      this.el.removeEventListener('change'  , this.onChangeHandler  , true);
+      this.el.removeEventListener('blur'    , this.onBlurHandler    , true);
+      this.el.removeEventListener('submit'  , this.onSubmitHandler  , true);
     }
   }
 
@@ -440,35 +352,34 @@ class HappyCanValidate extends HappyItem {
   onFocusHandler(event)
   {
     // F1.console.log('HappyCanValidate::onFocusHandler()', event);
-    let happyItem = event.target.HAPPY;
-    if ( ! happyItem || happyItem.happyType !== 'input') { return; }
-    let happyField = happyItem.parent;
+    let happyInput = event.target.HAPPY;
+    if ( ! happyInput || happyInput.happyType !== 'input') { return; }
+    let happyField = happyInput.parent, happy$ = happyInput.happy$;
     // Checklists, Radiolists and Selects should ignore blur events between OWN inputs.
-    if (happyField === happyItem.happy$.currentField && happyField.ignoreBlur()) {
+    if (happyField === happy$.currentField && happyField.ignoreBlur()) {
       return clearTimeout(happyField.delayBlurEventTimer);
     }
-    happyItem.happy$.currentField = happyField;
-    if (happyField.options.onFocus && happyField.options.onFocus(event)) { return; }
-    // console.log('HappyCanValidate::onValidateHandler() field focus', happyField.id);
+    happy$.currentField = happyField;
+    if (happyField.options.onFocus) { happyField.options.onFocus(event); }
   }
 
 
   onKeyDownHandler(event)
   {
     // F1.console.log('HappyCanValidate::onKeyDownHandler()', event);
-    let happyItem = event.target.HAPPY;
-    if ( ! happyItem || happyItem.happyType !== 'input') { return; }
-    let happyField = happyItem.parent;
+    let happyInput = event.target.HAPPY;
+    if ( ! happyInput || happyInput.happyType !== 'input') { return; }
+    let happyField = happyInput.parent;
     if (happyField.options.onKeyDown && happyField.options.onKeyDown(event)) { return; }
     // Focus on the NEXT FIELD or INPUT when we press ENTER
     if (event.key === 'Enter' || event.when == 13 || event.keyCode == 13) {
-      if (happyField.is(['memo'])) { return; }
+      if (happyField.isType(['memo'])) { return; }
       event.stopImmediatePropagation();
       event.preventDefault();
       let nextHappyInput;
-      if (happyField.is(['checkbox','checklist','radiolist'])) {
+      if (happyField.isType(['checkbox','checklist','radiolist'])) {
         // Also "Check/Select" the FIELD INPUT if it's in the list above.
-        happyItem.el.click();
+        happyInput.el.click();
       }
       if (happyField.options.onEnter && !happyField.options.onEnter(event)) { return; }
       if (happyField.fieldType === 'radiolist') {
@@ -479,55 +390,34 @@ class HappyCanValidate extends HappyItem {
         }
       } else {
         // Jump to the NEXT INPUT
-        nextHappyInput = happyItem.getNext(true);
+        nextHappyInput = happyInput.getNext(true);
       }
       if (nextHappyInput) { nextHappyInput.el.focus(); }
     }
 
-    else if (event.key === 'ArrowDown' && happyField.is('checklist')) {
+    else if (event.key === 'ArrowDown' && happyField.isType('checklist')) {
       // Focus on the NEXT INPUT if we press Arrow Down on a checklist field
-      let nextHappyInput = happyItem.getNext();
+      let nextHappyInput = happyInput.getNext();
       if (nextHappyInput) { nextHappyInput.el.focus(); }
     }
 
-    else if (event.key === 'ArrowUp' && happyField.is('checklist')) {
+    else if (event.key === 'ArrowUp' && happyField.isType('checklist')) {
       // Focus on the PREV INPUT if we press Arrow Up on a checklist field
-      let prevHappyInput = happyItem.getPrev();
+      let prevHappyInput = happyInput.getPrev();
       if (prevHappyInput) { prevHappyInput.el.focus(); }
     }
   }
 
 
-  // Here be dragons... You've been WARNED!
-  onValidateHandler(event)
+  onChangeHandler(event)
   {
-    // F1.console.log('HappyCanValidate::onValidateHandler()', event);
-    let happyItem = event.target.HAPPY;
-    if ( ! happyItem || happyItem.happyType !== 'input') { return; }
-    let happyField = happyItem.parent;
-
-    if (event.type === 'blur') {
-      // Delay the field-blur event action to check if we actually left this field.
-      // The next input-focus event will clear the timer if we are still on the same field.
-      happyField.delayBlurEventTimer = setTimeout(function () {
-        let date = new Date(), now = date.getTime();
-        if ((now - (happyField.lastUpdated || 0)) > 250) {
-          // console.log('HappyCanValidate::onValidateHandler() blur', happyItem.id);
-          happyField.lastUpdated = now;
-          let skipUpdate = happyField.beforeUpdate(event);
-          if (skipUpdate) { return; }
-          happyField.validate(event);
-          happyField.update(event);
-          happyField.afterUpdate(event);
-        }
-      }, 150);
-      return;
-    }
-
-    // event.type = change, event.type = input
+    // F1.console.log('HappyCanValidate::onChangeHandler()', event);
+    let happyInput = event.target.HAPPY;
+    if ( ! happyInput || happyInput.happyType !== 'input') { return; }
+    let happyField = happyInput.parent;
     let date = new Date(), now = date.getTime();
     if ((now - (happyField.lastUpdated || 0)) > 250) {
-      // console.log('HappyCanValidate::onValidateHandler()', event.type, happyItem.id);
+      // console.log('HappyCanValidate::onChangeHandler()', event.type, happyInput.id);
       happyField.lastUpdated = now;
       let skipUpdate = happyField.beforeUpdate(event);
       if (skipUpdate) { return; }
@@ -535,6 +425,29 @@ class HappyCanValidate extends HappyItem {
       happyField.update(event);
       happyField.afterUpdate(event);
     }
+  }
+
+
+  onBlurHandler(event)
+  {
+    // F1.console.log('HappyCanValidate::onBlurHandler()', event);
+    let happyInput = event.target.HAPPY;
+    if ( ! happyInput || happyInput.happyType !== 'input') { return; }
+    let happyField = happyInput.parent;
+    // Delay the field-blur event action to check if we actually left this field.
+    // The next input-focus event will clear the timer if we are still on the same field.
+    happyField.delayBlurEventTimer = setTimeout(function () {
+      let date = new Date(), now = date.getTime();
+      if ((now - (happyField.lastUpdated || 0)) > 250) {
+        // console.log('HappyCanValidate::onBlurHandler() blur', happyInput.id);
+        happyField.lastUpdated = now;
+        let skipUpdate = happyField.beforeUpdate(event);
+        if (skipUpdate) { return; }
+        happyField.validate(event);
+        happyField.update(event);
+        happyField.afterUpdate(event);
+      }
+    }, 150);
   }
 
 
@@ -547,88 +460,27 @@ class HappyCanValidate extends HappyItem {
   }
 
 
-  extractHappyState()
-  {
-
-  }
-
-
-  extractModifiedState()
-  {
-
-  }
-
-
-  extractMessageGroupType(elMsgGroup) {
-    return elMsgGroup.getAttribute('data-type') || 'default';
-  }
-
-
   /**
-   * For removal of all server-side messages before update?
-   * To check if we have any errors direct from server-side HTML?
+   * E.g. <div data-validate="{'required':true,'maxlen':2}">
    */
-  extractMessageGroups()
+  extractRules()
   {
-    this.messageGroups = [];
-    let happyItem = this, happy$ = this.happy$;
-    let elMessageZone = happyItem.getMessageZoneElement();
-    let msgGrpSelector = this.options.messageGroupSelector; // MUST be a local option!
-    if ( ! msgGrpSelector) { return; } // A selector MUST be defined!
-    let msgGroupElements = elMessageZone.querySelectorAll(msgGrpSelector);
-    msgGroupElements.forEach(function(msgGroupElement)
-    {
-      let groupType = happyItem.extractMessageGroupType(msgGroupElement);
-      let MsgGrpClass = happy$.getClass('messageGroup', groupType);
-      let msgGrp = new MsgGrpClass({
-        el: msgGroupElement, type: groupType, parent: happyItem
-      }, happy$);
-      happyItem.messageGroups.push(msgGrp);
-      msgGrp.extractMessages();
+    let self = this; self.rules = self.rules || {};
+    let rulesAsString = this.el.getAttribute('data-validate');
+    if ( ! rulesAsString) { return; }
+    let ruleDefs = rulesAsString.split('|');
+    ruleDefs.forEach(function createRule(ruleDef) {
+      let rule = new HappyRule(ruleDef);
+      self.rules[rule.name] = rule;
     });
-    if ( ! msgGroupElements.length) {
-      // Add a default message group, if we can't find one!
-      let msgGrp = new HappyMessageGroup ({
-        el: elMessageZone, type: 'default', parent: happyItem
-      }, happy$);
-      happyItem.messageGroups.push(msgGrp);
-      msgGrp.extractMessages();
-    }
-  }
-
-
-  getMessages()
-  {
-    // F1.console.log('HappyCanValidate::getErrorMessages()');
-    let messages = [];
-    this.messageGroups.forEach(function(msgGroup) {
-      messages = messages.concat(msgGroup.messages);
-    });
-    this.children.forEach(function(child) {
-      messages = messages.concat(child.getMessages());
-    });
-    return messages;
-  }
-
-
-  getErrorMessages()
-  {
-    // F1.console.log('HappyCanValidate::getErrorMessages()');
-    let errorMessages = [];
-    this.messageGroups.forEach(function(msgGroup) {
-      errorMessages = errorMessages.concat(msgGroup.getErrorMessages());
-    });
-    this.children.forEach(function(child) {
-      errorMessages = errorMessages.concat(child.getErrorMessages());
-    });
-    return errorMessages;
+    // F1.console.log('HappyCanValidate::extractRules(), rules:', self.rules);
   }
 
 
   mount(options)
   {
     super.mount(options);
-    this.extractMessageGroups();
+    this.extractRules();
     this.bindEvents();
   }
 
@@ -658,12 +510,6 @@ class HappyInput extends HappyCanValidate {
   }
 
 
-  extractInitialValue()
-  {
-
-  }
-
-
   extractValue()
   {
 
@@ -676,13 +522,33 @@ class HappyInput extends HappyCanValidate {
   }
 
 
+  extractRules()
+  {
+    // F1.console.log('HappyInput::extractRules()');
+    this.rules = {};
+    if (this.el.hasAttribute('required') ||
+      this.parent.el.classList.contains('required')) {
+      this.rules.required = new HappyRule('required');
+    }
+    if (this.el.hasAttribute('min')) {
+      let min = this.el.getAttribute('min');
+      this.rules.min = new HappyRule('min:' + min);
+    }
+    if (this.el.hasAttribute('max')) {
+      let max = this.el.getAttribute('max');
+      this.rules.max = new HappyRule('max:' + max);
+    }
+    if (this.el.hasAttribute('pattern')) {
+      let pattern = this.el.getAttribute('pattern');
+      this.rules.pattern = new HappyRule('pattern:' + pattern);
+    }
+    super.extractRules();
+    // F1.console.log('HappyInput::extractRules(), rules:', this.name, this.rules);
+  }
+
+
   mount(options)
   {
-    // We need to force a default here, since we use this option
-    // in a generic method that is NOT type dependant!
-    this.setOpt('messageGroupSelector',
-      this.getOpt('messageGroupSelector', '.input-messages')
-    );
     super.mount(options);
     this.inputType = this.inputType || this.extractType();
   }
@@ -708,7 +574,7 @@ class HappyField extends HappyCanValidate {
 
   extractInputs()
   {
-    let happyField = this, happyInputs = [];
+    let happyField = this; happyField.inputs = [];
     let inputSelector = happyField.getOpt('inputSelector',
       'input:not(hidden):not([type="submit"]), textarea, select');
     let inputElements = happyField.el.querySelectorAll(inputSelector);
@@ -718,9 +584,9 @@ class HappyField extends HappyCanValidate {
       let happyInput = happyField.happy$.addItem('input', {
         el: elInput, type: inputType, parent: happyField
       });
-      happyInputs.push(happyInput);
+      happyField.inputs.push(happyInput);
     }
-    return happyInputs;
+    happyField.children = happyField.inputs;
   }
 
 
@@ -744,7 +610,7 @@ class HappyField extends HappyCanValidate {
 
   ignoreBlur()
   {
-    return this.hasType(['checkbox', 'checklist', 'radiolist', 'select', 'file']);
+    return this.isType(['checkbox', 'checklist', 'radiolist', 'select', 'file']);
   }
 
 
@@ -756,13 +622,9 @@ class HappyField extends HappyCanValidate {
 
   mount(options)
   {
-    this.setOpt('messageGroupSelector',
-      this.getOpt('messageGroupSelector', '.field-messages')
-    );
     super.mount(options);
     this.fieldType = this.fieldType || this.extractType();
-    this.inputs = this.extractInputs();
-    this.children = this.inputs;
+    this.extractInputs();
     this.inputs.forEach(input => input.mount());
   }
 
@@ -793,7 +655,7 @@ class HappyForm extends HappyCanValidate {
 
   extractFields()
   {
-    let happyForm = this, formFields = [];
+    let happyForm = this; happyForm.fields = [];
     let fieldSelector = happyForm.getOpt('fieldSelector', '.field');
     let fieldElements = happyForm.el.querySelectorAll(fieldSelector);
     for (let i = 0, n = fieldElements.length; i < n; i++) {
@@ -801,9 +663,9 @@ class HappyForm extends HappyCanValidate {
       let fieldType = happyForm.extractFieldType(elField);
       let happyField = happyForm.happy$.addItem('field', {
         el: elField, type: fieldType, parent: happyForm });
-      formFields.push(happyField);
+      happyForm.fields.push(happyField);
     }
-    return formFields;
+    happyForm.children = happyForm.fields;
   }
 
 
@@ -822,8 +684,7 @@ class HappyForm extends HappyCanValidate {
   mount(options)
   {
     super.mount(options);
-    this.fields = this.extractFields();
-    this.children = this.fields;
+    this.extractFields();
     this.fields.forEach(field => field.mount());
   }
 
@@ -855,7 +716,7 @@ class HappyDoc extends HappyCanValidate {
   extractForms()
   {
     F1.console.log('HappyDoc::extractForms()');
-    let happyDoc = this, docForms = [];
+    let happyDoc = this; happyDoc.forms = [];
     let formSelector = happyDoc.getOpt('formSelector', 'form');
     let formElements = happyDoc.el.querySelectorAll(formSelector);
     for (let i = 0, n = formElements.length; i < n; i++) {
@@ -864,9 +725,9 @@ class HappyDoc extends HappyCanValidate {
       let happyForm = happyDoc.happy$.addItem('form', {
         el: elForm, type: formType, parent: happyDoc
       });
-      docForms.push(happyForm);
+      happyDoc.forms.push(happyForm);
     }
-    return docForms;
+    happyDoc.children = happyDoc.forms;
   }
 
 
@@ -887,8 +748,7 @@ class HappyDoc extends HappyCanValidate {
   {
     F1.console.log('HappyDoc::mount()');
     super.mount(options);
-    this.forms = this.extractForms();
-    this.children = this.forms;
+    this.extractForms();
     this.forms.forEach(form => form.mount());
   }
 
