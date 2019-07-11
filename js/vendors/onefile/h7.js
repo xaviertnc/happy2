@@ -111,7 +111,21 @@ class Happy {
   dismount() { this.topLevelItems.forEach(item => item.dismount()); }
 
 }
+// end: Happy
 
+
+
+class HappyRule {
+
+  constructor(ruleDef) {
+    let args = ruleDef.split(':');
+    this.name = args.shift();
+    this.args = args;
+    this.arg = args.length ? args[0] : undefined;
+  }
+
+}
+// end: HappyRule
 
 
 class HappyItem {
@@ -152,6 +166,18 @@ class HappyItem {
   }
 
 
+  isModified()
+  {
+    return this.value !== this.initialValue;
+  }
+
+
+  isHappy()
+  {
+    return !this.messages || this.messages.length > 0;
+  }
+
+
   getOpt(key, def)
   {
     if (this.options[key]) { return this.options[key]; }
@@ -165,6 +191,16 @@ class HappyItem {
     if (typeof this.options[key] !== 'undefined') { return; }
     if (typeof value !== 'undefined') { this.options[key] = value; }
     else { this.options[key] = def; }
+  }
+
+
+  getDomElement()
+  {
+    if (this.el) { return this.el; }
+    if (this.options.selector) {
+      let parentElement = this.parent ? this.parent.el : document.body;
+      return parentElement.querySelector(this.options.selector);
+    }
   }
 
 
@@ -189,12 +225,182 @@ class HappyItem {
   }
 
 
-  getDomElement()
+  extractValue()
   {
-    if (this.el) { return this.el; }
-    if (this.options.selector) {
-      let parentElement = this.parent ? this.parent.el : document.body;
-      return parentElement.querySelector(this.options.selector);
+    return this.el.value;
+  }
+
+
+  /**
+   * E.g. <div data-validate="required|maxLength:2:Provide at least $1 chars">
+   */
+  extractRules()
+  {
+    let self = this; self.rules = self.rules || {};
+    let rulesAsString = this.el.getAttribute('data-validate');
+    if ( ! rulesAsString) { return; }
+    let ruleDefs = rulesAsString.split('|');
+    ruleDefs.forEach(function createRule(ruleDef) {
+      let rule = new HappyRule(ruleDef);
+      self.rules[rule.name] = rule;
+    });
+    // F1.console.log('HappyItem::extractRules(), rules:', self.rules);
+  }
+
+
+  bindEvents()
+  {
+    if (this.isTopLevel) {
+      this.el.addEventListener('focus'   , this.onFocusHandler   , true);
+      this.el.addEventListener('blur'    , this.onBlurHandler    , true);
+      this.el.addEventListener('change'  , this.onChangeHandler  , true);
+      this.el.addEventListener('keydown' , this.onKeyDownHandler , true);
+      this.el.addEventListener('submit'  , this.onSubmitHandler  , true);
+    }
+  }
+
+
+  unbindEvents()
+  {
+    if (this.isTopLevel) {
+      this.el.removeEventListener('submit'  , this.onSubmitHandler  , true);
+      this.el.removeEventListener('keydown' , this.onKeyDownHandler , true);
+      this.el.removeEventListener('change'  , this.onChangeHandler  , true);
+      this.el.removeEventListener('blur'    , this.onBlurHandler    , true);
+      this.el.removeEventListener('focus'   , this.onFocusHandler   , true);
+    }
+  }
+
+
+  validate(event, reason)
+  {
+    F1.console.log('HappyItem::validate(), reason:', reason);
+    let messages = [], fnCustomValidate = this.getOpt('validate');
+    if (fnCustomValidate) {
+      messages = fnCustomValidate(event, reason);
+    } else {
+      for (let i = 0, n = this.rules.length; i < n; i++) {
+        let rule = this.rules[i];
+        let validator = this.happy$.validators[rule.name];
+        if (validator) {
+          rule.reason = reason;
+          // NOTE: We call  the validator with "this" item's context!
+          // We therefore have access to all the item's props inside the
+          // validator. E.g. this.type, this.el, this.value, etc.
+          let validateResult = validator.call(this, rule);
+          if (validateResult) {
+            messages.push(validateResult);
+            break;
+          }
+        }
+      }
+    }
+    return messages;
+  }
+
+
+  rateLimit(context, fn, params, interval) {
+    let date = new Date(), now = date.getTime();
+    if ((now - (context.lastUpdated || 0)) > interval) {
+      context.lastUpdated = now;
+      fn.apply(context, params);
+    }
+  }
+
+
+  onFocusHandler(event)
+  {
+    // F1.console.log('HappyItem::onFocusHandler()', event);
+    let happyInput = event.target.HAPPY;
+    if ( ! happyInput || happyInput.happyType !== 'input') { return; }
+    let happyField = happyInput.parent, happy$ = happyInput.happy$;
+    // Checklist, Radiolist and Select Fields should ignore blur events
+    // between their OWN inputs. ignoreBlur() checks for these types.
+    if (happyField === happy$.currentField && happyField.ignoreBlur()) {
+      // Ignore any pending `onBlur` event if we are still on the SAME FIELD!
+      return clearTimeout(happyField.delayBlurEventTimer);
+    }
+    happy$.currentField = happyField;
+  }
+
+
+  onBlurHandler(event)
+  {
+    // F1.console.log('HappyItem::onBlurHandler()', event);
+    let happyInput = event.target.HAPPY;
+    if ( ! happyInput || happyInput.happyType !== 'input') { return; }
+    let happyField = happyInput.parent;
+    // Delay the field-blur event action to check if we actually left this field.
+    // The next input-focus event will clear the timer if we are still on the same field.
+    happyField.delayBlurEventTimer = setTimeout(function () {
+      happyField.rateLimit(happyField, happyField.update, [event, 'onBlur'], 150);
+    });
+  }
+
+
+  onChangeHandler(event)
+  {
+    // F1.console.log('HappyItem::onChangeHandler()', event);
+    let happyInput = event.target.HAPPY;
+    if ( ! happyInput || happyInput.happyType !== 'input') { return; }
+    let happyField = happyInput.parent;
+    happyField.rateLimit(happyField, happyField.update, [event, 'onChange'], 150);
+  }
+
+
+  onKeyDownHandler(event)
+  {
+    // F1.console.log('HappyItem::onKeyDownHandler()', event);
+    let happyInput = event.target.HAPPY;
+    if ( ! happyInput || happyInput.happyType !== 'input') { return; }
+    let happyField = happyInput.parent;
+    if (happyField.options.onKeyDown && happyField.options.onKeyDown(event)) { return; }
+    // Focus on the NEXT FIELD or INPUT when we press ENTER
+    if (event.key === 'Enter' || event.when == 13 || event.keyCode == 13) {
+      if (happyField.isType(['memo'])) { return; }
+      event.stopImmediatePropagation();
+      event.preventDefault();
+      let nextHappyInput;
+      if (happyField.isType(['checkbox','checklist','radiolist'])) {
+        // Also "Check/Select" the FIELD INPUT if it's in the list above.
+        happyInput.el.click();
+      }
+      if (happyField.options.onEnter && !happyField.options.onEnter(event)) { return; }
+      if (happyField.fieldType === 'radiolist') {
+        // Jump to the NEXT FIELD's first input.
+        let nextHappyField = happyField.getNext(true);
+        if (nextHappyField) {
+          nextHappyInput = nextHappyField.inputs[0];
+        }
+      } else {
+        // Jump to the NEXT INPUT
+        nextHappyInput = happyInput.getNext(true);
+      }
+      if (nextHappyInput) { nextHappyInput.el.focus(); }
+    }
+
+    else if (event.key === 'ArrowDown' && happyField.isType('checklist')) {
+      // Focus on the NEXT INPUT if we press Arrow Down on a checklist field
+      let nextHappyInput = happyInput.getNext();
+      if (nextHappyInput) { nextHappyInput.el.focus(); }
+    }
+
+    else if (event.key === 'ArrowUp' && happyField.isType('checklist')) {
+      // Focus on the PREV INPUT if we press Arrow Up on a checklist field
+      let prevHappyInput = happyInput.getPrev();
+      if (prevHappyInput) { prevHappyInput.el.focus(); }
+    }
+  }
+
+
+  onSubmitHandler(event)
+  {
+    F1.console.log('HappyItem::onSubmitHandler()', event);
+    // Run validations + Stop event if validation fails...
+    this.update(event, 'onSubmit');
+    if ( ! this.happy) {
+      event.preventDefault();
+      event.stopPropagation();
     }
   }
 
@@ -246,15 +452,60 @@ class HappyItem {
   }
 
 
-  render()
-  { // Override me
-    return document.createElement('div');
+  addMessage(message)
+  {
+    this.messages = this.messages || [];
+    let elMessageZone = (this.happyType === 'input')
+      ? this.el.parentElement
+      : this.el;
+    let elMsg = document.createElement('span');
+    elMsg.className = this.getOpt('messageClass', 'message');
+    elMsg.innerHTML = message;
+    elMessageZone.appendChild(elMsg);
+    this.messages.push({ el: elMsg, elParent: elMessageZone, text: message });
   }
+
+
+  addMessages(messages)
+  {
+    messages.forEach(message => this.addMessage(message));
+  }
+
+
+  removeMessage(message)
+  {
+    message.elParent.remove(message.el);
+  }
+
+
+  removeMessages()
+  {
+    this.messages.forEach(message => this.removeMessage(message));
+    this.messages = [];
+  }
+
+
+  update(event, reason)
+  {
+    F1.console.log('HappyItem::update(), reason:', reason);
+    this.value = this.extractValue();
+    let messages = this.validate(event, reason) || [];
+    this.removeMessages();
+    this.addMessages(messages);
+    this.modified = this.isModified();
+    this.happy = this.isHappy();
+    if ( ! this.isTopLevel) {
+      this.parent.update(event, 'isParent');
+    }
+  }
+
+
+  render() { return document.createElement('div'); }
 
 
   mount(options = {})
   {
-    // console.log('HappyItem::mount()');
+    // F1.console.log('HappyItem::mount()');
     if (this.mounted) { return; }
     let parent = this.parent || {};
     let appendTo = options.appendTo;
@@ -268,9 +519,12 @@ class HappyItem {
     }
     this.name = this.extractName();
     this.el.HAPPY = this;
-    this.mounted = true;
     if (this.isTopLevel) {
-      F1.console.log('Happy[', this.happyType, ']::mount() - ok', this); }
+      F1.console.log('Happy[', this.happyType, ']::mount() - ok', this);
+    }
+    this.mounted = true;
+    this.extractRules();
+    this.bindEvents();
   }
 
 
@@ -286,215 +540,19 @@ class HappyItem {
       this.children.forEach(child => child.dismount());
       this.children = undefined;
     }
-    this.mounted = false;
     this.nextId = 1;
+    this.mounted = false;
+    if ( ! this.isRenderedElement) {
+      this.unbindEvents();
+    }
   }
-
-
-  // Just to complete the interface...
-  beforeUpdate() {/* Override me */}
-  afterUpdate()  {/* Override me */}
-  update()       {/* Override me */}
 
 }
 // end: HappyItem
 
 
 
-class HappyRule {
-
-  constructor(ruleDef) {
-    let args = ruleDef.split(':');
-    this.name = args.shift();
-    this.args = args;
-    this.arg = args.length ? args[0] : undefined;
-  }
-
-}
-// end: HappyRule
-
-
-
-class HappyCanValidate extends HappyItem {
-
-  constructor(type, options, happy$)
-  {
-    // F1.console.log('HappyCanValidate::construct()');
-    super(type, options, happy$);
-    this.nextMessagesId = 1;
-  }
-
-
-  bindEvents()
-  {
-    if (this.isTopLevel) {
-      this.el.addEventListener('submit'  , this.onSubmitHandler  , true);
-      this.el.addEventListener('blur'    , this.onBlurHandler    , true);
-      this.el.addEventListener('change'  , this.onChangeHandler  , true);
-      this.el.addEventListener('keydown' , this.onKeyDownHandler , true);
-      this.el.addEventListener('focus'   , this.onFocusHandler   , true);
-    }
-  }
-
-
-  unbindEvents()
-  {
-    if (this.isTopLevel) {
-      this.el.removeEventListener('focus'   , this.onFocusHandler   , true);
-      this.el.removeEventListener('keydown' , this.onKeyDownHandler , true);
-      this.el.removeEventListener('change'  , this.onChangeHandler  , true);
-      this.el.removeEventListener('blur'    , this.onBlurHandler    , true);
-      this.el.removeEventListener('submit'  , this.onSubmitHandler  , true);
-    }
-  }
-
-
-  onFocusHandler(event)
-  {
-    // F1.console.log('HappyCanValidate::onFocusHandler()', event);
-    let happyInput = event.target.HAPPY;
-    if ( ! happyInput || happyInput.happyType !== 'input') { return; }
-    let happyField = happyInput.parent, happy$ = happyInput.happy$;
-    // Checklists, Radiolists and Selects should ignore blur events between OWN inputs.
-    if (happyField === happy$.currentField && happyField.ignoreBlur()) {
-      return clearTimeout(happyField.delayBlurEventTimer);
-    }
-    happy$.currentField = happyField;
-    if (happyField.options.onFocus) { happyField.options.onFocus(event); }
-  }
-
-
-  onKeyDownHandler(event)
-  {
-    // F1.console.log('HappyCanValidate::onKeyDownHandler()', event);
-    let happyInput = event.target.HAPPY;
-    if ( ! happyInput || happyInput.happyType !== 'input') { return; }
-    let happyField = happyInput.parent;
-    if (happyField.options.onKeyDown && happyField.options.onKeyDown(event)) { return; }
-    // Focus on the NEXT FIELD or INPUT when we press ENTER
-    if (event.key === 'Enter' || event.when == 13 || event.keyCode == 13) {
-      if (happyField.isType(['memo'])) { return; }
-      event.stopImmediatePropagation();
-      event.preventDefault();
-      let nextHappyInput;
-      if (happyField.isType(['checkbox','checklist','radiolist'])) {
-        // Also "Check/Select" the FIELD INPUT if it's in the list above.
-        happyInput.el.click();
-      }
-      if (happyField.options.onEnter && !happyField.options.onEnter(event)) { return; }
-      if (happyField.fieldType === 'radiolist') {
-        // Jump to the NEXT FIELD's first input.
-        let nextHappyField = happyField.getNext(true);
-        if (nextHappyField) {
-          nextHappyInput = nextHappyField.inputs[0];
-        }
-      } else {
-        // Jump to the NEXT INPUT
-        nextHappyInput = happyInput.getNext(true);
-      }
-      if (nextHappyInput) { nextHappyInput.el.focus(); }
-    }
-
-    else if (event.key === 'ArrowDown' && happyField.isType('checklist')) {
-      // Focus on the NEXT INPUT if we press Arrow Down on a checklist field
-      let nextHappyInput = happyInput.getNext();
-      if (nextHappyInput) { nextHappyInput.el.focus(); }
-    }
-
-    else if (event.key === 'ArrowUp' && happyField.isType('checklist')) {
-      // Focus on the PREV INPUT if we press Arrow Up on a checklist field
-      let prevHappyInput = happyInput.getPrev();
-      if (prevHappyInput) { prevHappyInput.el.focus(); }
-    }
-  }
-
-
-  onChangeHandler(event)
-  {
-    // F1.console.log('HappyCanValidate::onChangeHandler()', event);
-    let happyInput = event.target.HAPPY;
-    if ( ! happyInput || happyInput.happyType !== 'input') { return; }
-    let happyField = happyInput.parent;
-    let date = new Date(), now = date.getTime();
-    if ((now - (happyField.lastUpdated || 0)) > 250) {
-      // console.log('HappyCanValidate::onChangeHandler()', event.type, happyInput.id);
-      happyField.lastUpdated = now;
-      let skipUpdate = happyField.beforeUpdate(event);
-      if (skipUpdate) { return; }
-      happyField.validate(event);
-      happyField.update(event);
-      happyField.afterUpdate(event);
-    }
-  }
-
-
-  onBlurHandler(event)
-  {
-    // F1.console.log('HappyCanValidate::onBlurHandler()', event);
-    let happyInput = event.target.HAPPY;
-    if ( ! happyInput || happyInput.happyType !== 'input') { return; }
-    let happyField = happyInput.parent;
-    // Delay the field-blur event action to check if we actually left this field.
-    // The next input-focus event will clear the timer if we are still on the same field.
-    happyField.delayBlurEventTimer = setTimeout(function () {
-      let date = new Date(), now = date.getTime();
-      if ((now - (happyField.lastUpdated || 0)) > 250) {
-        // console.log('HappyCanValidate::onBlurHandler() blur', happyInput.id);
-        happyField.lastUpdated = now;
-        let skipUpdate = happyField.beforeUpdate(event);
-        if (skipUpdate) { return; }
-        happyField.validate(event);
-        happyField.update(event);
-        happyField.afterUpdate(event);
-      }
-    }, 150);
-  }
-
-
-  onSubmitHandler(event)
-  {
-    F1.console.log('HappyCanValidate::onSubmitHandler()', event);
-    // Run validations + Stop event if validation fails...
-    // event.preventDefault();
-    // event.stopPropagation();
-  }
-
-
-  /**
-   * E.g. <div data-validate="{'required':true,'maxlen':2}">
-   */
-  extractRules()
-  {
-    let self = this; self.rules = self.rules || {};
-    let rulesAsString = this.el.getAttribute('data-validate');
-    if ( ! rulesAsString) { return; }
-    let ruleDefs = rulesAsString.split('|');
-    ruleDefs.forEach(function createRule(ruleDef) {
-      let rule = new HappyRule(ruleDef);
-      self.rules[rule.name] = rule;
-    });
-    // F1.console.log('HappyCanValidate::extractRules(), rules:', self.rules);
-  }
-
-
-  mount(options)
-  {
-    super.mount(options);
-    this.extractRules();
-    this.bindEvents();
-  }
-
-
-  dismount()
-  {
-    super.dismount();
-    if ( ! this.isRenderedElement) { this.unbindEvents(); }
-  }
-}
-
-
-
-class HappyInput extends HappyCanValidate {
+class HappyInput extends HappyItem {
 
   constructor(options, happy$)
   {
@@ -507,18 +565,6 @@ class HappyInput extends HappyCanValidate {
   {
     let el = this.el.previousElementSibling;
     if (el.nodeName === 'LABEL') { return el.innerText; }
-  }
-
-
-  extractValue()
-  {
-
-  }
-
-
-  validate()
-  {
-
   }
 
 
@@ -557,7 +603,7 @@ class HappyInput extends HappyCanValidate {
 
 
 
-class HappyField extends HappyCanValidate {
+class HappyField extends HappyItem {
 
   constructor(options, happy$)
   {
@@ -614,12 +660,6 @@ class HappyField extends HappyCanValidate {
   }
 
 
-  validate()
-  {
-
-  }
-
-
   mount(options)
   {
     super.mount(options);
@@ -638,7 +678,7 @@ class HappyField extends HappyCanValidate {
 
 
 
-class HappyForm extends HappyCanValidate {
+class HappyForm extends HappyItem {
 
   constructor(options, happy$)
   {
@@ -675,12 +715,6 @@ class HappyForm extends HappyCanValidate {
   }
 
 
-  validate()
-  {
-
-  }
-
-
   mount(options)
   {
     super.mount(options);
@@ -698,7 +732,7 @@ class HappyForm extends HappyCanValidate {
 
 
 
-class HappyDoc extends HappyCanValidate {
+class HappyDoc extends HappyItem {
 
   constructor(options, happy$)
   {
@@ -731,14 +765,7 @@ class HappyDoc extends HappyCanValidate {
   }
 
 
-
   extractValue()
-  {
-
-  }
-
-
-  validate()
   {
 
   }
