@@ -28,8 +28,16 @@ F1.afterPageLoadScripts.push(function initPage1() {
       },
       minLength: function(rule) {
         if ( ! this.value || this.value.length < rule.arg) {
-          return rule.arg[1] || ('minLength = ' + rule.arg);
+          return rule.args[1] || ('minLength = ' + rule.arg);
         }
+      },
+      email: function(rule, reason) {
+        F1.console.log('Validate Email:', rule, reason);
+        let re;
+        re = new RegExp('\\.coza$', 'i');
+        if (re.test(this.value)) { return rule.arg || 'Invalid TLD ".coza". Try ".co.za"'; }
+        re = new RegExp('^([\\w-]+(?:\\.[\\w-]+)*)@((?:[\\w-]+\\.)*\\w[\\w-]{0,66})\\.([a-z]{2,6}(?:\\.[a-z]{2})?)$', 'i');
+        if ( ! re.test(this.value)) { return rule.arg || 'Email must be valid! e.g. johnny@home.com'; }
       }
     }
   });

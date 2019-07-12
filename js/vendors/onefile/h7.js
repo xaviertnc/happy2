@@ -189,6 +189,7 @@ class HappyItem {
 
   isHappy()
   {
+    F1.console.log('HappyItem::isHappy(), this.messages =', this.messages, this);
     return ! this.messages || ! this.messages.length;
   }
 
@@ -240,12 +241,6 @@ class HappyItem {
   }
 
 
-  extractType()
-  {
-    return this.el.getAttribute('data-type') || this.el.type;
-  }
-
-
   extractValue()
   {
     let val;
@@ -264,13 +259,16 @@ class HappyItem {
   extractRules()
   {
     let self = this; this.rules = this.rules || {};
-    let rulesAsString = this.el.getAttribute('data-validate') || '';
-    let ruleDefs = rulesAsString.split('|');
+    let rulesAsString = this.el.getAttribute('data-validate');
+    let ruleDefs = rulesAsString ? rulesAsString.split('|') : [];
     ruleDefs.forEach(function createRule(ruleDef) {
       let rule = new HappyRule(ruleDef);
       self.rules[rule.name] = rule;
     });
-    if (! this.rules.required && this.el.classList.contains('required')) {
+    if ( ! this.rules.required && this.el.hasAttribute('required')) {
+      this.rules.required = new HappyRule('required');
+    }
+    if ( ! this.rules.required && this.el.classList.contains('required')) {
       this.rules.required = new HappyRule('required');
     }
     // F1.console.log('HappyItem::extractRules(), rules:', this.id, this.rules);
@@ -357,13 +355,18 @@ class HappyItem {
           let input = this.inputs[i];
           for (let r in input.rules) {
             let ruleInfo = input.rules[r];
-            // F1.console.log('HappyItem::validate(), ruleInfo:', ruleInfo);
+            F1.console.log('HappyItem::validate(input), ruleInfo:', ruleInfo);
             let validator = happy$.validators[ruleInfo.name];
             if (validator) {
-              ruleInfo.reason = reason;
               // NOTE: We call the validator with HappyInput context!
-              let message = validator.call(input, ruleInfo);
-              if (message) { validateResults.push({ item: input, message: message }); }
+              let message = validator.call(input, ruleInfo, reason);
+              if (message) {
+                if (ruleInfo.name === 'required') {
+                  validateResults.splice(0, 0, { item: input, message: message });
+                } else {
+                  validateResults.push({ item: input, message: message });
+                }
+              }
             }
           }
         }
@@ -373,12 +376,18 @@ class HappyItem {
         let ruleInfo = this.rules[r];
         let validator = happy$.validators[ruleInfo.name];
         if (validator) {
-          ruleInfo.reason = reason;
           // NOTE: We call the validator with "this" === HappyField context!
           // We therefore have access to all field properties inside the
           // validator. E.g. this.happy$, this.type, this.el, this.value, etc.
-          let message = validator.call(this, ruleInfo);
-          if (message) { validateResults.push({ item: this, message: message }); }
+          F1.console.log('HappyItem::validate(field), ruleInfo:', ruleInfo);
+          let message = validator.call(this, ruleInfo, reason);
+          if (message) {
+            if (ruleInfo.name === 'required') {
+              validateResults.splice(0, 0, { item: this, message: message });
+            } else {
+              validateResults.push({ item: this, message: message });
+            }
+          }
         }
       }
     }
@@ -708,10 +717,9 @@ class HappyInput extends HappyItem {
   extractRules()
   {
     // F1.console.log('HappyInput::extractRules()');
-    this.rules = {};
-    if (this.el.hasAttribute('required') ||
-      (!['checkbox', 'radio'].includes(this.el.type) &&
-      this.parent.el.classList.contains('required'))) {
+    super.extractRules();
+    if ( ! this.rules.required && this.parent.rules.required &&
+      !['checkbox', 'radio'].includes(this.el.type)) {
       this.rules.required = new HappyRule('required');
     }
     if (this.el.hasAttribute('min')) {
@@ -726,7 +734,6 @@ class HappyInput extends HappyItem {
       let pattern = this.el.getAttribute('pattern');
       this.rules.pattern = new HappyRule('pattern:' + pattern);
     }
-    super.extractRules();
     // F1.console.log('HappyInput::extractRules(), rules:', this.name, this.rules);
   }
 
@@ -750,6 +757,12 @@ class HappyField extends HappyItem {
   {
     // F1.console.log('HappyField::construct()');
     super('field', options, happy$);
+  }
+
+
+  extractType()
+  {
+    return this.inputs.length ? this.inputs[0].inputType : 'text';
   }
 
 
@@ -792,6 +805,15 @@ class HappyField extends HappyItem {
   }
 
 
+  // extractRules()
+  // {
+  //   super.extractRules();
+  //   if (! this.rules.required && this.el.classList.contains('required')) {
+  //     this.rules.required = new HappyRule('required');
+  //   }
+  // }
+
+
   isModified()
   {
     for (let i=0, n=this.inputs.length; i < n; i++) {
@@ -805,7 +827,7 @@ class HappyField extends HappyItem {
     for (let i=0, n=this.inputs.length; i < n; i++) {
       if ( ! this.inputs[i].happy) { return false; }
     }
-    return true;
+    return super.isHappy();
   }
 
 
@@ -836,6 +858,7 @@ class HappyField extends HappyItem {
     this.extractCleaners();
     this.extractInputs();
     this.inputs.forEach(input => input.mount());
+    this.fieldType = this.fieldType || this.extractType();
     this.value = this.getValue('init');
     this.name = this.extractName();
   }
@@ -895,7 +918,7 @@ class HappyForm extends HappyItem {
     for (let i=0, n=this.fields.length; i < n; i++) {
       if ( ! this.fields[i].happy) { return false; }
     }
-    return true;
+    return super.isHappy();
   }
 
 
@@ -973,7 +996,7 @@ class HappyDocument extends HappyItem {
     for (let i=0, n=this.forms.length; i < n; i++) {
       if ( ! this.forms[i].happy) { return false; }
     }
-    return true;
+    return super.isHappy();
   }
 
 

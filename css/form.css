@@ -88,7 +88,7 @@ input[type="checkbox"]
 .field.happy.modified > input,
 .field.happy.modified > .input,
 .field.happy.modified > legend,
-.field.happy.modified > label,
+.happy.modified > label,
 .field.happy.modified > fieldset {
   color: seagreen;
 }
