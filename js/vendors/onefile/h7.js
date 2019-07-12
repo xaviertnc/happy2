@@ -14,31 +14,36 @@ class Happy {
 
   constructor(options = {})
   {
-    this.nextId        = 1;
-    this.documents     = [];
-    this.forms         = [];
-    this.fields        = [];
-    this.inputs        = [];
-    this.items         = [];
-    this.topLevelItems = [];
+    this.baseClasses   = {
+      item     : HappyItem,
+      document : HappyDocument,
+      form     : HappyForm,
+      field    : HappyField,
+      input    : HappyInput
+    };
     this.cleaners      = {}; // and|or formatters
     this.validators    = {};
-    this.baseClasses   = {
-      item        : HappyItem,
-      document    : HappyDoc,
-      form        : HappyForm,
-      field       : HappyField,
-      input       : HappyInput
-    };
     this.customClasses = {
-      documents   : {},
-      forms       : {},
-      fields      : {},
-      inputs      : {}
+      documents : {},
+      forms     : {},
+      fields    : {},
+      inputs    : {}
     };
+    this.initVars();
     this.extend(options);
-    this.currentField = undefined;
     window.Happy.instance = this;
+  }
+
+  initVars()
+  {
+    this.items         = [];
+    this.inputs        = [];
+    this.fields        = [];
+    this.forms         = [];
+    this.documents     = [];
+    this.topLevelItems = [];
+    this.currentField  = undefined;
+    this.nextId        = 1;
   }
 
   extend(extendWithObj = {})
@@ -56,7 +61,7 @@ class Happy {
   }
 
   guessElementHappyType(el) {
-    return (el.nodeName.toLowerCase() === 'form') ? 'form' : 'doc';
+    return (el.nodeName.toLowerCase() === 'form') ? 'form' : 'document';
   }
 
   addItem(baseType, options = {})
@@ -94,6 +99,12 @@ class Happy {
   }
 
 
+  focusUnhappy(selector) {
+    let unhappyInput = document.querySelector(selector || '.unhappy > input');
+    if (unhappyInput) { unhappyInput.focus(); }
+  }
+
+
   mount(options = {})
   {
     if ( ! options.el) { throw new Error('A mount element is required!'); }
@@ -107,9 +118,13 @@ class Happy {
     } else {
       this.topLevelItems.forEach(item => item.mount());
     }
+
   }
 
-  dismount() { this.topLevelItems.forEach(item => item.dismount()); }
+  dismount() {
+    this.topLevelItems.forEach(item => item.dismount());
+    this.initVars();
+  }
 
 }
 // end: Happy
@@ -145,7 +160,7 @@ class HappyItem {
 
     if ( ! this.parent) { this.isTopLevel = true; }
 
-    this.name = this.options.name;
+    this.name = this.options.name; // Set in mount() if undefined
     this.id = this.options.id || this.extractId();
 
     this.mounted = false;
@@ -162,7 +177,6 @@ class HappyItem {
     let typePropName = this.happyType + 'Type';
     if (typeof typeList === 'string') { typeList = [typeList]; }
     let ok = typeList.includes(this[typePropName]);
-    F1.console.log('HappyItem::isType():', ok, typePropName, this[typePropName], typeList, this);
     return ok;
   }
 
@@ -207,10 +221,16 @@ class HappyItem {
 
   extractId()
   {
+    let idBase;
+    switch(this.happyType) {
+    case 'input'   : idBase = 'i'; break;
+    case 'field'   : idBase = 'f'; break;
+    case 'document': idBase = 'doc'; break;
+    default: idBase = this.happyType; }
     if (this.parent && this.parent.nextId) {
-      return this.parent.id + '_' + this.happyType + this.parent.nextId++;
+      return this.parent.id + '_' + idBase + this.parent.nextId++;
     }
-    return this.happyType + this.happy$.nextId++;
+    return idBase + this.happy$.nextId++;
   }
 
 
@@ -228,7 +248,13 @@ class HappyItem {
 
   extractValue()
   {
-    return this.el.value;
+    let val;
+    switch (this.inputType) {
+    case 'radio'   :
+    case 'checkbox': val = this.el.checked  ? (this.el.value || 1) : ''; break;
+    case 'option'  : val = this.el.selected ? (this.el.value || 1) : ''; break;
+    default        : val = this.el.value; }
+    return val;
   }
 
 
@@ -237,15 +263,17 @@ class HappyItem {
    */
   extractRules()
   {
-    let self = this; self.rules = self.rules || {};
-    let rulesAsString = this.el.getAttribute('data-validate');
-    if ( ! rulesAsString) { return; }
+    let self = this; this.rules = this.rules || {};
+    let rulesAsString = this.el.getAttribute('data-validate') || '';
     let ruleDefs = rulesAsString.split('|');
     ruleDefs.forEach(function createRule(ruleDef) {
       let rule = new HappyRule(ruleDef);
       self.rules[rule.name] = rule;
     });
-    // F1.console.log('HappyItem::extractRules(), rules:', self.rules);
+    if (! this.rules.required && this.el.classList.contains('required')) {
+      this.rules.required = new HappyRule('required');
+    }
+    // F1.console.log('HappyItem::extractRules(), rules:', this.id, this.rules);
   }
 
 
@@ -280,9 +308,9 @@ class HappyItem {
   {
     if (this.isTopLevel) {
       this.el.addEventListener('focus'   , this.onFocusHandler   , true);
-      this.el.addEventListener('keydown' , this.onKeyDownHandler , true);
       this.el.addEventListener('blur'    , this.onBlurHandler    , true);
       this.el.addEventListener('change'  , this.onChangeHandler  , true);
+      this.el.addEventListener('keydown' , this.onKeyDownHandler , true);
       this.el.addEventListener('submit'  , this.onSubmitHandler  , true);
     }
   }
@@ -292,9 +320,9 @@ class HappyItem {
   {
     if (this.isTopLevel) {
       this.el.removeEventListener('submit'  , this.onSubmitHandler  , true);
+      this.el.removeEventListener('keydown' , this.onKeyDownHandler , true);
       this.el.removeEventListener('change'  , this.onChangeHandler  , true);
       this.el.removeEventListener('blur'    , this.onBlurHandler    , true);
-      this.el.removeEventListener('keydown' , this.onKeyDownHandler , true);
       this.el.removeEventListener('focus'   , this.onFocusHandler   , true);
     }
   }
@@ -310,30 +338,33 @@ class HappyItem {
     if (fnCustomValidate) {
       validateResults = fnCustomValidate(event, reason);
     } else {
-      let inputsWithRules = [], happy$ = this.happy$;
-      // If we have child inputs, first test any input level rules!
-      for (let i = 0, n = this.inputs.length; i < n; i++) {
-        let input = this.inputs[i];
-        F1.console.log('HappyItem::validate(), input.rules:', input.rules);
-        for (let r in input.rules) {
-          if (input.rules.hasOwnProperty(r)) {
-            inputsWithRules.push(input);
-            break;
+      let happy$ = this.happy$;
+      if (this.subValidateInputs) {
+        // If we have child inputs, first validate their rules!
+        let inputsWithRules = [];
+        for (let i = 0, n = this.inputs.length; i < n; i++) {
+          let input = this.inputs[i];
+          // F1.console.log('HappyItem::validate(), input.rules:', input.rules);
+          for (let r in input.rules) {
+            if (input.rules.hasOwnProperty(r)) {
+              inputsWithRules.push(input);
+              break;
+            }
           }
         }
-      }
-      F1.console.log('HappyItem::validate(), inputsWithRules:', inputsWithRules);
-      for (let i = 0, n = inputsWithRules.length; i < n; i++) {
-        let input = this.inputs[i];
-        for (let r in input.rules) {
-          let ruleInfo = input.rules[r];
-          F1.console.log('HappyItem::validate(), ruleInfo:', ruleInfo);
-          let validator = happy$.validators[ruleInfo.name];
-          if (validator) {
-            ruleInfo.reason = reason;
-            // NOTE: We call the validator with HappyInput context!
-            let message = validator.call(input, ruleInfo);
-            if (message) { validateResults.push({ item: input, message: message }); }
+        // F1.console.log('HappyItem::validate(), inputsWithRules:', inputsWithRules);
+        for (let i = 0, n = inputsWithRules.length; i < n; i++) {
+          let input = this.inputs[i];
+          for (let r in input.rules) {
+            let ruleInfo = input.rules[r];
+            // F1.console.log('HappyItem::validate(), ruleInfo:', ruleInfo);
+            let validator = happy$.validators[ruleInfo.name];
+            if (validator) {
+              ruleInfo.reason = reason;
+              // NOTE: We call the validator with HappyInput context!
+              let message = validator.call(input, ruleInfo);
+              if (message) { validateResults.push({ item: input, message: message }); }
+            }
           }
         }
       }
@@ -406,11 +437,11 @@ class HappyItem {
 
   onKeyDownHandler(event)
   {
-    F1.console.log('HappyItem::onKeyDownHandler()', event);
+    // F1.console.log('HappyItem::onKeyDownHandler()', event);
     let happyInput = event.target.HAPPY;
     if ( ! happyInput || happyInput.happyType !== 'input') { return; }
     let happyField = happyInput.parent;
-    F1.console.log('HappyItem::onKeyDownHandler(), happyField', happyField);
+    // F1.console.log('HappyItem::onKeyDownHandler(), happyField', happyField);
     // Focus on the NEXT FIELD or INPUT when we press ENTER
     if (event.key === 'Enter' || event.when == 13 || event.keyCode == 13) {
       if (happyField.isType('memo')) { return; }
@@ -452,7 +483,7 @@ class HappyItem {
   {
     F1.console.log('HappyItem::onSubmitHandler()', event);
     // Run validations + Stop event if validation fails...
-    this.update(event, 'onSubmit');
+    event.target.HAPPY.update(event, 'onSubmit');
     if ( ! this.happy) {
       event.preventDefault();
       event.stopPropagation();
@@ -463,15 +494,14 @@ class HappyItem {
   getNext(stepOver)
   {
     if (this.isTopLevel) { return; }
-    // F1.console.log('HappyItem::getNext()', this.id);
+    // F1.console.log('HappyItem::getNext(), Start:', this.id);
     let parent = this.parent;
     let childCount = parent.children.length;
     if (childCount < 2) {
       if (parent.isTopLevel) { return; }
-      let nextParentParent = parent.parent.getNext();
-      // F1.console.log('HappyItem::getNext(), nextParentParent:', nextParentParent);
-      if (nextParentParent && nextParentParent.children.length) {
-        return nextParentParent.children[0].children[0];
+      let nextParent = parent.getNext();
+      if (nextParent && nextParent.children.length) {
+        return nextParent.children[0];
       }
     }
     let index = parent.children.indexOf(this) + 1;
@@ -527,7 +557,7 @@ class HappyItem {
     let happyClass = this.getOpt('happyClass', 'happy');
     let unhappyClass = this.getOpt('unhappyClass', 'unhappy');
     let elStateZone = (this.happyType === 'input') ? this.el.parentElement : this.el;
-    F1.console.log('HappyItem::renderState(),', this.id, this.happy, elStateZone);
+    // F1.console.log('HappyItem::renderState(),', this.id, this.happy, elStateZone);
     if (this.happy) {
       elStateZone.classList.add(happyClass);
       elStateZone.classList.remove(unhappyClass);
@@ -544,7 +574,7 @@ class HappyItem {
 
   addMessages(validateResults)
   {
-    F1.console.log('HappyItem::addMessages(), validateResults:', validateResults);
+    // F1.console.log('HappyItem::addMessages(), validateResults:', validateResults);
     let message, elMsg, elMessageZone, validateResult, happyItem;
     let msgGrpClass = this.getOpt('messageGroupClass', 'messages');
     let msgClass = this.getOpt('messageClass', 'message error');
@@ -581,7 +611,7 @@ class HappyItem {
     let elMessageZone = this.el;
     let msgGrpSelector = '.' + this.getOpt('messageGroupClass', 'messages');
     let msgGrpElements = elMessageZone.querySelectorAll(msgGrpSelector);
-    F1.console.log('HappyItem::removeMessages(), msgGrpElements', msgGrpElements);
+    // F1.console.log('HappyItem::removeMessages(), msgGrpElements', msgGrpElements);
     msgGrpElements.forEach(elMsgGrp => elMsgGrp.parentElement.removeChild(elMsgGrp));
     this.inputs.forEach(input => input.messages = []);
     this.messages = [];
@@ -626,7 +656,6 @@ class HappyItem {
       appendTo.append(this.el);
       this.isRenderedElement = true;
     }
-    this.name = this.extractName();
     this.el.HAPPY = this;
     if (this.isTopLevel) {
       F1.console.log('Happy[', this.happyType, ']::mount() - ok', this);
@@ -681,7 +710,8 @@ class HappyInput extends HappyItem {
     // F1.console.log('HappyInput::extractRules()');
     this.rules = {};
     if (this.el.hasAttribute('required') ||
-      this.parent.el.classList.contains('required')) {
+      (!['checkbox', 'radio'].includes(this.el.type) &&
+      this.parent.el.classList.contains('required'))) {
       this.rules.required = new HappyRule('required');
     }
     if (this.el.hasAttribute('min')) {
@@ -707,6 +737,7 @@ class HappyInput extends HappyItem {
     this.extractRules();
     this.extractCleaners();
     this.value = this.getValue('init');
+    this.name = this.extractName();
   }
 
 }
@@ -730,7 +761,10 @@ class HappyField extends HappyItem {
 
   extractName()
   {
-    return this.el.name;
+    let name;
+    if (this.inputs.length === 1) { name = this.inputs[0].name; }
+    else { name = this.el.getAttribute('data-name') || this.el.id; }
+    return name;
   }
 
 
@@ -761,7 +795,7 @@ class HappyField extends HappyItem {
   isModified()
   {
     for (let i=0, n=this.inputs.length; i < n; i++) {
-      if (this.inputs[i].modified) { return true; }
+      if (this.inputs[i].isModified()) { return true; }
     }
   }
 
@@ -803,6 +837,7 @@ class HappyField extends HappyItem {
     this.extractInputs();
     this.inputs.forEach(input => input.mount());
     this.value = this.getValue('init');
+    this.name = this.extractName();
   }
 
 
@@ -869,7 +904,7 @@ class HappyForm extends HappyItem {
     let val = {};
     for (let i=0, n=this.fields.length; i < n; i++) {
       let field = this.fields[i];
-      val[field.id] = field.value;
+      val[field.name || field.id] = field.value;
     }
     return val;
   }
@@ -892,12 +927,12 @@ class HappyForm extends HappyItem {
 
 
 
-class HappyDoc extends HappyItem {
+class HappyDocument extends HappyItem {
 
   constructor(options, happy$)
   {
     // F1.console.log('HappyDoc::construct()');
-    super('doc', options, happy$);
+    super('document', options, happy$);
   }
 
 

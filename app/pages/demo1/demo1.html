@@ -1,18 +1,21 @@
-<div id="happydoc">
+<fieldset id="happydoc">
 
-  <form id="form1" class="pjax has-error" method="post" enctype="multipart/form-data" novalidate>
+  <legend>Doc 1 <span class="show-if-modified">(*Modified*)</span></legend>
 
-    <fieldset>
+  <div class="doc-row">
 
-      <legend>Form 1</legend>
+    <div class="doc-column left-column">
 
-      <div class="validation-summary hidden"></div>
+      <form id="form1" class="pjax has-error" method="post" novalidate>
 
-      <div class="form-row">
+        <fieldset>
 
-        <div class="form-column left-column">
+          <legend>Form 1 <span class="show-if-modified">(*Modified*)</span></legend>
 
-          <fieldset class="field fullname required has-error" data-type="fullname">
+          <div class="validation-summary hidden"></div>
+
+          <fieldset class="field fullname has-error" data-name="form1[name]"
+            data-type="fullname" data-validate="required:Naampie is nodig!">
             <legend>Name:</legend>
             <div class="input-group">
               <div class="input-zone required has-error">
@@ -26,7 +29,7 @@
               </div>
               <div class="input-zone">
                 <label class="small-text">Lastname:</label>
-                <input name="form1[lastname]" type="text"
+                <input name="form1[lastname]" type="text" required
                   data-validate="minLength:3:Enter at least $1 characters"
                   data-format="lastname">
               </div>
@@ -37,17 +40,17 @@
             </ul>
           </fieldset>
 
-          <div class="field email required" data-type="email">
+          <div class="field email required">
             <label>Email:</label>
             <input name="form1[email]" type="email" placeholder="e.g. john.doe@demo.com">
           </div>
 
-          <div class="field memo required" data-type="memo">
+          <div class="field memo" data-type="memo">
             <label>Memo:</label>
             <textarea class="input" name="form1[memo]" rows="3" placeholder="Enter memo here..."></textarea>
           </div>
 
-          <fieldset class="field birthday required" data-type="birthday">
+          <fieldset class="field birthday required" data-type="birthday" data-name="form1[birthday]">
             <legend>Brithday:</legend>
             <div class="input-group">
               <select class="input" name="form1[b-day]">
@@ -81,7 +84,7 @@
             </select>
           </div>
 
-          <fieldset class="field radiolist" data-type="radiolist">
+          <fieldset class="field radiolist required" data-type="radiolist" data-name="form1[radiolist]">
             <legend>Radiolist:</legend>
             <div class="input-group">
               <label class="input-wrapper">
@@ -104,23 +107,41 @@
             <input name="form1[confirm]" type="checkbox" value="1" checked>
           </label>
 
-        </div> <!--/left-column-->
+          <div class="form-actions-bar">
+            <button class="button primary" type="submit">Submit</button>
+          </div>
 
-        <div class="form-column right-column">
+          <div class="validation-summary hidden"></div>
 
-          <fieldset class="field checklist" data-type="checklist">
+        </fieldset>
+
+      </form> <!-- end: form1 -->
+
+    </div> <!-- end: left-column -->
+
+    <div class="doc-column right-column">
+
+      <form id="form2" class="pjax" method="post" enctype="multipart/form-data" novalidate>
+
+        <fieldset>
+
+          <legend>Form 2 <span class="show-if-modified">(*Modified*)</span></legend>
+
+          <div class="validation-summary hidden"></div>
+
+          <fieldset class="field checklist" data-type="checklist" data-name="form2[checklist]">
             <legend>Checklist:</legend>
             <div class="input-group">
               <label class="input-wrapper">
-                <input name="form1[checklist][]" type="checkbox">
+                <input name="form2[checklist][]" type="checkbox">
                 <span>Item #1</span>
               </label>
               <label class="input-wrapper">
-                <input name="form1[checklist][]" type="checkbox">
+                <input name="form2[checklist][]" type="checkbox">
                 <span>Item #2</span>
               </label>
               <label class="input-wrapper">
-                <input name="form1[checklist][]" type="checkbox">
+                <input name="form2[checklist][]" type="checkbox">
                 <span>Item #3</span>
               </label>
             </div>
@@ -128,7 +149,7 @@
 
           <div class="field number required" data-type="number">
             <label>Number1:</label>
-            <input name="form1[number]" type="number" min="0" max="100" value="0">
+            <input name="form2[number]" type="number" min="0" max="100" value="0">
           </div>
 
           <div class="field updown required" data-type="updown">
@@ -137,7 +158,7 @@
               <div class="input-prepend">
                 <button type="button">-</button>
               </div>
-              <input name="form1[updown]" type="text" value="0">
+              <input name="form2[updown]" type="text" value="0">
               <div class="input-append">
                 <button type="button">+</button>
               </div>
@@ -150,14 +171,14 @@
               <div class="input-prepend">
                 <span class="prepend-text">R</span>
               </div>
-              <input name="form1[amount]" type="text" data-format="R|2|," value="0" required>
+              <input name="form2[amount]" type="text" data-format="currency:R|2|," value="0" required>
             </div>
           </div>
 
           <div class="field date" data-type="date">
             <label>Date:</label>
             <div class="input-wrapper">
-              <input name="form1[date]" type="text">
+              <input name="form2[date]" type="text">
               <div class="input-append no-border">
                 <button type="button">
                   <img src="img/calendar.gif">
@@ -169,7 +190,7 @@
 
           <div class="field file" data-type="file">
             <label>File:</label>
-            <input name="form1[file]" type="file">
+            <input name="form2[file]" type="file">
           </div>
 
           <div class="field captcha required" data-type="captcha">
@@ -178,29 +199,37 @@
               <div style="background:url(img/white-wave.png);padding:1em;margin-bottom:3px">
                 CAPT<?=rand(1111, 9999)?>
               </div>
-              <input name="form1[captcha]" type="text">
+              <input name="form2[captcha]" type="text">
             </div>
           </div>
 
-        </div>
 
-      </div>
+          <div class="form-actions-bar">
+            <button class="button primary" type="submit">Submit</button>
+            <button class="button secondary" type="submit" name="refresh" value="1">Refresh</button>
+            <button class="button danger" type="submit" name="delete-item" value="1" onclick="F1.confirm(this, event)">Delete Item</button>
+          </div>
 
-      <div class="form-actions-bar">
-        <button class="button primary" type="submit">Submit</button>
-        <button class="button secondary" type="submit" name="refresh" value="1">Refresh</button>
-        <button class="button danger" type="submit" name="delete-item" value="1" onclick="F1.confirm(this, event)">Delete Item</button>
-        <button class="button pull-right" type="button" onclick="HappyJS.dismount()">HappyJS Dismount</button>
-        <button class="button pull-right" type="button" onclick="HappyJS.mount()">HappyJS Mount</button>
-      </div>
+          <div class="validation-summary hidden"></div>
 
-      <div class="validation-summary hidden"></div>
+        </fieldset>
 
-    </fieldset>
+      </form> <!-- end: form2 -->
 
-  </form>
+    </div> <!-- end: right-column -->
 
-</div>
+  </div> <!-- end: doc-row -->
+
+  <div class="doc-row">
+
+    <div class="action-bar">
+      <button class="button" type="button" onclick="HappyJS.dismount()">HappyJS Dismount</button>
+      <button class="button" type="button" onclick="HappyJS.mount()">HappyJS Mount</button>
+    </div>
+
+  </div> <!-- end: doc-row -->
+
+</fieldset> <!-- end: happydoc -->
 
 <details>
   <summary>$app</summary>

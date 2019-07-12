@@ -85,21 +85,17 @@ input[type="checkbox"]
   color: crimson;
 }
 
-.happy > input,
-.happy > .input,
-.field.happy > legend,
-.field.happy > fieldset {
-  color: seagreen;
-}
-
-.happy > label,
-.happy > fieldset > legend {
+.field.happy.modified > input,
+.field.happy.modified > .input,
+.field.happy.modified > legend,
+.field.happy.modified > label,
+.field.happy.modified > fieldset {
   color: seagreen;
 }
 
 .modified > input,
 .modified > .input {
-  background: yellow;
+  background: lightgoldenrodyellow;
 }
 
 .warning {

@@ -1,20 +1,35 @@
 /* Page Styles Go Here... */
-
-details {
-	background: whitesmoke;
-	color: darkslateblue;
-	cursor: pointer;
-	margin: 1em 0.15em 0.5em;
-	padding: 0.5em;
+form > fieldset {
+  min-height: 460px;
 }
 
-.form-column {
-	min-width: 260px;
+.doc-row {
+	display: grid;
+	grid-template-columns: auto auto;
+  grid-column-gap: 1em;
+  grid-row-gap: 1em;
 }
 
-.left-column {
-	margin-right: 4%;
-	width: 50%
+.action-bar {
+  padding: 1em 0 0;
+}
+
+fieldset.has-error {
+  border-color: red;
+}
+
+fieldset.has-error > legend {
+  color: crimson;
+}
+
+.show-if-modified {
+	display: none;
+	color: royalblue;
+}
+
+.modified > fieldset > legend > .show-if-modified,
+.modified > legend > .show-if-modified {
+	display: inline;
 }
 
 .field > label,
@@ -112,10 +127,17 @@ label.field > span {
 	font-size: 0.9em;
 }
 
+details {
+	background: whitesmoke;
+	color: darkslateblue;
+	cursor: pointer;
+	margin: 1em 0.15em 0.5em;
+	padding: 0.5em;
+}
+
 @media (max-width:767px) {
-	.form-column {
-		margin-right: 0;
-		width: 100%;
+	.doc-row {
+		grid-template-columns: auto;
 	}
   .fullname .input-zone {
 	  max-width: 136px;
