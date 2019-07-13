@@ -23,8 +23,9 @@ fieldset.has-error > legend {
 }
 
 .show-if-modified {
-	display: none;
 	color: royalblue;
+	display: none;
+	font-size: 0.9em;
 }
 
 .modified > fieldset > legend > .show-if-modified,
@@ -45,6 +46,11 @@ label.field > span {
 	padding-inline: unset;
 }
 
+.input-group {
+	display: flex;
+	flex-wrap: wrap;
+}
+
 .fullname {
 	margin-bottom: 0;
 }
@@ -57,12 +63,12 @@ label.field > span {
 .fullname .input-group {
 	display: flex;
 	flex-wrap: wrap;
-	width: 100%;
+	margin-bottom: 0.85em
 }
 
 .fullname .input-zone {
 	max-width: 120px;
-	margin: 0 3px 1em 0;
+	margin: 0 3px 0.15em 0;
 }
 
 .birthday select {
@@ -87,6 +93,12 @@ label.field > span {
 
 .email, .memo {
   max-width: 400px;
+}
+
+.email input,
+.memo textarea {
+	min-width: 242px;
+	width: auto;
 }
 
 .select, .file, .captcha {
@@ -124,6 +136,7 @@ label.field > span {
 
 .radiolist .input-group,
 .checklist .input-group {
+	display: block;
 	font-size: 0.9em;
 }
 

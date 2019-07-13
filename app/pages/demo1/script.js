@@ -3,7 +3,6 @@
 
 window.F1 = window.F1 || { afterPageLoadScripts: [] };
 
-
 F1.afterPageLoadScripts.push(function initPage1() {
 
   class AgeInput extends HappyInput {
@@ -23,21 +22,27 @@ F1.afterPageLoadScripts.push(function initPage1() {
     validators: {
       required: function(rule) {
         if ( ! this.value || ! this.value.length) {
-          return rule.arg || 'required';
+          return rule.arg ? rule.arg : (this.label ? this.label + ' is required' : 'required');
+        }
+      },
+      ishappy: function(rule) {
+        // F1.console.log('Validate::ishappy(),', rule, reason, this.happy);
+        if ( ! this.happy) {
+          return rule.arg ? rule.arg : (this.label ? this.label + ' is unhappy' : 'unhappy');
         }
       },
       minLength: function(rule) {
-        if ( ! this.value || this.value.length < rule.arg) {
-          return rule.args[1] || ('minLength = ' + rule.arg);
+        if (this.value.length > 0 && this.value.length < rule.arg) {
+          return rule.args[1] ? rule.args[1] : ('minLength = ' + rule.arg);
         }
       },
-      email: function(rule, reason) {
-        F1.console.log('Validate Email:', rule, reason);
-        let re;
-        re = new RegExp('\\.coza$', 'i');
+      zaEmail: function(rule) { // function(rule, reason)
+        let re = new RegExp('\\.coza$', 'i');
         if (re.test(this.value)) { return rule.arg || 'Invalid TLD ".coza". Try ".co.za"'; }
         re = new RegExp('^([\\w-]+(?:\\.[\\w-]+)*)@((?:[\\w-]+\\.)*\\w[\\w-]{0,66})\\.([a-z]{2,6}(?:\\.[a-z]{2})?)$', 'i');
-        if ( ! re.test(this.value)) { return rule.arg || 'Email must be valid! e.g. johnny@home.com'; }
+        if ( ! re.test(this.value)) {
+          return rule.arg ? rule.arg : 'Email must be valid! e.g. john.doe@demo.com';
+        }
       }
     }
   });

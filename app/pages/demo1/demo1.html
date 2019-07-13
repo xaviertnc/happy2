@@ -14,40 +14,42 @@
 
           <div class="validation-summary hidden"></div>
 
-          <fieldset class="field fullname has-error" data-name="form1[name]"
-            data-type="fullname" data-validate="required:Naampie is nodig!">
+          <fieldset class="field fullname has-error" data-name="form1[name]" data-label="Name" data-type="fullname"
+            data-validate="ishappy:Name is required.">
             <legend>Name:</legend>
             <div class="input-group">
               <div class="input-zone required has-error">
-                <label class="small-text">Firstname:</label>
+                <label class="small-text">Firstname :</label>
                 <input name="form1[firstname]" type="text"
-                  data-validate="required|minLength:3"
+                  data-validate="required:Enter firstname.|minLength:3"
                   data-format="name">
                 <ul class="messages">
-                  <li class="message error">Firstname is required.</li>
+                  <li class="message error">Enter firstname.</li>
                 </ul>
               </div>
               <div class="input-zone">
                 <label class="small-text">Lastname:</label>
-                <input name="form1[lastname]" type="text" required
-                  data-validate="minLength:3:Enter at least $1 characters"
-                  data-format="lastname">
+                <input name="form1[lastname]" type="text" data-format="lastname">
               </div>
+              <ul class="messages">
+                <li class="message error">Name is required.</li>
+              </ul>
               <!-- <p class="message">User note: Provide both Firstname AND Lastname pls!</p> -->
             </div>
-            <ul class="messages">
-              <li class="message error">Name is required.</li>
-            </ul>
           </fieldset>
 
-          <div class="field email required" data-validate="email">
+          <div class="field email required" data-validate="zaEmail">
             <label>Email:</label>
-            <input name="form1[email]" type="email" placeholder="e.g. john.doe@demo.com">
+            <div class="input-group">
+              <input name="form1[email]" type="email" placeholder="e.g. john.doe@demo.com">
+            </div>
           </div>
 
           <div class="field memo" data-type="memo">
             <label>Memo:</label>
-            <textarea class="input" name="form1[memo]" rows="3" placeholder="Enter memo here..."></textarea>
+            <div class="input-group">
+              <textarea class="input" name="form1[memo]" rows="3" placeholder="Enter memo here..."></textarea>
+            </div>
           </div>
 
           <fieldset class="field birthday required" data-type="birthday" data-name="form1[birthday]">
@@ -129,7 +131,7 @@
 
           <div class="validation-summary hidden"></div>
 
-          <fieldset class="field checklist" data-type="checklist" data-name="form2[checklist]">
+          <fieldset class="field checklist required" data-type="checklist" data-name="form2[checklist]">
             <legend>Checklist:</legend>
             <div class="input-group">
               <label class="input-wrapper">
