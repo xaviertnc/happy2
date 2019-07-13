@@ -664,6 +664,9 @@ class HappyItem {
       for (let i = 0, n = this.inputs.length; i < n; i++) {
         let input = this.inputs[i];
         input.modified = input.isModified();
+        if ( ! this.subValidateInputs) {
+          input.happy = this.happy;
+        }
         input.renderState();
       }
     }
