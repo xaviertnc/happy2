@@ -7,6 +7,7 @@
  *
  * @auth:  C. Moller <xavier.tnc@gmail.com>
  * @date:  13 Jun 2019
+ * @updated: 13 Jul 2019
  *
  */
 
@@ -58,10 +59,7 @@ class Happy {
   {
     let HappyClass, baseGroup = baseType + 's';
     if (specificType) { HappyClass = this.customClasses[baseGroup][specificType]; }
-    HappyClass = HappyClass || this.baseClasses[baseType];
-    // F1.console.log('Happy::getClass()', HappyClass, ', baseType:', baseType,
-    //   ', specificType:', specificType);
-    return HappyClass;
+    return HappyClass || this.baseClasses[baseType];
   }
 
 
@@ -73,7 +71,6 @@ class Happy {
 
   addItem(baseType, options = {})
   {
-    // F1.console.log('Happy::addItem()');
     let baseGroup = baseType + 's';
     let specificType = options.type;
     let HappyClass = options.CustomClass || this.getClass(baseType, specificType);
@@ -155,11 +152,11 @@ class HappyRule {
 // end: HappyRule
 
 
+
 class HappyItem {
 
   constructor(happyType, options = {}, happy$)
   {
-    // F1.console.log('HappyItem::construct(), happyType =', happyType);
     this.el = options.el;
     this.parent = options.parent;
     this.happyType = happyType;
@@ -175,11 +172,40 @@ class HappyItem {
     this.id = this.options.id || this.extractId();
 
     this.mounted = false;
-    this.happy = true;
-
     this.children = [];
-
+    this.happy = true;
     this.nextId = 1;
+  }
+
+
+  rateLimit(context, fn, params, interval) {
+    let date = new Date(), now = date.getTime();
+    if ((now - (context.lastUpdated || 0)) > interval) {
+      context.lastUpdated = now;
+      fn.apply(context, params);
+    }
+  }
+
+
+  ignoreBlur()
+  {
+    return this.isType(['checkbox', 'checklist', 'radiolist', 'select', 'file']);
+  }
+
+
+  setOpt(key, value, def)
+  {
+    if (typeof this.options[key] !== 'undefined') { return; }
+    if (typeof value !== 'undefined') { this.options[key] = value; }
+    else { this.options[key] = def; }
+  }
+
+
+  getOpt(key, def)
+  {
+    if (this.options[key]) { return this.options[key]; }
+    if (this.parent) { return this.parent.getOpt(key, def); }
+    return def;
   }
 
 
@@ -204,28 +230,11 @@ class HappyItem {
 
   isHappy()
   {
-    // F1.console.log('HappyItem::isHappy()');
     if (this.happyType === 'input') { return this.happy; }
     for (let i=0, n=this.children.length; i < n; i++) {
       if ( ! this.children[i].happy) { return false; }
     }
     return true;
-  }
-
-
-  getOpt(key, def)
-  {
-    if (this.options[key]) { return this.options[key]; }
-    if (this.parent) { return this.parent.getOpt(key, def); }
-    return def;
-  }
-
-
-  setOpt(key, value, def)
-  {
-    if (typeof this.options[key] !== 'undefined') { return; }
-    if (typeof value !== 'undefined') { this.options[key] = value; }
-    else { this.options[key] = def; }
   }
 
 
@@ -236,6 +245,15 @@ class HappyItem {
       let parentElement = this.parent ? this.parent.el : document.body;
       return parentElement.querySelector(this.options.selector);
     }
+  }
+
+
+  getValue(init)
+  {
+    var rawValue = this.extractValue();
+    let val = this.clean(rawValue);
+    if (init) { this.initialValue = val; }
+    return val;
   }
 
 
@@ -285,7 +303,7 @@ class HappyItem {
 
 
   /**
-   * E.g. <div data-validate="required|maxLength:2:Provide at least $1 chars">
+   * E.g. <div data-validate="required|maxLength:2:Provide at least 2 chars">
    */
   extractRules()
   {
@@ -302,25 +320,22 @@ class HappyItem {
     if ( ! this.rules.required && this.el.classList.contains('required')) {
       this.rules.required = new HappyRule('required');
     }
-    // F1.console.log('HappyItem::extractRules(), rules:', this.id, this.rules);
   }
 
 
   /**
-   * E.g. <div data-format="currency">
+   * E.g. <div data-format="currency:R|2|,">
    */
   extractCleaners()
   {
     let cleanersAsString = this.el.getAttribute('data-format');
     if ( ! cleanersAsString) { return; }
     this.cleaners = cleanersAsString.split('|');
-    // F1.console.log('HappyItem::extractCleaners(), cleaners:', this.cleaners);
   }
 
 
   clean(raw)
   {
-    // F1.console.log('HappyItem::clean(),', this.id, ', raw:', raw);
     if ( ! raw) { return raw; }
     let val = raw.trim();
     if ( ! this.cleaners) { return val; }
@@ -328,8 +343,123 @@ class HappyItem {
       let fnCleaner = this.happy$.cleaners[this.cleaners[i]];
       if (fnCleaner) { val = fnCleaner.call(this, val); }
     }
-    F1.console.log('HappyItem::clean(), clean:', val);
+    // F1.console.log('HappyItem::clean(), clean:', val);
     return val;
+  }
+
+
+  getNext(stepOut)
+  {
+    if (this.isTopLevel) { return; }
+    let parent = this.parent;
+    let childCount = parent.children.length;
+    if (childCount < 2) {
+      if (parent.isTopLevel) { return; }
+      let nextParent = parent.getNext();
+      if (nextParent && nextParent.children.length) {
+        return nextParent.children[0];
+      }
+    }
+    let index = parent.children.indexOf(this) + 1;
+    if (index >= childCount) {
+      if (stepOut) {
+        let nextParent = parent.getNext();
+        if (nextParent && nextParent.children.length) {
+          return nextParent.children[0];
+        }
+      }
+      return parent.children[0];
+    }
+    return parent.children[index];
+  }
+
+
+  getPrev(stepOut)
+  {
+    if (this.isTopLevel) { return; }
+    let childCount = this.parent.children.length;
+    if (childCount < 2) { return; }
+    let index = this.parent.children.indexOf(this);
+    if ( ! index) {
+      if (stepOut) {
+        let prevParent = this.parent.getPrev();
+        if (prevParent && prevParent.children.length) {
+          return prevParent.children[prevParent.children.length - 1];
+        }
+      }
+      return this.parent.children[childCount - 1];
+    }
+    return this.parent.children[index - 1];
+  }
+
+
+  /**
+   * NOTE: Only HappyFields should call this method!
+   */
+  validate(event, reason)
+  {
+    // F1.console.log('HappyItem::validate(),', this.id, reason, ', val =', this.value);
+    let validateResults = [], fnCustomValidate = this.getOpt('validate');
+    this.happy = true;
+    if (fnCustomValidate) {
+      validateResults = fnCustomValidate(event, reason);
+    } else {
+      let happy$ = this.happy$;
+      if (this.subValidateInputs) {
+        // If we have child inputs, first validate their rules!
+        let inputsWithRules = [];
+        for (let i = 0, n = this.inputs.length; i < n; i++) {
+          let input = this.inputs[i];
+          for (let r in input.rules) {
+            if (input.rules.hasOwnProperty(r)) {
+              inputsWithRules.push(input);
+              break;
+            }
+          }
+        }
+        for (let i = 0, n = inputsWithRules.length; i < n; i++) {
+          let inputHappy = true, input = this.inputs[i];
+          for (let r in input.rules) {
+            let ruleInfo = input.rules[r];
+            let validator = happy$.validators[ruleInfo.name];
+            if (validator) {
+              // NOTE: We call the validator with HappyInput context!
+              let message = validator.call(input, ruleInfo, reason);
+              if (message) {
+                if (ruleInfo.name === 'required') {
+                  validateResults.unshift({ item: input, message: message });
+                } else {
+                  validateResults.push({ item: input, message: message });
+                }
+                inputHappy = false;
+                this.happy = false;
+              }
+            }
+          }
+          input.happy = inputHappy;
+        }
+      }
+      // Now test the field level rules.
+      for (let r in this.rules) {
+        let ruleInfo = this.rules[r];
+        let validator = happy$.validators[ruleInfo.name];
+        if (validator) {
+          // NOTE: We call the validator with "this" === HappyField context!
+          // We therefore have access to all field properties inside the
+          // validator. E.g. this.happy$, this.type, this.el, this.value, etc.
+          let message = validator.call(this, ruleInfo, reason);
+          if (message) {
+            if (ruleInfo.name === 'required') {
+              validateResults.unshift({ item: this, message: message });
+            } else {
+              validateResults.push({ item: this, message: message });
+            }
+            this.happy = false;
+          }
+        }
+      }
+    }
+    return validateResults;
   }
 
 
@@ -357,93 +487,8 @@ class HappyItem {
   }
 
 
-  /**
-   * NOTE: Only HappyFields should call this method!
-   */
-  validate(event, reason)
-  {
-    // F1.console.log('HappyItem::validate(),', this.id, reason, ', val =', this.value);
-    let validateResults = [], fnCustomValidate = this.getOpt('validate');
-    this.happy = true;
-    if (fnCustomValidate) {
-      validateResults = fnCustomValidate(event, reason);
-    } else {
-      let happy$ = this.happy$;
-      if (this.subValidateInputs) {
-        // F1.console.log('HappyItem::validate(), subValidateInputs');
-        // If we have child inputs, first validate their rules!
-        let inputsWithRules = [];
-        for (let i = 0, n = this.inputs.length; i < n; i++) {
-          let input = this.inputs[i];
-          // F1.console.log('HappyItem::validate(), input.rules:', input.rules);
-          for (let r in input.rules) {
-            if (input.rules.hasOwnProperty(r)) {
-              inputsWithRules.push(input);
-              break;
-            }
-          }
-        }
-        // F1.console.log('HappyItem::validate(), inputsWithRules:', inputsWithRules);
-        for (let i = 0, n = inputsWithRules.length; i < n; i++) {
-          let inputHappy = true, input = this.inputs[i];
-          for (let r in input.rules) {
-            let ruleInfo = input.rules[r];
-            // F1.console.log('HappyItem::validate(input), ruleInfo:', ruleInfo);
-            let validator = happy$.validators[ruleInfo.name];
-            if (validator) {
-              // NOTE: We call the validator with HappyInput context!
-              let message = validator.call(input, ruleInfo, reason);
-              if (message) {
-                if (ruleInfo.name === 'required') {
-                  validateResults.unshift({ item: input, message: message });
-                } else {
-                  validateResults.push({ item: input, message: message });
-                }
-                inputHappy = false;
-                this.happy = false;
-              }
-            }
-          }
-          input.happy = inputHappy;
-        }
-      }
-      // Now test the field level rules.
-      for (let r in this.rules) {
-        let ruleInfo = this.rules[r];
-        let validator = happy$.validators[ruleInfo.name];
-        if (validator) {
-          // NOTE: We call the validator with "this" === HappyField context!
-          // We therefore have access to all field properties inside the
-          // validator. E.g. this.happy$, this.type, this.el, this.value, etc.
-          // F1.console.log('HappyItem::validate(field), ruleInfo:', ruleInfo);
-          let message = validator.call(this, ruleInfo, reason);
-          if (message) {
-            if (ruleInfo.name === 'required') {
-              validateResults.unshift({ item: this, message: message });
-            } else {
-              validateResults.push({ item: this, message: message });
-            }
-            this.happy = false;
-          }
-        }
-      }
-    }
-    return validateResults;
-  }
-
-
-  rateLimit(context, fn, params, interval) {
-    let date = new Date(), now = date.getTime();
-    if ((now - (context.lastUpdated || 0)) > interval) {
-      context.lastUpdated = now;
-      fn.apply(context, params);
-    }
-  }
-
-
   onFocusHandler(event)
   {
-    // F1.console.log('HappyItem::onFocusHandler()', event);
     let happyInput = event.target.HAPPY;
     if ( ! happyInput || happyInput.happyType !== 'input') { return; }
     let happyField = happyInput.parent, happy$ = happyInput.happy$;
@@ -459,7 +504,6 @@ class HappyItem {
 
   onBlurHandler(event)
   {
-    // F1.console.log('HappyItem::onBlurHandler()', event);
     let happyInput = event.target.HAPPY;
     if ( ! happyInput || happyInput.happyType !== 'input') { return; }
     let happyField = happyInput.parent;
@@ -473,7 +517,6 @@ class HappyItem {
 
   onChangeHandler(event)
   {
-    // F1.console.log('HappyItem::onChangeHandler()', event);
     let happyInput = event.target.HAPPY;
     if ( ! happyInput || happyInput.happyType !== 'input') { return; }
     let happyField = happyInput.parent;
@@ -483,11 +526,9 @@ class HappyItem {
 
   onKeyDownHandler(event)
   {
-    // F1.console.log('HappyItem::onKeyDownHandler()', event);
     let happyInput = event.target.HAPPY;
     if ( ! happyInput || happyInput.happyType !== 'input') { return; }
     let happyField = happyInput.parent;
-    // F1.console.log('HappyItem::onKeyDownHandler(), happyField', happyField);
     // Focus on the NEXT FIELD or INPUT when we press ENTER
     if (event.key === 'Enter' || event.when == 13 || event.keyCode == 13) {
       if (happyField.isType('memo')) { return; }
@@ -537,90 +578,19 @@ class HappyItem {
   }
 
 
-  getNext(stepOver)
+  removeMessages()
   {
-    if (this.isTopLevel) { return; }
-    // F1.console.log('HappyItem::getNext(), Start:', this.id);
-    let parent = this.parent;
-    let childCount = parent.children.length;
-    if (childCount < 2) {
-      if (parent.isTopLevel) { return; }
-      let nextParent = parent.getNext();
-      if (nextParent && nextParent.children.length) {
-        return nextParent.children[0];
-      }
-    }
-    let index = parent.children.indexOf(this) + 1;
-    if (index >= childCount) {
-      if (stepOver) {
-        let nextParent = parent.getNext();
-        if (nextParent && nextParent.children.length) {
-          return nextParent.children[0];
-        }
-      }
-      return parent.children[0];
-    }
-    return parent.children[index];
-  }
-
-
-  getPrev(stepOver)
-  {
-    if (this.isTopLevel) { return; }
-    let childCount = this.parent.children.length;
-    if (childCount < 2) { return; }
-    let index = this.parent.children.indexOf(this);
-    if ( ! index) {
-      if (stepOver) {
-        let prevParent = this.parent.getPrev();
-        if (prevParent && prevParent.children.length) {
-          return prevParent.children[prevParent.children.length - 1];
-        }
-      }
-      return this.parent.children[childCount - 1];
-    }
-    return this.parent.children[index - 1];
-  }
-
-
-  getValue(init)
-  {
-    var rawValue = this.extractValue();
-    let val = this.clean(rawValue);
-    if (init) { this.initialValue = val; }
-    return val;
-  }
-
-
-  render()
-  {
-    return document.createElement('div');
-  }
-
-
-  renderState()
-  {
-    let happyClass = this.getOpt('happyClass', 'happy');
-    let unhappyClass = this.getOpt('unhappyClass', 'unhappy');
-    let elStateZone = (this.happyType === 'input') ? this.el.parentElement : this.el;
-    // F1.console.log('HappyItem::renderState(),', this.id, this.happy, elStateZone);
-    if (this.isHappy()) {
-      elStateZone.classList.add(happyClass);
-      elStateZone.classList.remove(unhappyClass);
-    }
-    else {
-      elStateZone.classList.add(unhappyClass);
-      elStateZone.classList.remove(happyClass);
-    }
-    let modifiedClass = this.getOpt('modifiedClass', 'modified');
-    if (this.modified) { elStateZone.classList.add(modifiedClass); }
-    else { elStateZone.classList.remove(modifiedClass); }
+    let elMessageZone = this.el;
+    let msgGrpSelector = '.' + this.getOpt('messageGroupClass', 'messages');
+    let msgGrpElements = elMessageZone.querySelectorAll(msgGrpSelector);
+    msgGrpElements.forEach(elMsgGrp => elMsgGrp.parentElement.removeChild(elMsgGrp));
+    this.inputs.forEach(input => input.messages = []);
+    this.messages = [];
   }
 
 
   addMessages(validateResults)
   {
-    // F1.console.log('HappyItem::addMessages(), validateResults:', validateResults);
     let message, elMsg, elMessageZone, validateResult, happyItem;
     let msgGrpClass = this.getOpt('messageGroupClass', 'messages');
     let msgClass = this.getOpt('messageClass', 'message error');
@@ -653,15 +623,29 @@ class HappyItem {
   }
 
 
-  removeMessages()
+  renderState()
   {
-    let elMessageZone = this.el;
-    let msgGrpSelector = '.' + this.getOpt('messageGroupClass', 'messages');
-    let msgGrpElements = elMessageZone.querySelectorAll(msgGrpSelector);
-    // F1.console.log('HappyItem::removeMessages(), msgGrpElements', msgGrpElements);
-    msgGrpElements.forEach(elMsgGrp => elMsgGrp.parentElement.removeChild(elMsgGrp));
-    this.inputs.forEach(input => input.messages = []);
-    this.messages = [];
+    let happyClass = this.getOpt('happyClass', 'happy');
+    let unhappyClass = this.getOpt('unhappyClass', 'unhappy');
+    let elStateZone = (this.happyType === 'input') ? this.el.parentElement : this.el;
+    // F1.console.log('HappyItem::renderState(),', this.id, this.happy, elStateZone);
+    if (this.isHappy()) {
+      elStateZone.classList.add(happyClass);
+      elStateZone.classList.remove(unhappyClass);
+    }
+    else {
+      elStateZone.classList.add(unhappyClass);
+      elStateZone.classList.remove(happyClass);
+    }
+    let modifiedClass = this.getOpt('modifiedClass', 'modified');
+    if (this.modified) { elStateZone.classList.add(modifiedClass); }
+    else { elStateZone.classList.remove(modifiedClass); }
+  }
+
+
+  render()
+  {
+    return document.createElement('div');
   }
 
 
@@ -691,7 +675,6 @@ class HappyItem {
 
   mount(options = {})
   {
-    // F1.console.log('HappyItem::mount()');
     if (this.mounted) { return; }
     let parent = this.parent || {};
     let appendTo = options.appendTo;
@@ -741,7 +724,6 @@ class HappyInput extends HappyItem {
   constructor(options, happy$)
   {
     super('input', options, happy$);
-    // F1.console.log('HappyInput::construct()');
   }
 
 
@@ -756,7 +738,6 @@ class HappyInput extends HappyItem {
 
   extractRules()
   {
-    // F1.console.log('HappyInput::extractRules()');
     super.extractRules();
     if (this.el.hasAttribute('min')) {
       let min = this.el.getAttribute('min');
@@ -770,7 +751,6 @@ class HappyInput extends HappyItem {
       let pattern = this.el.getAttribute('pattern');
       this.rules.pattern = new HappyRule('pattern:' + pattern);
     }
-    // F1.console.log('HappyInput::extractRules(), rules:', this.name, this.rules);
   }
 
 
@@ -792,14 +772,21 @@ class HappyField extends HappyItem {
 
   constructor(options, happy$)
   {
-    // F1.console.log('HappyField::construct()');
     super('field', options, happy$);
   }
 
 
-  extractInputType(elInput)
+  getValue(init)
   {
-    return elInput.getAttribute('data-type') || elInput.type;
+    let inputValues = [];
+    for (let i = 0, n = this.inputs.length; i < n; i++) {
+      let input = this.inputs[i];
+      input.value = input.getValue(init);
+      if (input.value || input.value === 0) { inputValues.push(input.value); }
+    }
+    let fieldValue = inputValues.join(',');
+    if (init) { this.initialValue = fieldValue; }
+    return fieldValue;
   }
 
 
@@ -809,6 +796,12 @@ class HappyField extends HappyItem {
     if (this.inputs.length === 1) { name = this.inputs[0].name; }
     else { name = this.el.getAttribute('data-name') || this.el.id; }
     return name;
+  }
+
+
+  extractInputType(elInput)
+  {
+    return elInput.getAttribute('data-type') || elInput.type;
   }
 
 
@@ -827,26 +820,6 @@ class HappyField extends HappyItem {
       happyField.inputs.push(happyInput);
     }
     happyField.children = happyField.inputs;
-  }
-
-
-  getValue(init)
-  {
-    let inputValues = [];
-    for (let i = 0, n = this.inputs.length; i < n; i++) {
-      let input = this.inputs[i];
-      input.value = input.getValue(init);
-      if (input.value || input.value === 0) { inputValues.push(input.value); }
-    }
-    let fieldValue = inputValues.join(',');
-    if (init) { this.initialValue = fieldValue; }
-    return fieldValue;
-  }
-
-
-  ignoreBlur()
-  {
-    return this.isType(['checkbox', 'checklist', 'radiolist', 'select', 'file']);
   }
 
 
@@ -877,8 +850,18 @@ class HappyForm extends HappyItem {
 
   constructor(options, happy$)
   {
-    // F1.console.log('HappyForm::construct()');
     super('form', options, happy$);
+  }
+
+
+  getValue()
+  {
+    let val = {};
+    for (let i=0, n=this.fields.length; i < n; i++) {
+      let field = this.fields[i];
+      val[field.name || field.id] = field.value;
+    }
+    return val;
   }
 
 
@@ -904,17 +887,6 @@ class HappyForm extends HappyItem {
   }
 
 
-  getValue()
-  {
-    let val = {};
-    for (let i=0, n=this.fields.length; i < n; i++) {
-      let field = this.fields[i];
-      val[field.name || field.id] = field.value;
-    }
-    return val;
-  }
-
-
   mount(options)
   {
     super.mount(options);
@@ -936,7 +908,6 @@ class HappyDocument extends HappyItem {
 
   constructor(options, happy$)
   {
-    // F1.console.log('HappyDoc::construct()');
     super('document', options, happy$);
   }
 
@@ -949,7 +920,6 @@ class HappyDocument extends HappyItem {
 
   extractForms()
   {
-    F1.console.log('HappyDoc::extractForms()');
     let happyDoc = this; happyDoc.forms = [];
     let formSelector = happyDoc.getOpt('formSelector', 'form');
     let formElements = happyDoc.el.querySelectorAll(formSelector);
@@ -967,7 +937,6 @@ class HappyDocument extends HappyItem {
 
   mount(options)
   {
-    F1.console.log('HappyDoc::mount()');
     super.mount(options);
     this.extractForms();
     this.forms.forEach(form => form.mount());
