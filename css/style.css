@@ -154,6 +154,8 @@ body { background: whitesmoke; }
   width: 50%;
 }
 
+.small-text { font-size: 0.8em; }
+
 .modal-close { float: right; }
 
 .busy, .busy a { cursor: progress; }
@@ -167,10 +169,6 @@ body { background: whitesmoke; }
 .pull-left  { float: left;  }
 
 @media (max-width:359px) {
-  #page-content {
-    padding: 0 0.5em 0.5em 0;
-  }
-  #site-footer {
-    font-size: 0.8em;
-  }
+  #page-content { padding: 0 0.5em 0.5em 0; }
+  #site-footer { font-size: 0.8em; }
 }

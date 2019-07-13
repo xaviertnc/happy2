@@ -1,0 +1,158 @@
+/* Page Styles Go Here... */
+form > fieldset {
+  min-height: 460px;
+}
+
+.doc-row {
+	display: grid;
+	grid-template-columns: auto auto;
+  grid-column-gap: 1em;
+  grid-row-gap: 1em;
+}
+
+.action-bar {
+  padding: 1em 0 0;
+}
+
+fieldset.has-error {
+  border-color: red;
+}
+
+fieldset.has-error > legend {
+  color: crimson;
+}
+
+.show-if-modified {
+	color: royalblue;
+	display: none;
+	font-size: 0.9em;
+}
+
+.modified > fieldset > legend > .show-if-modified,
+.modified > legend > .show-if-modified {
+	display: inline;
+}
+
+.field > label,
+.field > legend,
+label.field > span {
+  display: inline-block;
+  margin-bottom: 0.15em;
+  min-width: 90px;
+}
+
+.field > legend {
+	float: left;
+	padding-inline: unset;
+}
+
+.input-group {
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.fullname {
+	margin-bottom: 0;
+}
+
+.fullname .small-text {
+	display: block;
+	font-size: 0.8em;
+}
+
+.fullname .input-group {
+	display: flex;
+	flex-wrap: wrap;
+	margin-bottom: 0.85em
+}
+
+.fullname .input-zone {
+	max-width: 120px;
+	margin: 0 3px 0.15em 0;
+}
+
+.birthday select {
+	margin-right: 3px;
+}
+
+.number input {
+  width: 55px;
+  text-align: center;
+}
+
+.currency {
+	max-width: 180px;
+}
+
+.currency .prepend-text {
+	display: inline-block;
+	background: gainsboro;
+	font-size: 0.94em;
+	line-height: 1em;
+}
+
+.email, .memo {
+  max-width: 400px;
+}
+
+.email input,
+.memo textarea {
+	min-width: 242px;
+	width: auto;
+}
+
+.select, .file, .captcha {
+  max-width: 320px;
+}
+
+.updown input {
+  width: 35px;
+  text-align: center;
+}
+
+.updown button {
+	display: inline-block;
+	padding: 0 0.5em 0;
+	background: gainsboro;
+	cursor: pointer;
+}
+
+.date button {
+	display: inline-block;
+	background: transparent;
+	border: 0;
+	padding: 0 3px;
+	margin: 0;
+}
+
+.date input {
+	width: 130px;
+}
+
+.birthday select {
+  width: 72px;
+  text-align: center;
+}
+
+.radiolist .input-group,
+.checklist .input-group {
+	display: block;
+	font-size: 0.9em;
+}
+
+details {
+	background: whitesmoke;
+	color: darkslateblue;
+	cursor: pointer;
+	margin: 1em 0.15em 0.5em;
+	padding: 0.5em;
+}
+
+@media (max-width:767px) {
+	.doc-row {
+		grid-template-columns: auto;
+	}
+  .fullname .input-zone {
+	  max-width: 136px;
+	}
+}

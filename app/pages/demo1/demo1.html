@@ -1,4 +1,4 @@
-<fieldset id="happydoc">
+<fieldset id="happydoc" class="doc">
 
   <legend>Doc 1 <span class="show-if-modified">(*Modified*)</span></legend>
 
@@ -14,11 +14,11 @@
 
           <div class="validation-summary hidden"></div>
 
-          <fieldset class="field fullname has-error" data-name="form1[name]" data-label="Name" data-type="fullname"
+          <div class="field fullname has-error" data-name="form1[name]" data-label="Name" data-type="fullname"
             data-validate="ishappy:Name is required.">
-            <legend>Name:</legend>
+            <label>Name:</label>
             <div class="input-group">
-              <div class="input-zone required has-error">
+              <div class="subfield required has-error">
                 <label class="small-text">Firstname :</label>
                 <input name="form1[firstname]" type="text"
                   data-validate="required:Enter firstname.|minLength:3"
@@ -27,16 +27,16 @@
                   <li class="message error">Enter firstname.</li>
                 </ul>
               </div>
-              <div class="input-zone">
+              <div class="subfield">
                 <label class="small-text">Lastname:</label>
                 <input name="form1[lastname]" type="text" data-format="lastname">
               </div>
               <ul class="messages">
+                <li class="message info">User note: Provide both Firstname AND Lastname pls!</li>
                 <li class="message error">Name is required.</li>
               </ul>
-              <!-- <p class="message">User note: Provide both Firstname AND Lastname pls!</p> -->
             </div>
-          </fieldset>
+          </div>
 
           <div class="field email required" data-validate="zaEmail">
             <label>Email:</label>
@@ -52,64 +52,78 @@
             </div>
           </div>
 
-          <fieldset class="field birthday required" data-type="birthday" data-name="form1[birthday]">
-            <legend>Brithday:</legend>
+          <div class="field birthday required" data-type="birthday" data-name="form1[birthday]">
+            <label>Brithday:</label>
             <div class="input-group">
-              <select class="input" name="form1[b-day]">
-                <option>- day -</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-              </select>
-              <select class="input" name="form1[b-month]">
-                <option>- mth -</option>
-                <option value="1">Jan</option>
-                <option value="2">Feb</option>
-                <option value="3">Mar</option>
-              </select>
-              <select class="input" name="form1[b-year]">
-                <option>- year -</option>
-                <option value="2018">2018</option>
-                <option value="2019">2019</option>
-                <option value="2020">2020</option>
-              </select>
+              <fieldset>
+                <div class="subfield">
+                  <select class="input" name="form1[b-day]">
+                    <option>- day -</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                  </select>
+                </div>
+                <div class="subfield">
+                  <select class="input" name="form1[b-month]">
+                    <option>- mth -</option>
+                    <option value="1">Jan</option>
+                    <option value="2">Feb</option>
+                    <option value="3">Mar</option>
+                  </select>
+                </div>
+                <div class="subfield">
+                  <select class="input" name="form1[b-year]">
+                    <option>- year -</option>
+                    <option value="2018">2018</option>
+                    <option value="2019">2019</option>
+                    <option value="2020">2020</option>
+                  </select>
+                </div>
+              </fieldset>
             </div>
-          </fieldset>
+          </div>
 
           <div class="field select required" data-type="select">
             <label>Select:</label>
-            <select class="input" name="form1[select]">
-              <option value="">- select something -</option>
-              <option value="1">Option #1</option>
-              <option value="2">Option #2</option>
-              <option value="3">Option #3</option>
-            </select>
+            <div class="input-group">
+              <select class="input" name="form1[select]">
+                <option value="">- select something -</option>
+                <option value="1">Option #1</option>
+                <option value="2">Option #2</option>
+                <option value="3">Option #3</option>
+              </select>
+            </div>
           </div>
 
-          <fieldset class="field radiolist required" data-type="radiolist" data-name="form1[radiolist]">
-            <legend>Radiolist:</legend>
+          <div class="field radiolist required" data-type="radiolist" data-name="form1[radiolist]">
+            <label>Radiolist:</label>
             <div class="input-group">
-              <label class="input-wrapper">
-                <input name="form1[radiolist]" type="radio" value="1">
-                <span>Option #1</span>
-              </label>
-              <label class="input-wrapper">
-                <input name="form1[radiolist]" type="radio" value="2">
-                <span>Option #2</span>
-              </label>
-              <label class="input-wrapper">
-                <input name="form1[radiolist]" type="radio" value="3">
-                <span>Option #3</span>
-              </label>
+              <fieldset>
+                <label class="input-wrapper">
+                  <input name="form1[radiolist]" type="radio" value="1">
+                  <span>Option #1</span>
+                </label>
+                <label class="input-wrapper">
+                  <input name="form1[radiolist]" type="radio" value="2">
+                  <span>Option #2</span>
+                </label>
+                <label class="input-wrapper">
+                  <input name="form1[radiolist]" type="radio" value="3">
+                  <span>Option #3</span>
+                </label>
+              </fieldset>
             </div>
-          </fieldset>
+          </div>
 
-          <label class="field check required" data-type="checkbox">
-            <span>Checkbox:</span>
-            <input name="form1[confirm]" type="checkbox" value="1" checked>
-          </label>
+          <div class="field check required" data-type="checkbox">
+            <label for="confirm">Checkbox:</label>
+            <div class="input-group">
+              <input id="confirm" name="form1[confirm]" type="checkbox" value="1" checked>
+            </div>
+          </div>
 
-          <div class="form-actions-bar">
+          <div class="action-bar">
             <button class="button primary" type="submit">Submit</button>
           </div>
 
@@ -131,82 +145,92 @@
 
           <div class="validation-summary hidden"></div>
 
-          <fieldset class="field checklist required" data-type="checklist" data-name="form2[checklist]">
-            <legend>Checklist:</legend>
+          <div class="field checklist required" data-type="checklist" data-name="form2[checklist]">
+            <label>Checklist:</label>
             <div class="input-group">
-              <label class="input-wrapper">
-                <input name="form2[checklist][]" type="checkbox">
-                <span>Item #1</span>
-              </label>
-              <label class="input-wrapper">
-                <input name="form2[checklist][]" type="checkbox">
-                <span>Item #2</span>
-              </label>
-              <label class="input-wrapper">
-                <input name="form2[checklist][]" type="checkbox">
-                <span>Item #3</span>
-              </label>
+              <fieldset>
+                <label class="input-wrapper">
+                  <input name="form2[checklist][]" type="checkbox">
+                  <span>Item #1</span>
+                </label>
+                <label class="input-wrapper">
+                  <input name="form2[checklist][]" type="checkbox">
+                  <span>Item #2</span>
+                </label>
+                <label class="input-wrapper">
+                  <input name="form2[checklist][]" type="checkbox">
+                  <span>Item #3</span>
+                </label>
+              </fieldset>
             </div>
-          </fieldset>
+          </div>
 
           <div class="field number required" data-type="number">
-            <label>Number1:</label>
-            <input name="form2[number]" type="number" min="0" max="100" value="0">
+            <label>Number:</label>
+            <div class="input-group">
+              <input name="form2[number]" type="number" min="0" max="100" value="0">
+            </div>
           </div>
 
           <div class="field updown required" data-type="updown">
-            <label>Number2:</label>
-            <div class="input-wrapper">
-              <div class="input-prepend">
-                <button type="button">-</button>
-              </div>
-              <input name="form2[updown]" type="text" value="0">
-              <div class="input-append">
-                <button type="button">+</button>
+            <label>UpDown:</label>
+            <div class="input-group">
+              <div class="input-wrapper">
+                <div class="input-prepend">
+                  <button type="button">-</button>
+                </div>
+                <input name="form2[updown]" type="number" min="0" max="10" value="0">
+                <div class="input-append">
+                  <button type="button">+</button>
+                </div>
               </div>
             </div>
           </div>
 
           <div class="field currency" data-type="currency">
             <label>Currency:</label>
-            <div class="input-wrapper">
-              <div class="input-prepend">
-                <span class="prepend-text">R</span>
+            <div class="input-group">
+              <div class="input-wrapper">
+                <div class="input-prepend">
+                  <button type="button" disabled>R</button>
+                </div>
+                <input name="form2[amount]" type="text"  style="max-width:100px"
+                  data-format="currency:R|2|," value="0" required>
               </div>
-              <input name="form2[amount]" type="text" data-format="currency:R|2|," value="0" required>
             </div>
           </div>
 
           <div class="field date" data-type="date">
             <label>Date:</label>
-            <div class="input-wrapper">
-              <input name="form2[date]" type="text">
-              <div class="input-append no-border">
-                <button type="button">
-                  <img src="img/calendar.gif">
-                  <span class="hidden">Select Date</span>
-                </button>
+            <div class="input-group">
+              <div class="input-wrapper">
+                <input name="form2[date]" type="text">
+                <img src="img/calendar.gif" style="cursor:pointer;margin-left:3px">
               </div>
             </div>
           </div>
 
           <div class="field file" data-type="file">
             <label>File:</label>
-            <input name="form2[file]" type="file">
+            <div class="input-group">
+              <input name="form2[file]" type="file">
+            </div>
           </div>
 
           <div class="field captcha required" data-type="captcha">
             <label>Captcha:</label>
             <div class="input-group">
-              <div style="background:url(img/white-wave.png);padding:1em;margin-bottom:3px">
-                CAPT<?=rand(1111, 9999)?>
+              <div class="subfield">
+                <div style="background:url(img/white-wave.png);padding:1em;margin-bottom:3px">
+                  CAPT<?=rand(1111, 9999)?>
+                </div>
+                <input name="form2[captcha]" type="text">
               </div>
-              <input name="form2[captcha]" type="text">
             </div>
           </div>
 
 
-          <div class="form-actions-bar">
+          <div class="action-bar">
             <button class="button primary" type="submit">Submit</button>
             <button class="button secondary" type="submit" name="refresh" value="1">Refresh</button>
             <button class="button danger" type="submit" name="delete-item" value="1" onclick="F1.confirm(this, event)">Delete Item</button>

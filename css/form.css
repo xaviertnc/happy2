@@ -1,133 +1,100 @@
-form > fieldset {
-  padding: 1em;
+.show-if-modified {
+  display: none;
 }
 
-.form-row {
-  display: flex;
-  flex-wrap: wrap;
+.modified .show-if-modified {
+  display: inline;
 }
 
 .field {
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 1em;
+}
+
+.field > label {
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.field fieldset {
   border: none;
   display: flex;
-  margin: 0 0 1em 0;
+  flex-direction: column;
+  margin: 0 0.3em 0 0;
   padding: 0;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  flex-grow: 1;
+}
+
+.subfield {
+  margin-right: 0.3em;
+  margin-bottom: 0.3em;
+  width: 150px;
+}
+
+.subfield > label {
+  display: block;
+}
+
+.input, input {
+  margin: 0 0.3em 0.15em 0;
+  max-width: 265px;
+  padding: 1px 3px;
+  width: 100%;
+}
+
+input[type="radio"],
+input[type="checkbox"] {
+  width: 1.5em;
+  margin-top: 0.3em;
+}
+
+input[type="number"] {
+  width: 40px;
+  text-align: center;
 }
 
 .input-wrapper {
   display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.input-wrapper input {
+  margin: 0;
 }
 
 .input-prepend {
-  border: 1px solid silver;
-  border-right: 0;
   position: relative;
+  left: 1px;
 }
 
 .input-append {
-  border: 1px solid silver;
-  border-left: 0;
-}
-
-.no-border {
-  border: none;
-}
-
-.append-text,
-.prepend-text {
-  padding: 2px 0.3em;
-  line-height: 1.25em
-}
-
-input, .input {
-  border: 1px solid silver;
-  padding: 1px 3px;
-  max-width: 320px;
-  width: 100%;
-}
-
-input:focus, textarea:focus, select:focus {
-  box-shadow: 0 0 3px 0 cornflowerblue;
-}
-
-input[type="radio"],
-input[type="checkbox"]
-{
-  margin: 0 0.3em 0 0;
-  width: 1em;
+  position: relative;
+  left: -1px;
 }
 
 .messages {
   list-style: none;
-  margin: 0 0.2em;
   padding: 0;
-  display: flex;
-  align-items: center;
+  margin: 0;
+  width: 100%;
 }
 
 .message {
-  padding: 0;
-  margin: 0;
-  color: silver;
-  font-family: sans-serif;
-  font-size: 0.7em;
-  font-style: italic;
-  line-height: 1.3em;
+  font-size: 0.8em;
 }
 
-.has-error > input,
-.has-error > .input,
-.has-error > fieldset {
-  border-color: red;
-}
-
-.error,
-.has-error > label,
-.has-error > fieldset > legend {
+.error {
   color: crimson;
 }
 
-.field.happy.modified > input,
-.field.happy.modified > .input,
-.field.happy.modified > legend,
-.happy.modified > label,
-.field.happy.modified > fieldset {
-  color: seagreen;
-}
-
-.modified > input,
-.modified > .input {
-  background: lightgoldenrodyellow;
-}
-
-.warning {
-  color: darkorange;
-}
-
-.form-actions-bar {
-  padding: 1em 0 0;
-}
-
-
-@media (max-width:767px) {
-  .field > label,
-  .field > legend,
-  label.field > span {
-    min-width: 140px;
-  }
-}
-
-@media (max-width:580px) {
-  .field {
-    display: block;
-  }
-  .field > label,
-  .field > legend,
-  label.field > span {
-    display: block !important;
-  }
-  .input-group {
-    /* flexbox + fieldset hack. */
-    clear: left;
-  }
+.info {
+  color: grey;
 }

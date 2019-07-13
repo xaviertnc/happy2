@@ -230,11 +230,12 @@ class HappyItem {
 
   isHappy()
   {
-    if (this.happyType === 'input') { return this.happy; }
-    for (let i=0, n=this.children.length; i < n; i++) {
-      if ( ! this.children[i].happy) { return false; }
+    if (this.happyType !== 'input' || this.happyType !== 'field' || this.subValidateInputs) {
+      for (let i=0, n=this.children.length; i < n; i++) {
+        if ( ! this.children[i].happy) { return false; }
+      }
     }
-    return true;
+    return this.happy;
   }
 
 
