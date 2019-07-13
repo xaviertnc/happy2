@@ -34,6 +34,7 @@ class Happy {
     window.Happy.instance = this;
   }
 
+
   initVars()
   {
     this.items         = [];
@@ -46,21 +47,15 @@ class Happy {
     this.nextId        = 1;
   }
 
+
   extend(extendWithObj = {})
   {
     return Object.assign(this, extendWithObj);
   }
 
-  printf(tpl = '', args)
-  {
-    args = args || [];
-    if (typeof args === 'string') { args = [args]; }
-    return tpl ? tpl.replace(/{(\d+)}/g, function(match, number) {
-      return (typeof args[number] !== 'undefined') ? args[number] : match;
-    }) : tpl;
-  }
 
-  getClass(baseType, specificType) {
+  getClass(baseType, specificType)
+  {
     let HappyClass, baseGroup = baseType + 's';
     if (specificType) { HappyClass = this.customClasses[baseGroup][specificType]; }
     HappyClass = HappyClass || this.baseClasses[baseType];
@@ -69,9 +64,12 @@ class Happy {
     return HappyClass;
   }
 
-  guessElementHappyType(el) {
+
+  guessElementHappyType(el)
+  {
     return (el.nodeName.toLowerCase() === 'form') ? 'form' : 'document';
   }
+
 
   addItem(baseType, options = {})
   {
@@ -93,6 +91,7 @@ class Happy {
     return happyItem;
   }
 
+
   // happy.find('fullname')  - OR -
   // happy.find('fullname', happy.fields)
   find(name, list = this.items)
@@ -108,7 +107,8 @@ class Happy {
   }
 
 
-  focusUnhappy(selector) {
+  focusUnhappy(selector)
+  {
     let unhappyInput = document.querySelector(selector || '.unhappy > input');
     if (unhappyInput) { unhappyInput.focus(); }
   }
@@ -130,7 +130,9 @@ class Happy {
 
   }
 
-  dismount() {
+
+  dismount()
+  {
     this.topLevelItems.forEach(item => item.dismount());
     this.initVars();
   }
