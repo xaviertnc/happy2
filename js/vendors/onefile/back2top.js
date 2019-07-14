@@ -1,38 +1,33 @@
+/* globals F1 */
+/* eslint-env es7 */
+
 window.F1 = window.F1 || { afterPageLoadScripts: [] };
 
 /**
- * OneFile files are stand-alone libs that only require jQuery to work.
- *
  * F1.Back2Top - Scroll "Back to top", auto show, floating button.
  *   - When the user scrolls down 20px from the top of the document,
  *     show the button
  *
+ * NOTE: Set <style> html { scroll-behaviour: smooth; } </style>
+ *
  * @auth:  C. Moller <xavier.tnc@gmail.com>
- * @date:  14 April 2018
+ * @date:  14 July 2019
  *
  */
 
-F1.Back2Top = function (elementSelector, options)
+F1.Back2Top = function (elementSelector, showOffset)
 {
-  this.selector = elementSelector || '#back-to-top';
-  this.$elm = $(this.selector);
-  this.style = this.$elm[0].style;
-  this.showTop = 20;
-  options = options || {};
-  $.extend(this, options);
-  $(window).on('scroll', this, this.scrollHandler.bind(this));
+  this.showOffset = showOffset || 20;
+  this.el = document.querySelector(elementSelector || '#back-to-top');
+  window.addEventListener('scroll', this.scrollHandler.bind(this));
   F1.console.log('F1 Back2Top Initialized:', this);
 };
 
 
-F1.Back2Top.prototype.scrollHandler = function(event)
+F1.Back2Top.prototype.scrollHandler = function()
 {
-  var display = this.style.display;
-  if (document.body.scrollTop > this.showTop || document.documentElement.scrollTop > this.showTop) {
-    if ( ! display || display === 'none' ) { this.style.display = 'block'; }
-  } else {
-    if (display === 'block') { this.style.display = 'none'; }
-  }
+  this.el.style.display = (document.body.scrollTop > this.showOffset ||
+    document.documentElement.scrollTop > this.showOffset) ? 'block' : 'none';
 };
 
-// end: F1.Modal
+// end: F1.Back2Top

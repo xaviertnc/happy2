@@ -72,7 +72,7 @@ $(document).ready(function() {
 
   F1.console.log('*** DOCUMENT READY ***');
 
-  F1.back2Top = new F1.Back2Top('#back-to-top');
+  F1.back2Top = new F1.Back2Top();
 
   F1.alerts = new F1.Alerts('#alerts');
 

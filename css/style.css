@@ -1,5 +1,7 @@
 *, ::before, ::after { box-sizing: border-box; }
 
+html { scroll-behavior: smooth; }
+
 body { background: whitesmoke; }
 
 #page {
@@ -59,26 +61,22 @@ body { background: whitesmoke; }
 }
 
 #back-to-top {
-  display: none;
-  border-radius: 6px;
   background-color: darkslateblue;
-  border: 1px solid gainsboro;
   bottom: 0.5em;
+  border: 1px solid gainsboro;
+  border-radius: 6px;
+  color: white;
   cursor: pointer;
+  display: none;
+  font-family: sans-serif;
+  font-size: 1.34em;
+  font-weight: bold;
+  opacity: 0.8;
+  padding: 0.7em 0.9em 0.4em;
   position: fixed;
+  text-decoration: none;
   right: 0.3em;
   z-index: 1000;
-  opacity: 0.8;
-}
-
-#back-to-top a {
-  border-radius: 4px;
-  color: white;
-  display: inline-block;
-  padding: 0.7em 0.9em 0.4em;
-  font-family: sans-serif;
-  font-weight: bold;
-  font-size: 1.34em;
 }
 
 #busy-indicator-overlay {
