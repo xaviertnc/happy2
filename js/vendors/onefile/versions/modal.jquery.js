@@ -1,20 +1,19 @@
-/* globals F1 */
-/* eslint-env es7 */
-
 window.F1 = window.F1 || { afterPageLoadScripts: [] };
 
 /**
+ * OneFile files are stand-alone libs that only require jQuery to work.
+ *
  * F1.Modal - Modal behaviour methods
  *
  * @auth:  C. Moller <xavier.tnc@gmail.com>
- * @date:  14 July 2019
+ * @date:  14 April 2018
  *
  */
 
 F1.Modal = function (options)
 {
   options = options || {};
-  Object.assign(this, options);
+  $.extend(this, options);
   F1.console.log('F1 Modal Initialized:', this);
 };
 
@@ -30,42 +29,40 @@ F1.Modal.prototype.show = function (modalSelector, event, resetForm)
 {
   F1.console.log('F1 Modal SHOW, resetForm:', resetForm);
   event.preventDefault();
-  const elModal = document.querySelector(modalSelector);
-  const inputElements = elModal.querySelectorAll('input, textarea, select');
   try {
+    var $modal = $(modalSelector);
+    var $inputs = $modal.find(':input');
     if (resetForm) {
       if (typeof resetForm === 'object') {
-        const formGroup = resetForm.formGroup;
-        const fields = resetForm.fields;
+        var formGroup = resetForm.formGroup;
+        var fields = resetForm.fields;
         if (formGroup) {
-          for (let field in fields) {
+          for (var field in fields) {
             resetForm.form[formGroup][field].value = fields[field];
           }
         } else {
-          for (let field in fields) {
+          for (var field in fields) {
             resetForm.form[field].value = fields[field];
           }
         }
       } else {
-        inputElements.forEach(elInput => elInput.value = '');
+        $inputs.val('');
       }
     }
   } catch(err) {
     F1.console.log('error:' + err.message);
   }
-  if (elModal) {
-    elModal.classList.remove('hidden');
-    let elDismiss = elModal.querySelector('.dismiss');
-    if (elDismiss) { elDismiss.MODAL = elModal; }
-  }
-  if (inputElements.length) { inputElements[0].focus(); }
+  $modal.removeClass('hidden');
+  $inputs.first().focus();
+  return false;
 };
 
 
-F1.Modal.prototype.dismiss = function (elDismiss, event)
+F1.Modal.prototype.dismiss = function (elm, event)
 {
   event.preventDefault();
-  elDismiss.MODAL.classList.remove('hidden');
+  $(elm).parents('.modal:first').addClass('hidden');
+  return false;
 };
 
 // end: F1.Modal

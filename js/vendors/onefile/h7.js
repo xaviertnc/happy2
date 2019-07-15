@@ -1,4 +1,4 @@
-/* globals document, F1, Happy */
+/* globals F1 */
 /* eslint-env es7 */
 
 /**

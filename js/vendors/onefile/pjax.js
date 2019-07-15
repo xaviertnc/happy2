@@ -1,4 +1,5 @@
-/* globals window, document, F1 */
+/* globals F1 */
+/* eslint-env es7 */
 
 window.F1 = window.F1 || { afterPageLoadScripts: [] };
 
