@@ -40,7 +40,7 @@ F1.Tabs.prototype.init = function()
   this.tabElements.forEach(function (elTab) {
     elTab.addEventListener('click', event => self.show(elTab, event));
   });
-  F1.console.log('F1 Tabs Initialized:', this);
+  F1.console.log('F1 Tabs Initialized');
 };
 
 // end: F1.Tabs

@@ -1,4 +1,4 @@
-/* globals window, document, F1, $ */
+/* globals F1 */
 
 // MAIN
 
@@ -28,6 +28,17 @@ F1.debounce = function(func, wait, immediate) {
       func.apply(context, args);
     }
   };
+};
+
+
+F1.upDown = function(elInput, increment, range)
+{
+  let val = parseInt(elInput.value);
+  let newVal = val + parseInt(increment || 0);
+  range = range || { min:0, max:100 };
+  if (range.max && newVal > range.max) { return; }
+  if (typeof range.min !== 'undefined' && newVal < range.min) { return; }
+  elInput.value = newVal;
 };
 
 

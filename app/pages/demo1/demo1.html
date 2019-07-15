@@ -172,17 +172,13 @@
             </div>
           </div>
 
-          <div class="field updown required" data-type="updown">
+          <div class="field updown" data-type="updown" data-validate="min:0|max:10">
             <label>UpDown:</label>
             <div class="input-group">
               <div class="input-wrapper">
-                <div class="input-prepend">
-                  <button type="button">-</button>
-                </div>
-                <input name="form2[updown]" type="number" min="0" max="10" value="0">
-                <div class="input-append">
-                  <button type="button">+</button>
-                </div>
+                <button type="button" onclick="F1.upDown(this.nextElementSibling, -1, { min:0, max:10 })">-</button>
+                <input name="form2[updown]" type="text" value="0" readonly>
+                <button type="button" onclick="F1.upDown(this.previousElementSibling, 1, { min:0, max:10 })">+</button>
               </div>
             </div>
           </div>
@@ -192,10 +188,9 @@
             <div class="input-group">
               <div class="input-wrapper">
                 <div class="input-prepend">
-                  <button type="button" disabled>R</button>
+                  <span class="prepend-text">R</span>
                 </div>
-                <input name="form2[amount]" type="text"  style="max-width:100px"
-                  data-format="currency:R|2|," value="0" required>
+                <input name="form2[amount]" type="text" data-format="currency:R|2|," value="0" required>
               </div>
             </div>
           </div>

@@ -52,7 +52,7 @@ F1.Alerts.prototype.init = function() {
   let self = this;
   this.el = document.querySelector(this.alertsSelector);
   this.el.querySelectorAll(this.alertSelector).forEach(elAlert => self.mount(elAlert));
-  F1.console.log('F1 Alerts Initialized:', this);
+  F1.console.log('F1 Alerts Initialized');
 };
 
 

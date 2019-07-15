@@ -32,6 +32,13 @@ form.has-error legend {
 	  width: 67px;
 }
 
+.updown input {
+  width: 35px;
+  text-align: center;
+}
+
+.currency input { width: 90px; }
+
 @media all and (min-width:900px) {
   .fullname .subfield { width: 130px; }
   .messages { width: auto; }

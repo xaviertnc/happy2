@@ -20,7 +20,7 @@ F1.Back2Top = function (elementSelector, showOffset)
   this.showOffset = showOffset || 20;
   this.el = document.querySelector(elementSelector || '#back-to-top');
   window.addEventListener('scroll', this.scrollHandler.bind(this));
-  F1.console.log('F1 Back2Top Initialized:', this);
+  F1.console.log('F1 Back2Top Initialized');
 };
 
 

@@ -43,10 +43,15 @@
 }
 
 .input, input {
+  border: 1px solid silver;
   margin: 0 0.3em 0.15em 0;
-  max-width: 265px;
+  max-width: 320px;
   padding: 1px 3px;
   width: 100%;
+}
+
+.input:focus, input:focus {
+  box-shadow: 0 0 3px 0 cornflowerblue;
 }
 
 input[type="radio"],
@@ -56,7 +61,7 @@ input[type="checkbox"] {
 }
 
 input[type="number"] {
-  width: 40px;
+  width: 49px;
   text-align: center;
 }
 
@@ -70,15 +75,24 @@ input[type="number"] {
   margin: 0;
 }
 
-.input-prepend {
-  position: relative;
-  left: 1px;
+.append-text,
+.prepend-text {
+  background: gainsboro;
+  display: inline-block;
+  border: 1px solid silver;
+  line-height: 1em;
+  padding: 2px 5px;
+  font-size: 0.9em;
 }
 
-.input-append {
-  position: relative;
-  left: -1px;
+.prepend-text {
+  border-right: 0;
 }
+
+.append-text {
+  border-left: 0;
+}
+
 
 .messages {
   list-style: none;

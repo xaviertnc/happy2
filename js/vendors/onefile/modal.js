@@ -15,7 +15,7 @@ F1.Modal = function (options)
 {
   options = options || {};
   Object.assign(this, options);
-  F1.console.log('F1 Modal Initialized:', this);
+  F1.console.log('F1 Modal Initialized');
 };
 
 
