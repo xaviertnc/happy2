@@ -16,20 +16,20 @@ F1.Alerts = function (alertsContainerSelector, options)
   options = options || {};
   this.alertsSelector = alertsContainerSelector || '#alerts';
   this.alertSelector = '.alert';
-  this.fadeDuration = 3000;
+  this.fadeDuration = 2000;
   Object.assign(this, options);
 };
 
 
 F1.Alerts.prototype.mount = function(elAlert) {
-  let self = this, ttl = elAlert.getAttribute('data-ttl'), ttlTimer;
+  let self = this, ttl = parseInt(elAlert.getAttribute('data-ttl')), ttlTimer;
   elAlert.addEventListener('click', function() {
     clearTimeout(ttlTimer);
     elAlert.parentElement.removeChild(elAlert);
   });
   if (ttl) {
     setTimeout(function() {
-      elAlert.style.transition = self.fadeDuration;
+      elAlert.style.transition = 'opacity ' + self.fadeDuration + 'ms';
       elAlert.style.opacity = 0;
       setTimeout(function() {
         elAlert.parentElement.removeChild(elAlert);

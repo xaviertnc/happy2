@@ -8,6 +8,7 @@ body { background: whitesmoke; }
   background: white;
   max-width: 1024px;
   margin: 0 auto;
+  position: relative;
 }
 
 #site-brand {
@@ -148,8 +149,9 @@ body { background: whitesmoke; }
   border: 1px solid gainsboro;
   box-shadow: 1px 1px 3px grey;
   margin: 1em auto;
+  max-width: 640px;
   padding: 1em;
-  width: 50%;
+  width: 95%;
 }
 
 .small-text { font-size: 0.8em; }
@@ -161,6 +163,11 @@ body { background: whitesmoke; }
 .pjax-error h3 { color: red; }
 
 .hidden { display: none; }
+
+.animate {
+  opacity: 1 !important;
+  transition: opacity 0.3s;
+}
 
 .pull-right { float: right; }
 

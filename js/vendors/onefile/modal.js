@@ -55,17 +55,17 @@ F1.Modal.prototype.show = function (modalSelector, event, resetForm)
   }
   if (elModal) {
     elModal.classList.remove('hidden');
-    let elDismiss = elModal.querySelector('.dismiss');
-    if (elDismiss) { elDismiss.MODAL = elModal; }
+    let elModalClose = elModal.querySelector('.modal-close');
+    if (elModalClose) { elModalClose.MODAL = elModal; }
   }
   if (inputElements.length) { inputElements[0].focus(); }
 };
 
 
-F1.Modal.prototype.dismiss = function (elDismiss, event)
+F1.Modal.prototype.dismiss = function (elModalClose, event)
 {
   event.preventDefault();
-  elDismiss.MODAL.classList.remove('hidden');
+  elModalClose.MODAL.classList.add('hidden');
 };
 
 // end: F1.Modal

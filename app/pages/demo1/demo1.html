@@ -15,24 +15,24 @@
           <div class="validation-summary hidden"></div>
 
           <div class="field fullname has-error" data-name="form1[name]" data-label="Name"
-            data-type="fullname" data-validate="ishappy:Name is required.">
+            data-type="fullname" data-validate="isHappy:Name is required.">
             <label>Name:</label>
             <div class="input-group">
               <div class="subfield required has-error">
-                <label class="small-text">Firstname :</label>
+                <label class="small-text">Firstname</label>
                 <input name="form1[firstname]" type="text"
                   data-validate="required:Enter firstname.|minLength:3"
                   data-format="name">
-                <ul class="messages">
+                <ul class="messages animate">
                   <li class="message error">Enter firstname.</li>
                 </ul>
               </div>
               <div class="subfield">
-                <label class="small-text">Lastname:</label>
+                <label class="small-text">Lastname</label>
                 <input name="form1[lastname]" type="text" data-format="lastname">
               </div>
-              <ul class="messages">
-                <li class="message info">User note: Provide both Firstname AND Lastname pls!</li>
+              <ul class="messages animate">
+                <!-- <li class="message info">User note: Provide both Firstname AND Lastname pls!</li> -->
                 <li class="message error">Name is required.</li>
               </ul>
             </div>
@@ -172,7 +172,7 @@
             </div>
           </div>
 
-          <div class="field updown" data-type="updown" data-validate="min:0|max:10">
+          <div class="field updown" data-type="updown">
             <label>UpDown:</label>
             <div class="input-group">
               <div class="input-wrapper">
@@ -241,14 +241,12 @@
 
   </div> <!-- end: doc-row -->
 
-  <div class="doc-row">
-
-    <div class="action-bar">
-      <button class="button" type="button" onclick="HappyJS.dismount()">HappyJS Dismount</button>
-      <button class="button" type="button" onclick="HappyJS.mount()">HappyJS Mount</button>
-    </div>
-
-  </div> <!-- end: doc-row -->
+  <div class="action-bar">
+    <button class="button" type="button" onclick="F1.happy.mount({ el: document.body.querySelector('#happydoc'),
+      unhappyClass: 'has-error'})">HappyJS Mount</button>
+    <button class="button" type="button" onclick="F1.happy.dismount()">HappyJS Dismount</button>
+    <button class="button" type="button" onclick="F1.modal.show('#main-modal', event)">Show Modal</button>
+  </div>
 
 </fieldset> <!-- end: happydoc -->
 

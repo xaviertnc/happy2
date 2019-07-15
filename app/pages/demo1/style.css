@@ -12,12 +12,19 @@
   margin-bottom: 1em;
 }
 
-.doc.has-error > legend,
-form.has-error legend {
-	color: crimson;
+.doc.has-error, form.has-error > fieldset { border-color: lightpink; }
+.doc.has-error > legend, form.has-error > fieldset > legend { color: crimson; }
+
+.doc.modified > legend .show-if-modified,
+form.modified > fieldset > legend .show-if-modified {
+  display: inline;
 }
 
-.field.happy { color: seagreen; }
+.field.has-error > label { color: crimson; }
+.field.happy > label { color: seagreen; }
+
+.subfield.has-error > label { color: crimson; }
+.subfield.happy > label { color: seagreen; }
 
 .fullname .input-group > .messages {
   align-self: center;

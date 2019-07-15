@@ -45,6 +45,7 @@ class Happy {
     this.documents     = [];
     this.topLevelItems = [];
     this.currentField  = undefined;
+    this.mounted       = false;
     this.nextId        = 1;
   }
 
@@ -114,17 +115,18 @@ class Happy {
   mount(options = {})
   {
     if ( ! options.el) { throw new Error('A mount element is required!'); }
+    if (this.mounted) { throw new Error('Already mounted. Dismount before re-mount!'); }
     if ( ! this.items.length) {
       let baseType = options.type;
       if (baseType) { delete options.type; }
       else { baseType = this.guessElementHappyType(options.el); }
       let item = this.addItem(baseType, options);
       item.mount();
+      this.mounted = true;
       return item;
-    } else {
-      this.topLevelItems.forEach(item => item.mount());
     }
-
+    this.topLevelItems.forEach(item => item.mount());
+    this.mounted = true;
   }
 
 
@@ -132,6 +134,7 @@ class Happy {
   {
     this.topLevelItems.forEach(item => item.dismount());
     this.initVars();
+    F1.console.log('Happy::dismount()', this);
   }
 
 }
@@ -512,7 +515,7 @@ class HappyItem {
     // The next input-focus event will clear the timer if we are still on the same field.
     happyField.delayBlurEventTimer = setTimeout(function () {
       happyField.rateLimit(happyField, happyField.update, [event, 'onBlur'], 150);
-    });
+    }, 200);
   }
 
 
@@ -592,9 +595,9 @@ class HappyItem {
 
   addMessages(validateResults)
   {
-    let message, elMsg, elMessageZone, validateResult, happyItem;
-    let msgGrpClass = this.getOpt('messageGroupClass', 'messages');
-    let msgClass = this.getOpt('messageClass', 'message error');
+    let message, elMsg, elMessageZone, validateResult, happyItem, happyItems = [];
+    const msgGrpClass = this.getOpt('messageGroupClass', 'messages');
+    const msgClass = this.getOpt('messageClass', 'message error');
     for (let i = 0, n = validateResults.length; i < n; i++) {
       validateResult = validateResults[i];
       happyItem = validateResult.item || this;
@@ -615,12 +618,14 @@ class HappyItem {
       elMsg.innerHTML = message;
       happyItem.elMsgGrp.appendChild(elMsg);
       happyItem.messages.push({ el: elMsg, elParent: elMessageZone, text: message });
+      happyItems.push(happyItem);
     }
-    for (let i = 0, n = validateResults.length; i < n; i++) {
-      validateResult = validateResults[i];
-      if (validateResult.item) { delete validateResult.item.elMsgGrp; }
-    }
-    delete this.elMsgGrp;
+    setTimeout(function(){
+      happyItems.forEach(function(item) {
+        item.elMsgGrp.classList.add('animate');
+        delete item.elMsgGrp;
+      });
+    }, 150);
   }
 
 
@@ -743,14 +748,6 @@ class HappyInput extends HappyItem {
   extractRules()
   {
     super.extractRules();
-    if (this.el.hasAttribute('min')) {
-      let min = this.el.getAttribute('min');
-      this.rules.min = new HappyRule('min:' + min);
-    }
-    if (this.el.hasAttribute('max')) {
-      let max = this.el.getAttribute('max');
-      this.rules.max = new HappyRule('max:' + max);
-    }
     if (this.el.hasAttribute('pattern')) {
       let pattern = this.el.getAttribute('pattern');
       this.rules.pattern = new HappyRule('pattern:' + pattern);
@@ -844,6 +841,7 @@ class HappyField extends HappyItem {
   dismount()
   {
     super.dismount();
+    clearTimeout(this.delayBlurEventTimer);
     this.inputs = undefined;
   }
 }

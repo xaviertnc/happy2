@@ -1,9 +1,7 @@
 .show-if-modified {
   display: none;
-}
-
-.modified .show-if-modified {
-  display: inline;
+  font-size: 0.9em;
+  color: royalblue;
 }
 
 .field {
@@ -96,6 +94,7 @@ input[type="number"] {
 
 .messages {
   list-style: none;
+  opacity: 0;
   padding: 0;
   margin: 0;
   width: 100%;

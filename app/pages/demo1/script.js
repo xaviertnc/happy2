@@ -1,5 +1,5 @@
 /* globals window, F1, Happy, HappyField, HappyInput */
-/* eslint-env es6 */
+/* eslint-env es7 */
 
 window.F1 = window.F1 || { afterPageLoadScripts: [] };
 
@@ -25,7 +25,7 @@ F1.afterPageLoadScripts.push(function initPage1() {
           return rule.arg ? rule.arg : (this.label ? this.label + ' is required' : 'required');
         }
       },
-      ishappy: function(rule) {
+      isHappy: function(rule) {
         // F1.console.log('Validate::ishappy(),', rule, reason, this.happy);
         if ( ! this.happy) {
           return rule.arg ? rule.arg : (this.label ? this.label + ' is unhappy' : 'unhappy');
@@ -58,6 +58,10 @@ F1.afterPageLoadScripts.push(function initPage1() {
 
   happy.focusUnhappy('.has-error > input, .has-error > .input');
 
+
   F1.console.log('Page 1 initialized - ok');
+
+
+  F1.happy = happy;
 
 });
