@@ -1,0 +1,8 @@
+{
+  "presets": [[
+    "C:/Users/Neels/AppData/Roaming/npm/node_modules/babel-preset-env",
+    {
+      "useBuiltIns": "usage"
+    },
+  ]]
+}
