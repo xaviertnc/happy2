@@ -131,7 +131,7 @@ class View {
     $srcFilePaths = array_get($this->app->client, 'globalStyles', []);
     $mostRecent = $this->getMostRecentTimestamp($srcFilePaths);
     if ( ! $mostRecent) { $mostRecent = time(); }
-    $assetHref = "css/$mostRecent.app.css";
+    $assetHref = "$mostRecent.app.css";
     $assetFilePath = $this->app->webRootPath."/$assetHref";
     if ( ! file_exists($assetFilePath))
     {
@@ -148,7 +148,7 @@ class View {
     $srcFilePaths = array_get($this->app->client, 'globalScripts', []);
     $mostRecent = $this->getMostRecentTimestamp($srcFilePaths);
     if ( ! $mostRecent) { $mostRecent = time(); }
-    $assetHref = "js/$mostRecent.app.js";
+    $assetHref = "$mostRecent.app.js";
     $assetFilePath = $this->app->webRootPath."/$assetHref";
     if ( ! file_exists($assetFilePath))
     {

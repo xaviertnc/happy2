@@ -2,5 +2,5 @@ nbproject
 js/vendors/junk
 **/cache
 *sublime*
-js/*.app.js
-css/*.app.css
+*.app.js
+*.app.css
