@@ -1,16 +1,17 @@
 <?php
   $page = new stdClass();
-  $page->title = 'Demo 3';
+  $page->title = 'Demo3';
   $page->id = $app->currentPage;
   $page->dir = $app->controllerPath;
   $page->state = array_get($app->state, $page->id, []);
   $page->errors = array_get($page->state, 'errors', []);
   $page->alerts = array_get($page->state, 'alerts', []);
+  $page->basename = substr(__FILE__, 0, strlen(__FILE__) - 4);
   $page->lastCsrfToken = array_get($page->state, 'csrfToken');
-  $page->basename = substr(__FILE__, 0, strlen(__FILE__)-4);
+  $page->csrfToken = md5(uniqid(rand(), true)); //time();
   $page->modelFilePath = $page->basename . '.model.php';
   $page->viewFilePath = $page->basename . '.html';
-  $page->csrfToken = md5(uniqid(rand(), true)); //time();
+  $page->cachePath = $page->dir . '/cache';
 
   $app->page = $page;
 
@@ -45,7 +46,7 @@
   else {
 
     include $app->partialsPath . '/head.html';
-    include $view->partialFile($app->page->dir, $app->page->viewFilePath, 'html', 3, null, '        ');
+    include $view->partialFile($page->cachePath, $page->viewFilePath);
     include $app->partialsPath . '/foot.html';
 
     $page->state['alerts'] = [];

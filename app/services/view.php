@@ -39,80 +39,174 @@ class View {
   }
 
 
-  public function compile($pagePath, $filePath, $fileExt, $dentCount,
-    $dent, $before, $after, $firstDent = null)
+  public function getMostRecentTimestamp(array $filePaths)
   {
-    $timestamp = filemtime($filePath);
-    $cacheFilePath = "$pagePath/cache/$timestamp.$fileExt";
-    if (file_exists($cacheFilePath)) { return $cacheFilePath; }
+    $mostRecent = 0;
+    foreach ($filePaths as $filePath) {
+      if ( ! file_exists($filePath)) { break; }
+      $timestamp = filemtime($filePath);
+      if ($timestamp > $mostRecent) { $mostRecent = $timestamp; }
+    }
+    return $mostRecent;
+  }
+
+
+  public function getDefaultCachePath($srcFilePath = null)
+  {
+    if (isset($this->app->page) and
+        isset($this->app->page->cachePath)) {
+      return $this->app->page->cachePath;
+    }
+    return $this->app->cachePath ?: dirname($srcFilePath) . '/cache';
+  }
+
+
+  /**
+   * The "compiled/cached file" will only exist if the "source file" was not modified
+   * since the last cache operation.
+   *
+   * NOTE: Add a pre-extension to $fileType to distinguish similar files.
+   * E.g. ".pdf.html", ".csv.html" or .altview.html etc.
+   */
+  public function getCachedFilePath($srcFilePath, $fileType, $cachePath = null)
+  {
+    if ( ! $cachePath) { $cachePath = $this->getDefaultCachePath($srcFilePath); }
+    $srcFileTimestamp = filemtime($srcFilePath);
+    return "$cachePath/$srcFileTimestamp.$fileType";
+  }
+
+
+
+  public function cacheToFile($content, $filePath, $cachePath = null)
+  {
+    if ( ! $cachePath) { $cachePath = dirname($filePath); }
+    // Make sure we are within our bounds when using mkdir with "true"!
+    if ( ! is_dir($cachePath) and strpos($cachePath,
+      $this->app->rootPath) !== false) { mkdir($cachePath, 0777, true); }
+    file_put_contents($filePath, $content);
+  }
+
+
+  public function concatFiles(array $filePaths, $fileType)
+  {
+    $content = '';
+    foreach ($filePaths as $i => $filePath) {
+      $content .= ($i ? PHP_EOL : '') . file_get_contents($filePath);
+    }
+    $content = str_replace("\r", '', $content);
+    $content = preg_replace('/\n+[\s\t]*/', "\n", $content);
+    $content = preg_replace('@/\*.*?\*/@s', '', $content);
+    if ($fileType == 'js') {
+       $content = preg_replace('@(?<=\n)[\s\t]*//.*@', '', $content);
+       $content = preg_replace('/(F1\.)*console\.log.*?\);/', '', $content);
+    }
+    $content = preg_replace('/\n[\s\t]*\n+/', "\n", $content);
+    return $content;
+  }
+
+
+  public function compile($filePath, $fileType, $dentCount, $dent,
+    $before, $after, $cachePath = null, $inline = false)
+  {
+    if ( ! $cachePath) { $cachePath = dirname($filePath) . '/cache'; }
+    $compiledFilePath = $this->getCachedFilePath($filePath, $fileType, $cachePath);
+    if (file_exists($compiledFilePath)) { return $compiledFilePath; }
     $dent = $dent ?: $this->dent;
     $indent = $this->indent($dentCount, $dent);
-    $content = file_get_contents($filePath);
-    $content = $this->indentBlock($content, $indent . $dent);
-    $html = $firstDent;
-    $html .= $before ? ($before . PHP_EOL . $indent . $dent) : '';
-    $html .= $content . PHP_EOL;
-    if ($after) { $html .= $indent . $after . PHP_EOL; }
-    $cachePath = $pagePath . '/cache';
-    if ( ! is_dir($cachePath)) { mkdir($cachePath); }
-    file_put_contents($cacheFilePath, $html);
-    return $cacheFilePath;
+    $content = $inline ? '' : $indent;
+    $innerContent = file_get_contents($filePath);
+    $innerContent = $this->indentBlock($innerContent, $indent . ($before ? $dent : ''));
+    $content .= $before ? ($before . PHP_EOL . $indent . $dent) : '';
+    $content .= $innerContent . PHP_EOL;
+    if ($after) { $content .= $indent . $after . PHP_EOL; }
+    $this->cacheToFile($content, $compiledFilePath, $cachePath);
+    return $compiledFilePath;
   }
 
 
-  public function partialFile($pagePath, $filePath, $fileExt = 'html',
-    $dentCount = null, $dent = null, $firstDent = null)
+  public function globalStyles($uid = '.app', $stylesUri = null)
   {
-    if ( ! file_exists($filePath)) { return; }
-    return $this->compile($pagePath, $filePath, $fileExt, $dentCount?:3, $dent, null, null, $firstDent);
+    $srcFilePaths = array_get($this->app->client, 'globalStyles', []);
+    $mostRecent = $this->getMostRecentTimestamp($srcFilePaths);
+    if ( ! $mostRecent) { $mostRecent = time(); }
+
+    $assetHref = $stylesUri
+      ? "$stylesUri/$mostRecent$uid.css"
+      : "css/$mostRecent$uid.css";
+
+    $assetFilePath = $this->app->webRootPath . '/'. $assetHref;
+
+    if ( ! file_exists($assetFilePath))
+    {
+      file_put_contents($assetFilePath,
+      $this->concatFiles($srcFilePaths, 'css'));
+    }
+
+    return '<link href="' . $assetHref . '" rel="stylesheet">' . PHP_EOL;
   }
 
 
-  public function styleFile($dentCount = 2, $dent = null)
+  public function globalScripts($uid = '.app', $scriptsUri = null)
+  {
+    $srcFilePaths = array_get($this->app->client, 'globalScripts', []);
+    $mostRecent = $this->getMostRecentTimestamp($srcFilePaths);
+    if ( ! $mostRecent) { $mostRecent = time(); }
+
+    $assetHref = $scriptsUri
+      ? "$scriptsUri/$mostRecent$uid.js"
+      : "js/$mostRecent$uid.js";
+
+    $assetFilePath = $this->app->webRootPath . '/'. $assetHref;
+
+    if ( ! file_exists($assetFilePath))
+    {
+      file_put_contents($assetFilePath,
+      $this->concatFiles($srcFilePaths, 'js'));
+    }
+
+    return '<script src="' . $assetHref . '"></script>' . PHP_EOL;
+  }
+
+
+  public function inlineStyle($dentCount = 2, $dent = null, $cachePath = null)
   {
     $pagePath = $this->app->page->dir;
     $filePath = $pagePath . '/style.css';
     if ( ! file_exists($filePath)) { return; }
+    if ( ! $cachePath) { $cachePath = $this->getDefaultCachePath(); }
     $before = '<style data-rel="page">'; $after = '</style>';
-    return $this->compile($pagePath, $filePath, 'css', $dentCount, $dent, $before, $after);
+    return $this->compile($filePath, 'css', $dentCount, $dent,
+      $before, $after, $cachePath, true);
   }
 
 
-  public function scriptFile($dentCount = 4, $dent = null)
+  public function inlineScript($dentCount = 4, $dent = null, $cachePath = null)
   {
     $pagePath = $this->app->page->dir;
     $filePath = $pagePath . '/script.js';
     if ( ! file_exists($filePath)) { return; }
+    if ( ! $cachePath) { $cachePath = $this->getDefaultCachePath(); }
     $before = '<script>'; $after = '</script>';
-    return $this->compile($pagePath, $filePath, 'js', $dentCount, $dent, $before, $after);
+    return $this->compile($filePath, 'js', $dentCount, $dent,
+      $before, $after, $cachePath, true);
   }
 
 
-  public function styleLinks(array $styleLinks, $dentCount, $dent = null)
+  public function partialFile($cachePath, $filePath, $fileType = 'html',
+    $dentCount = null, $dent = null, $before = null, $after = null, $inline = false)
   {
-    $dent = $dent ?: $this->dent;
-    $indent = $this->indent($dentCount, $dent);
-    $html = '';
-    foreach ($styleLinks as $i => $styleHref)
-    {
-      $html .= ($i ? $indent : '') . '<link href="' . $styleHref . '" rel="stylesheet">' . PHP_EOL;
-    }
-    return $html;
+    if ( ! file_exists($filePath)) { return; }
+    if ( ! $cachePath) { $cachePath = $this->getDefaultCachePath(); }
+    return $this->compile($filePath, $fileType, $dentCount?:4, $dent,
+      $before, $after, $cachePath, $inline);
   }
 
 
-  public function scriptTags(array $scripts, $dentCount, $dent = null)
+  public function inlinePartialFile($cachePath, $filePath, $fileType = 'html',
+    $dentCount = null, $dent = null, $before = null, $after = null)
   {
-    $dent = $dent ?: $this->dent;
-    $indent = $this->indent($dentCount, $dent);
-    $html = '';
-    foreach ($scripts as $i => $script)
-    {
-      $html .= ($i ? $indent : '') .
-        '<script' . (isset($script['async']) ? ' async defer' : '') .
-          ' src="' . $script['src'] . '"></script>' . PHP_EOL;
-    }
-    return $html;
+    return $this->partialFile($cachePath, $filePath, $fileType,
+      $dentCount, $dent, $before, $after, true);
   }
 
 

@@ -1,5 +1,5 @@
 
-       <?php if ($page->script = $view->scriptFile()) include $page->script ?>
+        <?php if ($page->inlineScript = $view->inlineScript()) include $page->inlineScript ?>
 
       </section> <!-- end: Page content -->
 
@@ -13,13 +13,7 @@
 
     </div> <!-- end: Page container -->
 
-    <script src="js/vendors/onefile/alerts.js"></script>
-    <script src="js/vendors/onefile/modal.js"></script>
-    <script src="js/vendors/onefile/b2top.js"></script>
-    <script src="js/vendors/onefile/tabs.js"></script>
-    <script src="js/vendors/onefile/pjax.js"></script>
-    <script src="js/vendors/onefile/h7.js"></script>
-    <script src="js/main.js"></script>
+    <?=$view->globalScripts()?>
 
   </body>
 

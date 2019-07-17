@@ -7,11 +7,8 @@
     <base href="<?=$request->urlBase?>">
     <meta name="X-CSRF-TOKEN" content="<?=$page->csrfToken?>">
     <link id="favicon" href="favicon.ico" rel="shortcut icon">
-    <link href="css/style.css" rel="stylesheet">
-    <link href="css/form.css" rel="stylesheet">
-
-    <?php if ($page->style = $view->styleFile()) include $page->style ?>
-
+    <?=$view->globalStyles()?>
+    <?php if ($page->inlineStyle = $view->inlineStyle()) include $page->inlineStyle ?>
   </head>
 
   <body>
@@ -55,7 +52,7 @@
             <small><?=$app->siteSlogan?></small>
           </div>
         </div>
-        <?php include $view->partialFile($app->partialsPath, $app->partialsPath . '/topnav.html'); ?>
+        <?php include $view->inlinePartialFile($app->cachePath, $app->partialsPath . '/topnav.html', 'topnav.html'); ?>
       </header>
 
       <section id="page-content">

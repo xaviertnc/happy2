@@ -42,8 +42,26 @@ $app->storagePath = $app->appPath . '/storage';
 $app->servicesPath = $app->appPath . '/services';
 $app->partialsPath = $app->appPath . '/partials';
 $app->componentsPath = $app->appPath . '/components';
+$app->cachePath = $app->storagePath . '/cache';
+$app->webRootPath = $app->rootPath;
 $app->pagesUri = 'app/pages';
 $app->homeUri = 'demo1';
+$app->client = [
+  'globalStyles' => [
+    $app->webRootPath . '/css/style.css',
+    $app->webRootPath . '/css/form.css'
+  ],
+  'globalScripts' => [
+    $app->webRootPath . '/js/vendors/onefile/alerts.js',
+    $app->webRootPath . '/js/vendors/onefile/modal.js',
+    $app->webRootPath . '/js/vendors/onefile/b2top.js',
+    $app->webRootPath . '/js/vendors/onefile/tabs.js',
+    $app->webRootPath . '/js/vendors/onefile/pjax.js',
+    $app->webRootPath . '/js/vendors/onefile/h7.js',
+    $app->webRootPath . '/js/main.js'
+  ]
+];
+
 
 date_default_timezone_set($app->timezone);
 

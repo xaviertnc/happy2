@@ -1,5 +1,5 @@
-/* globals window, F1, Happy2, HappyInput, HappyField */
-/* eslint-env es6 */
+/* globals F1 */
+/* eslint-env es7 */
 
 window.F1 = window.F1 || { afterPageLoadScripts: [] };
 

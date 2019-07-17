@@ -2,15 +2,17 @@
 
   $page = new stdClass();
   $page->title = 'Error 404 (Page Not Found)';
+  $page->id = $app->currentPage;
   $page->dir = $app->controllerPath;
-  $page->id = 'page_' . $app->currentPage;
   $page->state = array_get($app->state, $page->id, []);
   $page->errors = array_get($page->state, 'errors', []);
   $page->alerts = array_get($page->state, 'alerts', []);
+  $page->basename = substr(__FILE__, 0, strlen(__FILE__) - 4);
   $page->lastCsrfToken = array_get($page->state, 'csrfToken');
-  $page->basename = substr(__FILE__, 0, strlen(__FILE__)-4);
-  $page->viewFilePath = $page->basename . '.html';
   $page->csrfToken = md5(uniqid(rand(), true)); //time();
+  $page->modelFilePath = $page->basename . '.model.php';
+  $page->viewFilePath = $page->basename . '.html';
+  $page->cachePath = $page->dir . '/cache';
 
   $app->page = $page;
 
@@ -28,7 +30,7 @@
       $request->action = array_get($_POST, '__ACTION__');
       $request->params = array_get($_POST, '__PARAMS__');
 
-      $alerts[] = ['info', 'Hey, you posted some data.', 3000];
+      // $alerts[] = ['info', 'Hey, you posted some data.', 3000];
 
     } while (0);
 
@@ -45,7 +47,7 @@
   else {
 
     include $app->partialsPath . '/head.html';
-    include $view->partialFile($app->page->dir, $app->page->viewFilePath, 'html', 3, null, '        ');
+    include $view->partialFile($page->cachePath, $page->viewFilePath);
     include $app->partialsPath . '/foot.html';
 
     // Save the APP-STATE before we exit.
