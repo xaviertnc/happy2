@@ -31,7 +31,7 @@ class Happy {
       inputs    : {}
     };
     this.initVars();
-    this.extend(options);
+    for (let prop in options) { this[prop] = options[prop]; }
     window.Happy.instance = this;
   }
 
@@ -47,12 +47,6 @@ class Happy {
     this.currentField  = undefined;
     this.mounted       = false;
     this.nextId        = 1;
-  }
-
-
-  extend(extendWithObj = {})
-  {
-    return Object.assign(this, extendWithObj);
   }
 
 
@@ -233,10 +227,11 @@ class HappyItem {
 
   isHappy()
   {
-    if (this.happyType !== 'input' || this.happyType !== 'field' || this.subValidateInputs) {
+    if (this.happyType !== 'input' && this.happyType !== 'field' || this.subValidateInputs) {
       for (let i=0, n=this.children.length; i < n; i++) {
         if ( ! this.children[i].happy) { return false; }
       }
+      return true;
     }
     return this.happy;
   }
