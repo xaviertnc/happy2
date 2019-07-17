@@ -53,11 +53,10 @@ class View {
 
   public function getDefaultCachePath($srcFilePath = null)
   {
-    if (isset($this->app->page) and
-        isset($this->app->page->cachePath)) {
+    if (isset($this->app->page) and isset($this->app->page->cachePath)) {
       return $this->app->page->cachePath;
     }
-    return $this->app->cachePath ?: dirname($srcFilePath) . '/cache';
+    return dirname($srcFilePath) . '/cache';
   }
 
 
@@ -76,6 +75,28 @@ class View {
   }
 
 
+  public function minify($content, $contentType = null)
+  {
+    $content = str_replace("\r", '', $content);
+    $content = preg_replace('/\n+[\s\t]*/', "\n", $content);
+    $content = preg_replace('@/\*.*?\*/@s', '', $content);
+    if ($contentType == 'js') {
+      $content = preg_replace('@(?<=\n)[\s\t]*//.*@', '', $content);
+      // $content = preg_replace('/(F1\.)*console\.log.*?\);/', '', $content);
+    }
+    $content = preg_replace('/\n[\s\t]*\n+/', "\n", $content);
+    return $content;
+  }
+
+
+  public function concatFiles(array $filePaths)
+  {
+    $content = '';
+    foreach ($filePaths as $i => $filePath) {
+      $content .= ($i ? PHP_EOL : '') . file_get_contents($filePath); }
+    return $content;
+  }
+
 
   public function cacheToFile($content, $filePath, $cachePath = null)
   {
@@ -87,28 +108,9 @@ class View {
   }
 
 
-  public function concatFiles(array $filePaths, $fileType)
-  {
-    $content = '';
-    foreach ($filePaths as $i => $filePath) {
-      $content .= ($i ? PHP_EOL : '') . file_get_contents($filePath);
-    }
-    $content = str_replace("\r", '', $content);
-    $content = preg_replace('/\n+[\s\t]*/', "\n", $content);
-    $content = preg_replace('@/\*.*?\*/@s', '', $content);
-    if ($fileType == 'js') {
-       $content = preg_replace('@(?<=\n)[\s\t]*//.*@', '', $content);
-       $content = preg_replace('/(F1\.)*console\.log.*?\);/', '', $content);
-    }
-    $content = preg_replace('/\n[\s\t]*\n+/', "\n", $content);
-    return $content;
-  }
-
-
   public function compile($filePath, $fileType, $dentCount, $dent,
     $before, $after, $cachePath = null, $inline = false)
   {
-    if ( ! $cachePath) { $cachePath = dirname($filePath) . '/cache'; }
     $compiledFilePath = $this->getCachedFilePath($filePath, $fileType, $cachePath);
     if (file_exists($compiledFilePath)) { return $compiledFilePath; }
     $dent = $dent ?: $this->dent;
@@ -124,46 +126,36 @@ class View {
   }
 
 
-  public function globalStyles($uid = '.app', $stylesUri = null)
+  public function globalStyles()
   {
     $srcFilePaths = array_get($this->app->client, 'globalStyles', []);
     $mostRecent = $this->getMostRecentTimestamp($srcFilePaths);
     if ( ! $mostRecent) { $mostRecent = time(); }
-
-    $assetHref = $stylesUri
-      ? "$stylesUri/$mostRecent$uid.css"
-      : "css/$mostRecent$uid.css";
-
-    $assetFilePath = $this->app->webRootPath . '/'. $assetHref;
-
+    $assetHref = "css/$mostRecent.app.css";
+    $assetFilePath = $this->app->webRootPath."/$assetHref";
     if ( ! file_exists($assetFilePath))
     {
-      file_put_contents($assetFilePath,
-      $this->concatFiles($srcFilePaths, 'css'));
+      $content = $this->concatFiles($srcFilePaths);
+      $content = $this->minify($content, 'css');
+      file_put_contents($assetFilePath, $content);
     }
-
     return '<link href="' . $assetHref . '" rel="stylesheet">' . PHP_EOL;
   }
 
 
-  public function globalScripts($uid = '.app', $scriptsUri = null)
+  public function globalScripts()
   {
     $srcFilePaths = array_get($this->app->client, 'globalScripts', []);
     $mostRecent = $this->getMostRecentTimestamp($srcFilePaths);
     if ( ! $mostRecent) { $mostRecent = time(); }
-
-    $assetHref = $scriptsUri
-      ? "$scriptsUri/$mostRecent$uid.js"
-      : "js/$mostRecent$uid.js";
-
-    $assetFilePath = $this->app->webRootPath . '/'. $assetHref;
-
+    $assetHref = "js/$mostRecent.app.js";
+    $assetFilePath = $this->app->webRootPath."/$assetHref";
     if ( ! file_exists($assetFilePath))
     {
-      file_put_contents($assetFilePath,
-      $this->concatFiles($srcFilePaths, 'js'));
+      $content = $this->concatFiles($srcFilePaths);
+      $content = $this->minify($content, 'js');
+      file_put_contents($assetFilePath, $content);
     }
-
     return '<script src="' . $assetHref . '"></script>' . PHP_EOL;
   }
 
