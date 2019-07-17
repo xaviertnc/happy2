@@ -52,12 +52,12 @@ $app->client = [
     $app->webRootPath . '/css/form.css'
   ],
   'globalScripts' => [
-    $app->webRootPath . '/js/vendors/onefile/alerts.js',
-    $app->webRootPath . '/js/vendors/onefile/modal.js',
-    $app->webRootPath . '/js/vendors/onefile/b2top.js',
-    $app->webRootPath . '/js/vendors/onefile/tabs.js',
-    $app->webRootPath . '/js/vendors/onefile/pjax.js',
-    $app->webRootPath . '/js/vendors/onefile/h7.js',
+    $app->vendorsPath . '/onefile/alerts.js',
+    $app->vendorsPath . '/onefile/modal.js',
+    $app->vendorsPath . '/onefile/b2top.js',
+    $app->vendorsPath . '/onefile/tabs.js',
+    $app->vendorsPath . '/onefile/pjax.js',
+    $app->vendorsPath . '/onefile/h7.js',
     $app->webRootPath . '/js/main.js'
   ]
 ];

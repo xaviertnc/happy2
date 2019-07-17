@@ -12,6 +12,9 @@
   margin-bottom: 1em;
 }
 
+.doc.happy, form.happy > fieldset { border-color: darkseagreen; }
+.doc.happy > legend, form.happy > fieldset > legend { color: seagreen; }
+
 .doc.has-error, form.has-error > fieldset { border-color: lightpink; }
 .doc.has-error > legend, form.has-error > fieldset > legend { color: crimson; }
 

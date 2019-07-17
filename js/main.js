@@ -4,6 +4,18 @@
 
 F1.DEBUG = true;
 
+
+if (F1.DEBUG && window.console) {
+  F1.console = window.console;
+} else {
+  F1.console = {
+    log: function noConsoleLog() {},
+    dir: function noConsoleDir() {},
+    error: function reportError(errMsg) { return new Error(errMsg); }
+  };
+}
+
+
 // Returns a function, that, as long as it continues to be invoked, will not
 // be triggered. The function will be called after it stops being called for
 // N milliseconds. If `immediate` is passed, trigger the function on the
@@ -70,16 +82,6 @@ F1.runScripts = function (scriptQueue)
 };
 
 
-if (F1.DEBUG && window.console) {
-  F1.console = window.console;
-} else {
-  F1.console = {
-    log: function noConsoleLog() {},
-    dir: function noConsoleDir() {},
-    error: function reportError(errMsg) { return new Error(errMsg); }
-  };
-}
-
 F1.console.log('*** DOCUMENT READY ***');
 
 F1.back2Top = new F1.Back2Top();
@@ -105,6 +107,7 @@ F1.pjax = new F1.Pjax({
     F1.tabs.init();
   }
 });
+
 
 F1.runScripts(F1.afterPageLoadScripts);
 F1.afterPageLoadScripts = [];

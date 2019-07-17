@@ -949,5 +949,4 @@ class HappyDocument extends HappyItem {
 }
 
 
-
 window.Happy = Happy;
