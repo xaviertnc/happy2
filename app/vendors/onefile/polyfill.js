@@ -1,14 +1,15 @@
-function runListeners(oEvent) {
-  if (!oEvent) { oEvent = window.event; }
-  for (var iLstId = 0, iElId = 0, oEvtListeners = oListeners[oEvent.type]; iElId < oEvtListeners.aEls.length; iElId++) {
-    if (oEvtListeners.aEls[iElId] === this) {
-      for (iLstId; iLstId < oEvtListeners.aEvts[iElId].length; iLstId++) { oEvtListeners.aEvts[iElId][iLstId].call(this, oEvent); }
-      break;
-    }
-  }
-}
+/* global F1 */
 if (!Element.prototype.addEventListener) {
   var oListeners = {};
+  F1.runListeners = function(oEvent) {
+    if (!oEvent) { oEvent = window.event; }
+    for (var iLstId = 0, iElId = 0, oEvtListeners = oListeners[oEvent.type]; iElId < oEvtListeners.aEls.length; iElId++) {
+      if (oEvtListeners.aEls[iElId] === this) {
+        for (iLstId; iLstId < oEvtListeners.aEvts[iElId].length; iLstId++) { oEvtListeners.aEvts[iElId][iLstId].call(this, oEvent); }
+        break;
+      }
+    }
+  };
   Element.prototype.addEventListener = function (sEventType, fListener /*, useCapture (will be ignored!) */) {
     if (oListeners.hasOwnProperty(sEventType)) {
       var oEvtListeners = oListeners[sEventType];
@@ -18,12 +19,12 @@ if (!Element.prototype.addEventListener) {
       if (nElIdx === -1) {
         oEvtListeners.aEls.push(this);
         oEvtListeners.aEvts.push([fListener]);
-        this['on' + sEventType] = runListeners;
+        this['on' + sEventType] = F1.runListeners;
       } else {
         var aElListeners = oEvtListeners.aEvts[nElIdx];
-        if (this['on' + sEventType] !== runListeners) {
+        if (this['on' + sEventType] !== F1.runListeners) {
           aElListeners.splice(0);
-          this['on' + sEventType] = runListeners;
+          this['on' + sEventType] = F1.runListeners;
         }
         for (var iLstId = 0; iLstId < aElListeners.length; iLstId++) {
           if (aElListeners[iLstId] === fListener) { return; }
@@ -32,7 +33,7 @@ if (!Element.prototype.addEventListener) {
       }
     } else {
       oListeners[sEventType] = { aEls: [this], aEvts: [ [fListener] ] };
-      this['on' + sEventType] = runListeners;
+      this['on' + sEventType] = F1.runListeners;
     }
   };
   Element.prototype.removeEventListener = function (sEventType, fListener /*, useCapture (will be ignored!) */) {

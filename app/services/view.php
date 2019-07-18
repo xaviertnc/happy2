@@ -126,37 +126,74 @@ class View {
   }
 
 
-  public function globalStyles()
+  public function globalStyles($dentCount = 2, $dent = null)
   {
     $srcFilePaths = array_get($this->app->client, 'globalStyles', []);
-    $mostRecent = $this->getMostRecentTimestamp($srcFilePaths);
-    if ( ! $mostRecent) { $mostRecent = time(); }
-    $assetHref = "$mostRecent.app.css";
-    $assetFilePath = $this->app->webRootPath."/$assetHref";
-    if ( ! file_exists($assetFilePath))
+    if (__ENV_PROD__)
     {
-      $content = $this->concatFiles($srcFilePaths);
-      $content = $this->minify($content, 'css');
-      file_put_contents($assetFilePath, $content);
+      $mostRecent = $this->getMostRecentTimestamp($srcFilePaths);
+      if ( ! $mostRecent) { $mostRecent = time(); }
+      $assetHref = "$mostRecent.css";
+      $assetFilePath = $this->app->webRootPath."/$assetHref";
+      if ( ! file_exists($assetFilePath))
+      {
+        $content = $this->concatFiles($srcFilePaths);
+        $content = $this->minify($content, 'css');
+        file_put_contents($assetFilePath, $content);
+      }
+      return '<link href="' . $assetHref . '" rel="stylesheet">' . PHP_EOL;
     }
-    return '<link href="' . $assetHref . '" rel="stylesheet">' . PHP_EOL;
+    else
+    {
+      $html = '';
+      $dent = $dent ?: $this->dent;
+      $indent = $this->indent($dentCount, $dent);
+      foreach ($srcFilePaths as $i => $srcFilePath)
+      {
+        $fileName = basename($srcFilePath);;
+        $assetHref = "css/$fileName";
+        $html .= ($i ? $indent : '') . '<link href="' . $assetHref . '" rel="stylesheet">' . PHP_EOL;
+      }
+      return $html;
+    }
   }
 
 
-  public function globalScripts()
+  public function globalScripts($dentCount = 2, $dent = null)
   {
     $srcFilePaths = array_get($this->app->client, 'globalScripts', []);
-    $mostRecent = $this->getMostRecentTimestamp($srcFilePaths);
-    if ( ! $mostRecent) { $mostRecent = time(); }
-    $assetHref = "$mostRecent.app.js";
-    $assetFilePath = $this->app->webRootPath."/$assetHref";
-    if ( ! file_exists($assetFilePath))
+    if (__ENV_PROD__)
     {
-      $content = $this->concatFiles($srcFilePaths);
-      $content = $this->minify($content, 'js');
-      file_put_contents($assetFilePath, $content);
+      $mostRecent = $this->getMostRecentTimestamp($srcFilePaths);
+      if ( ! $mostRecent) { $mostRecent = time(); }
+      $assetHref = "$mostRecent.js";
+      $assetFilePath = $this->app->webRootPath."/$assetHref";
+      if ( ! file_exists($assetFilePath))
+      {
+        $content = $this->concatFiles($srcFilePaths);
+        $content = $this->minify($content, 'js');
+        file_put_contents($assetFilePath, $content);
+      }
+      return '<script src="' . $assetHref . '"></script>' . PHP_EOL;
     }
-    return '<script src="' . $assetHref . '"></script>' . PHP_EOL;
+    else
+    {
+      $html = '';
+      $dent = $dent ?: $this->dent;
+      $indent = $this->indent($dentCount, $dent);
+      foreach ($srcFilePaths as $i => $srcFilePath)
+      {
+        $fileName = basename($srcFilePath);;
+        $assetHref = "js/$fileName";
+        $assetFilePath = $this->app->webRootPath."/$assetHref";
+        if ( ! file_exists($assetFilePath)
+          or filemtime($srcFilePath) != filemtime($assetFilePath)) {
+          copy($srcFilePath, $assetFilePath);
+        }
+        $html .= ($i ? $indent : '') . '<script src="' . $assetHref . '"></script>' . PHP_EOL;
+      }
+      return $html;
+    }
   }
 
 

@@ -1,6 +1,7 @@
 nbproject
-js/vendors/junk
+js
+!/js/main.js
 **/cache
 *sublime*
-*.app.js
-*.app.css
+/*.js
+/*.css

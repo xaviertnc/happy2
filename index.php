@@ -52,6 +52,7 @@ $app->client = [
     $app->webRootPath . '/css/form.css'
   ],
   'globalScripts' => [
+    // $app->vendorsPath . '/onefile/polyfill.js',
     $app->vendorsPath . '/onefile/alerts.js',
     $app->vendorsPath . '/onefile/modal.js',
     $app->vendorsPath . '/onefile/b2top.js',
