@@ -47,6 +47,8 @@ form.modified > fieldset > legend .show-if-modified {
   text-align: center;
 }
 
+.button { margin: 0.15em 0; }
+
 .currency input { width: 90px; }
 
 @media all and (min-width:900px) {

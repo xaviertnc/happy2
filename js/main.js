@@ -2,7 +2,7 @@
 
 // MAIN
 
-F1.DEBUG = true;
+F1.DEBUG = false;
 
 
 if (F1.DEBUG && window.console) {

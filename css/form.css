@@ -91,6 +91,14 @@ input[type="number"] {
   border-left: 0;
 }
 
+.message-summary {
+  border: 1px dashed pink;
+  color: crimson;
+  padding: 0.3em 0.55em;
+  margin: 0.5em 0;
+  line-height: 1.34em;
+  font-size: 0.85em;
+}
 
 .messages {
   list-style: none;

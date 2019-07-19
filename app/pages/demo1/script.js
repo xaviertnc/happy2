@@ -53,10 +53,14 @@ F1.afterPageLoadScripts.push(function initPage1() {
 
   happy.mount({
     el: document.body.querySelector('#happydoc'),
-    unhappyClass: 'has-error'
+    onSubmitAbort: function() { F1.pjax.removeBusyIndication(); },
+    unhappyInputSelector: '.has-error > input, .has-error > .input',
+    unhappyClass: 'has-error',
+    summaryType: 'short'
   });
 
-  happy.focusUnhappy('.has-error > input, .has-error > .input');
+
+  happy.focusOnFirstInput();
 
 
   F1.console.log('Page 1 initialized - ok');

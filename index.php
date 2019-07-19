@@ -46,6 +46,7 @@ $app->cachePath = $app->storagePath . '/cache';
 $app->webRootPath = $app->rootPath;
 $app->pagesUri = 'app/pages';
 $app->homeUri = 'demo1';
+
 $app->client = [
   'globalStyles' => [
     $app->webRootPath . '/css/style.css',

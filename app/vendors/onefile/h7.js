@@ -99,9 +99,16 @@ class Happy {
   }
 
 
-  focusUnhappy(selector)
+  focusOnFirstInput()
   {
-    let unhappyInput = document.querySelector(selector || '.unhappy > input');
+    this.inputs[0] && this.inputs[0].el.focus();
+  }
+
+
+  focusUnhappy(selector, elContext = document)
+  {
+    // F1.console.log('Happy::focusUnhappy(), selector =', selector);
+    let unhappyInput = elContext.querySelector(selector || '.unhappy > input');
     if (unhappyInput) { unhappyInput.focus(); }
   }
 
@@ -184,12 +191,6 @@ class HappyItem {
   }
 
 
-  ignoreBlur()
-  {
-    return this.isType(['checkbox', 'checklist', 'radiolist', 'select', 'file']);
-  }
-
-
   setOpt(key, value, def)
   {
     if (typeof this.options[key] !== 'undefined') { return; }
@@ -244,6 +245,17 @@ class HappyItem {
       let parentElement = this.parent ? this.parent.el : document.body;
       return parentElement.querySelector(this.options.selector);
     }
+  }
+
+
+  getSummaryContainers(options = {})
+  {
+    let containerElements = [];
+    const elContext = options.elContext || document;
+    if (options.selector) { containerElements = elContext.querySelectorAll(options.selector); }
+    else if (options.elements) { containerElements = options.elements; }
+    else { containerElements.push(options.el || this.el); }
+    return containerElements;
   }
 
 
@@ -392,6 +404,12 @@ class HappyItem {
   }
 
 
+  focusUnhappy()
+  {
+    this.happy$.focusUnhappy(this.getOpt('unhappyInputSelector'), this.el);
+  }
+
+
   /**
    * NOTE: Only HappyFields should call this method!
    */
@@ -491,12 +509,11 @@ class HappyItem {
     let happyInput = event.target.HAPPY;
     if ( ! happyInput || happyInput.happyType !== 'input') { return; }
     let happyField = happyInput.parent, happy$ = happyInput.happy$;
-    // Checklist, Radiolist and Select Fields should ignore blur events
-    // between their OWN inputs. ignoreBlur() checks for these types.
-    if (happyField === happy$.currentField && happyField.ignoreBlur()) {
+    happyInput.touched = true;
+    happyField.touched = true;
+    if (happyField === happy$.currentField && !happyField.subValidateInputs) {
       // Ignore any pending `onBlur` event if we are still on the SAME FIELD!
-      return clearTimeout(happyField.delayBlurEventTimer);
-    }
+      clearTimeout(happy$.delayBlurEventTimer); }
     happy$.currentField = happyField;
   }
 
@@ -504,12 +521,15 @@ class HappyItem {
   onBlurHandler(event)
   {
     let happyInput = event.target.HAPPY;
-    if ( ! happyInput || happyInput.happyType !== 'input') { return; }
-    let happyField = happyInput.parent;
-    // Delay the field-blur event action to check if we actually left this field.
-    // The next input-focus event will clear the timer if we are still on the same field.
-    happyField.delayBlurEventTimer = setTimeout(function () {
-      happyField.rateLimit(happyField, happyField.update, [event, 'onBlur'], 150);
+    if ( ! happyInput || happyInput.happyType !== 'input' ||
+      happyInput.getOpt('ignoreBlurEvents')) { return; }
+    let happyField = happyInput.parent, happy$ = happyInput.happy$;
+    // Checklist, Radiolist and Select Fields should ignore blur events between their OWN inputs.
+    // Delay the field-blur event action to allow testing if we actually left this field.
+    // The next focus event will clear the timer and delayed action if we are still on the same field.
+    happy$.delayBlurEventTimer = setTimeout(function () {
+      if (happyField === happy$.currentField) { return; }
+      happyField.rateLimit(happyField, happyField.check, [event, 'onBlur'], 150);
     }, 200);
   }
 
@@ -517,9 +537,12 @@ class HappyItem {
   onChangeHandler(event)
   {
     let happyInput = event.target.HAPPY;
-    if ( ! happyInput || happyInput.happyType !== 'input') { return; }
+    if ( ! happyInput || happyInput.happyType !== 'input' ||
+      happyInput.getOpt('ignoreChangeEvents')) { return; }
     let happyField = happyInput.parent;
-    happyField.rateLimit(happyField, happyField.update, [event, 'onChange'], 150);
+    happyField.happy$.delayChangeEventTimer = setTimeout(function () {
+      happyField.rateLimit(happyField, happyField.check, [event, 'onChange'], 150);
+    }, 200);
   }
 
 
@@ -567,80 +590,146 @@ class HappyItem {
 
   onSubmitHandler(event)
   {
-    F1.console.log('HappyItem::onSubmitHandler()', event);
-    // Run validations + Stop event if validation fails...
-    event.target.HAPPY.update(event, 'onSubmit');
-    if ( ! this.happy) {
-      event.preventDefault();
-      event.stopPropagation();
+    // F1.console.log('HappyItem::onSubmitHandler(), start');
+    const happyForm = event.target.HAPPY;
+    if (happyForm) {
+      clearTimeout(happyForm.happy$.delayBlurEventTimer);
+      clearTimeout(happyForm.happy$.delayChangeEventTimer);
+      const messages = happyForm.checkAll(event, 'isSubmit');
+      if (messages.length) {
+        const onSubmitAbortFn = happyForm.getOpt('onSubmitAbort');
+        if (onSubmitAbortFn && onSubmitAbortFn(happyForm, messages, event) === 'end') { return; }
+        happyForm.renderMessageSummary(messages, {
+          elContext: happyForm.el,
+          selector: happyForm.getOpt('summarySelector', '.message-summary'),
+          htmlTag: happyForm.getOpt('summaryItemTag'),
+          type: happyForm.getOpt('summaryType')
+        });
+        event.preventDefault();
+        event.stopPropagation();
+        setTimeout(function() { happyForm.focusUnhappy(); });
+      }
     }
   }
 
 
   removeMessages()
   {
-    let elMessageZone = this.el;
-    let msgGrpSelector = '.' + this.getOpt('messageGroupClass', 'messages');
-    let msgGrpElements = elMessageZone.querySelectorAll(msgGrpSelector);
+    // F1.console.log('HappyItem::removeMessages(),', this.id);
+    const summarySelector = this.getOpt('summarySelector', '.message-summary');
+    const summaryElements = document.querySelectorAll(summarySelector);
+    summaryElements.forEach(function(elSummary) {
+      if (elSummary.classList.contains('remove')) {
+        elSummary.parentElement.removeChild(elSummary);
+      } else {
+        elSummary.innerHTML = '';
+        elSummary.classList.add('hidden');
+      }
+    });
+    const elMessageZone = this.el;
+    const msgGrpSelector = '.' + this.getOpt('messageGroupClass', 'messages');
+    const msgGrpElements = elMessageZone.querySelectorAll(msgGrpSelector);
     msgGrpElements.forEach(elMsgGrp => elMsgGrp.parentElement.removeChild(elMsgGrp));
     this.inputs.forEach(input => input.messages = []);
     this.messages = [];
   }
 
 
-  addMessages(validateResults)
+  addMessages(validateResults, onlyUpdateModel)
   {
-    let message, elMsg, elMessageZone, validateResult, happyItem, happyItems = [];
+    const happyItems = [];
     const msgGrpClass = this.getOpt('messageGroupClass', 'messages');
     const msgClass = this.getOpt('messageClass', 'message error');
+    let message, elMsg, elMessageZone, validateResult, happyItem;
     for (let i = 0, n = validateResults.length; i < n; i++) {
       validateResult = validateResults[i];
+      message = validateResult.message;
       happyItem = validateResult.item || this;
       happyItem.messages = happyItem.messages || [];
-      if (happyItem.elMsgGrp) { continue; }
-      elMsg = document.createElement('li');
-      elMsg.className = msgClass;
-      elMessageZone = (happyItem.happyType === 'input')
-        ? happyItem.el.parentElement
-        : happyItem.el.querySelector('.input-group');
-      if ( ! elMessageZone) { elMessageZone = happyItem.el; }
-      if ( ! happyItem.elMsgGrp) {
-        happyItem.elMsgGrp = document.createElement('ul');
-        happyItem.elMsgGrp.className = msgGrpClass;
-        elMessageZone.appendChild(happyItem.elMsgGrp);
+      if ( ! onlyUpdateModel && ! happyItem.elMsgGrp) { // (!elMsgGrp) == only render first msg.
+        elMsg = document.createElement('li');
+        elMsg.className = msgClass;
+        elMessageZone = (happyItem.happyType === 'input')
+          ? happyItem.el.parentElement
+          : happyItem.el.querySelector('.input-group');
+        if ( ! elMessageZone) { elMessageZone = happyItem.el; }
+        if ( ! happyItem.elMsgGrp) {
+          happyItem.elMsgGrp = document.createElement('ul');
+          happyItem.elMsgGrp.className = msgGrpClass;
+          elMessageZone.appendChild(happyItem.elMsgGrp);
+        }
+        elMsg.innerHTML = message;
+        happyItem.elMsgGrp.appendChild(elMsg);
       }
-      message = validateResult.message;
-      elMsg.innerHTML = message;
-      happyItem.elMsgGrp.appendChild(elMsg);
-      happyItem.messages.push({ el: elMsg, elParent: elMessageZone, text: message });
+      happyItem.messages.push({
+        el: elMsg, elParent: elMessageZone, text: message, happyItem: happyItem
+      });
       happyItems.push(happyItem);
     }
-    setTimeout(function(){
-      happyItems.forEach(function(item) {
-        item.elMsgGrp.classList.add('animate');
-        delete item.elMsgGrp;
-      });
-    }, 150);
+    if ( ! onlyUpdateModel) {
+      setTimeout(function(){
+        // F1.console.log('addMessages::addMessages(), happyItems =', happyItems);
+        happyItems.forEach(function(item) {
+          if (item.elMsgGrp) {
+            item.elMsgGrp.classList.add('animate');
+            delete item.elMsgGrp;
+          }
+        });
+      }, 150);
+    }
   }
 
 
   renderState()
   {
-    let happyClass = this.getOpt('happyClass', 'happy');
-    let unhappyClass = this.getOpt('unhappyClass', 'unhappy');
-    let elStateZone = (this.happyType === 'input') ? this.el.parentElement : this.el;
+    const happyClass = this.getOpt('happyClass', 'happy');
+    const unhappyClass = this.getOpt('unhappyClass', 'unhappy');
+    const elStateZone = (this.happyType === 'input') ? this.el.parentElement : this.el;
     // F1.console.log('HappyItem::renderState(),', this.id, this.happy, elStateZone);
     if (this.isHappy()) {
-      elStateZone.classList.add(happyClass);
+      if (this.touched && this.modified) { elStateZone.classList.add(happyClass); }
+      else { elStateZone.classList.remove(happyClass); }
       elStateZone.classList.remove(unhappyClass);
     }
     else {
       elStateZone.classList.add(unhappyClass);
       elStateZone.classList.remove(happyClass);
     }
-    let modifiedClass = this.getOpt('modifiedClass', 'modified');
+    const modifiedClass = this.getOpt('modifiedClass', 'modified');
     if (this.modified) { elStateZone.classList.add(modifiedClass); }
     else { elStateZone.classList.remove(modifiedClass); }
+  }
+
+
+  renderMessageSummary(happyMessages = [], options = {})
+  {
+    // F1.console.log('HappyItem::renderMessageSummary(),', this.id, happyMessages);
+    const summaryContainers = this.getSummaryContainers(options);
+    const htmlTag = options.htmlTag || 'div';
+    const messageRenderedIndex = {};
+    let html = '';
+    if (options.type === 'short') { happyMessages = [happyMessages[0]]; } // Only one msg in summary!
+    happyMessages.forEach(function(happyMessage) {
+      const happyItem = happyMessage.happyItem;
+      const messageText = happyMessage.text === 'required'
+        ? (happyItem.label || 'Input') + ' is required.' // Prettify default required messages.
+        : happyMessage.text;
+      if ( ! messageRenderedIndex[happyItem.id]) { // Only one msg per field!
+        html += '<' + htmlTag + '>' + messageText + '</' + htmlTag + '>';
+      }
+      messageRenderedIndex[happyItem.id] = true;
+    });
+    summaryContainers.forEach(function(elSummary) {
+      if (elSummary.HAPPY) {
+        const elContainer = document.createElement('div');
+        elContainer.className = 'message-summary remove';
+        elContainer.innerHTML = html;
+        elSummary.appendChild(elContainer);
+      } else {
+        elSummary.innerHTML = html;
+        elSummary.classList.remove('hidden');
+      }
+    });
   }
 
 
@@ -650,30 +739,54 @@ class HappyItem {
   }
 
 
-  update(event, reason)
+  check(event, reason)
   {
-    // F1.console.log('HappyItem::update(),', this.id, reason);
+    let messages = [];
+    const reasonCheckOrSubmit = (reason === 'check' || reason === 'isSubmit');
+    // F1.console.log('HappyItem::check(),', this.id, reason);
     this.value = this.getValue();
     this.modified = this.isModified();
-    if (reason === 'isParent') {
-      this.happy = this.isHappy();
-    } else {
-      let validateResults = this.validate(event, reason) || [];
+    if (reason !== 'isParent') {
+      const validateResults = this.validate(event, reason) || [];
       this.removeMessages();
-      this.addMessages(validateResults);
+      this.addMessages(validateResults); // , reasonCheckOrSubmit
       for (let i = 0, n = this.inputs.length; i < n; i++) {
         let input = this.inputs[i];
         input.modified = input.isModified();
-        if ( ! this.subValidateInputs) {
+        if (this.subValidateInputs) {
+          messages = messages.concat(input.messages);
+        } else {
           input.happy = this.happy;
         }
         input.renderState();
       }
+    } else {
+      this.happy = this.isHappy();
     }
     this.renderState();
-    if ( ! this.isTopLevel) {
-      this.parent.update(event, 'isParent');
+    if ( ! reasonCheckOrSubmit && this.parent) { this.parent.check(event, 'isParent'); }
+    return messages.concat(this.messages || []);
+  }
+
+
+  checkAll(event, reason) // reason: 'check' or 'isSubmit'
+  {
+    // F1.console.log('HappyItem::checkAll(),', this.id, reason);
+    let messages = [];
+    if (this.happyType === 'document') {
+      this.forms.forEach(function(form) {
+        messages = messages.concat(form.checkAll(event, reason));
+      });
+    } else { // this.happyType === 'form'
+      this.fields.forEach(function(field) {
+        if ( ! messages.length) { // Only check until we find something!
+          messages = messages.concat(field.check(event, reason));
+        }
+      });
     }
+    this.renderState();
+    messages = messages.concat(this.check(event, 'isParent'));
+    return messages;
   }
 
 
@@ -733,10 +846,13 @@ class HappyInput extends HappyItem {
 
   extractLabel()
   {
-    let el = this.el.previousElementSibling;
-    if (el && el.nodeName === 'LABEL') {
-      return el.innerHTML.replace(/\s*:$/,'');
-    }
+    let label, el = this.el.previousElementSibling;
+    if (el && el.nodeName === 'LABEL') { label = el.innerHTML.replace(/\s*:$/,''); }
+    if (label) { return label; }
+    el = this.el.closest('.subfield,.field');
+    el = el.firstElementChild;
+    if (el && el.nodeName === 'LABEL') { label = el.innerHTML.replace(/\s*:$/,''); }
+    return label;
   }
 
 
@@ -792,6 +908,14 @@ class HappyField extends HappyItem {
     if (this.inputs.length === 1) { name = this.inputs[0].name; }
     else { name = this.el.getAttribute('data-name') || this.el.id; }
     return name;
+  }
+
+
+  extractLabel()
+  {
+    let label = this.el.getAttribute('data-label');
+    if (label) { return label; }
+    return this.inputs[0].label;
   }
 
 

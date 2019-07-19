@@ -1,4 +1,4 @@
-<fieldset id="happydoc" class="doc has-error">
+<fieldset id="happydoc" class="doc">
 
   <legend>Doc 1 <span class="show-if-modified">(*Modified*)</span></legend>
 
@@ -6,35 +6,35 @@
 
     <div class="doc-column left-column">
 
-      <form id="form1" class="pjax has-error" method="post" novalidate>
+      <form id="form1" class="pjax" method="post" novalidate>
 
         <fieldset>
 
           <legend>Form 1 <span class="show-if-modified">(*Modified*)</span></legend>
 
-          <div class="validation-summary hidden"></div>
-
-          <div class="field fullname has-error" data-name="form1[name]" data-label="Name"
-            data-type="fullname" data-validate="isHappy:Name is required.">
-            <label>Name:</label>
+          <div class="field fullname" data-name="form1[name]" data-label="Name"
+            data-type="fullname"> <!--data-validate="isHappy:Name is required."-->
+            <label style="margin-top:0.8em">Name:</label>
             <div class="input-group">
-              <div class="subfield required has-error">
+              <div class="subfield">
                 <label class="small-text">Firstname</label>
-                <input name="form1[firstname]" type="text"
-                  data-validate="required:Enter firstname.|minLength:3"
-                  data-format="name">
+                <input name="form1[firstname]" type="text" data-validate="minLength:3" data-format="name" required>
+<!--
                 <ul class="messages animate">
                   <li class="message error">Enter firstname.</li>
                 </ul>
+ -->
               </div>
               <div class="subfield">
                 <label class="small-text">Lastname</label>
                 <input name="form1[lastname]" type="text" data-format="lastname">
               </div>
+<!--
               <ul class="messages animate">
-                <!-- <li class="message info">User note: Provide both Firstname AND Lastname pls!</li> -->
+                <li class="message info">User note: Provide both Firstname AND Lastname pls!</li>
                 <li class="message error">Name is required.</li>
               </ul>
+ -->
             </div>
           </div>
 
@@ -123,11 +123,11 @@
             </div>
           </div>
 
+          <div class="message-summary hidden"></div>
+
           <div class="action-bar">
             <button class="button primary" type="submit">Submit</button>
           </div>
-
-          <div class="validation-summary hidden"></div>
 
         </fieldset>
 
@@ -143,7 +143,7 @@
 
           <legend>Form 2 <span class="show-if-modified">(*Modified*)</span></legend>
 
-          <div class="validation-summary hidden"></div>
+          <div class="message-summary hidden"></div>
 
           <div class="field checklist required" data-type="checklist" data-name="form2[checklist]">
             <label>Checklist:</label>
@@ -215,23 +215,22 @@
           <div class="field captcha required" data-type="captcha">
             <label>Captcha:</label>
             <div class="input-group">
-              <div class="subfield">
+              <!-- <div class="subfield"> -->
                 <div style="background:url(img/white-wave.png);padding:1em;margin-bottom:3px">
                   CAPT<?=rand(1111, 9999)?>
                 </div>
                 <input name="form2[captcha]" type="text">
-              </div>
+              <!-- </div> -->
             </div>
           </div>
 
+          <div class="message-summary hidden"></div>
 
           <div class="action-bar">
             <button class="button primary" type="submit">Submit</button>
             <button class="button secondary" type="submit" name="refresh" value="1">Refresh</button>
             <button class="button danger" type="submit" name="delete-item" value="1" onclick="F1.confirm(this, event)">Delete Item</button>
           </div>
-
-          <div class="validation-summary hidden"></div>
 
         </fieldset>
 
