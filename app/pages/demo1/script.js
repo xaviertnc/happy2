@@ -44,14 +44,20 @@ F1.afterPageLoadScripts.push(function initPage1() {
           return rule.arg ? rule.arg : 'Email must be valid! e.g. john.doe@demo.com';
         }
       }
+    },
+    customClasses: {
+      fields: {
+        fullname: FullNameField,
+        birthday: BirthdayField
+      },
+      inputs: {
+        age: AgeInput
+      }
     }
   });
 
-  happy.customClasses.inputs.age = AgeInput;
-  happy.customClasses.fields.fullname = FullNameField;
-  happy.customClasses.fields.birthday = BirthdayField;
 
-  happy.mount({
+  const happyDoc = happy.mount({
     el: document.body.querySelector('#happydoc'),
     onSubmitAbort: function() { F1.pjax.removeBusyIndication(); },
     unhappyInputSelector: '.has-error > input, .has-error > .input',
@@ -60,7 +66,7 @@ F1.afterPageLoadScripts.push(function initPage1() {
   });
 
 
-  happy.focusOnFirstInput();
+  happy.focusOnFirstInput(happyDoc.getOpt('unhappyInputSelector'), happyDoc.el);
 
 
   F1.console.log('Page 1 initialized - ok');
