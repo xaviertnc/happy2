@@ -99,17 +99,19 @@ class Happy {
   }
 
 
-  focusOnFirstInput()
-  {
-    this.inputs[0] && this.inputs[0].el.focus();
-  }
-
-
   focusUnhappy(selector, elContext = document)
   {
     // F1.console.log('Happy::focusUnhappy(), selector =', selector);
     let unhappyInput = elContext.querySelector(selector || '.unhappy > input');
-    if (unhappyInput) { unhappyInput.focus(); }
+    if (unhappyInput) { unhappyInput.focus(); return true; }
+  }
+
+
+  focusOnFirstInput(unhappySelector, elContext)
+  {
+    if ( ! this.focusUnhappy(unhappySelector, elContext)) {
+      this.inputs[0] && this.inputs[0].el.focus();
+    }
   }
 
 

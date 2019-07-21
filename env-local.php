@@ -8,7 +8,7 @@
  */
 
 define('__DEBUG__', true);
-define('__ENV_PROD__', false);
+define('__ENV_PROD__', true);
 
 
 $app->uriBase = '/';
