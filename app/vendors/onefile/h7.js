@@ -592,15 +592,19 @@ class HappyItem {
 
   onSubmitHandler(event)
   {
-    // F1.console.log('HappyItem::onSubmitHandler(), start');
+    F1.console.log('HappyItem::onSubmitHandler(), start');
     const happyForm = event.target.HAPPY;
-    if (happyForm) {
+    const elSubmitTrigger = happyForm.el.submitTriggerElement;
+    const checkHappy = elSubmitTrigger ? !elSubmitTrigger.hasAttribute('novalidate') : true;
+    F1.console.log('HappyItem::onSubmitHandler(), elForm:', happyForm.el);
+    F1.console.log('HappyItem::onSubmitHandler(), elSubmitTrigger:', elSubmitTrigger);
+    if (happyForm && checkHappy) {
       clearTimeout(happyForm.happy$.delayBlurEventTimer);
       clearTimeout(happyForm.happy$.delayChangeEventTimer);
       const messages = happyForm.checkAll(event, 'isSubmit');
       if (messages.length) {
-        const onSubmitAbortFn = happyForm.getOpt('onSubmitAbort');
-        if (onSubmitAbortFn && onSubmitAbortFn(happyForm, messages, event) === 'end') { return; }
+        const onUnhappySubmitFn = happyForm.getOpt('onUnhappySubmit');
+        if (onUnhappySubmitFn && onUnhappySubmitFn(happyForm, messages, event) === 'end') { return; }
         happyForm.renderMessageSummary(messages, {
           elContext: happyForm.el,
           selector: happyForm.getOpt('summarySelector', '.message-summary'),
