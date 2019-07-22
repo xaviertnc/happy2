@@ -59,7 +59,7 @@ F1.afterPageLoadScripts.push(function initPage1() {
 
   const happyDoc = happy.mount({
     el: document.body.querySelector('#happydoc'),
-    onSubmitAbort: function() { F1.pjax.removeBusyIndication(); },
+    onUnhappySubmit: function() { F1.pjax.removeBusyIndication(); },
     unhappyInputSelector: '.has-error > input, .has-error > .input',
     unhappyClass: 'has-error',
     summaryType: 'short'
