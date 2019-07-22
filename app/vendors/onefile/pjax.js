@@ -183,9 +183,10 @@ F1.Pjax.prototype.bindForms = function(viewport, formSubmitHandler)
       function (event) { var elForm = this; pjax.formSubmitHandler(event, elForm); });
     var submitButtons = this.findDOMElementAll('[type="submit"]', elPjaxForm);
     for (j=0, k=submitButtons.length; j < k; j++) {
+      submitButtons[j].elPjaxForm = elPjaxForm;
       submitButtons[j].addEventListener('click', function(event) {
         pjax.showBusyIndication();
-        elPjaxForm.submitElement = this;
+        this.elPjaxForm.submitTriggerElement = this;
         if (pjax.beforeSubmit && pjax.beforeSubmit(event, elPjaxForm) === 'abort') {
           return false; }
       });
@@ -488,19 +489,16 @@ F1.Pjax.prototype.pageLinkClickHandler = function(event)
 F1.Pjax.prototype.formSubmitHandler = function(event, elForm)
 {
   this.stopDOMEvent(event);
-  // F1.console.log('F1.Pjax.formSubmitHandler(), this:', this);
-  // F1.console.log('F1.Pjax.formSubmitHandler(), event:', event);
-  // F1.console.log('F1.Pjax.formSubmitHandler(), elForm:', elForm);
-  if (elForm.submitElement) {
-    var submitParams, submitAction = elForm.submitElement.name || '';
-    // NOTE: elForm.submitElement is set in Pjax.bindForms() below
+  if (elForm.submitTriggerElement) {
+    var submitParams, submitAction = elForm.submitTriggerElement.name || '';
+    // NOTE: elForm.submitTriggerElement is set in Pjax.bindForms() below
     // via the submit element's onClick handler.
-    if (elForm.submitElement.tagName.toLowerCase() === 'input') {
+    if (elForm.submitTriggerElement.tagName.toLowerCase() === 'input') {
       // INPUT[type="submit"] elements use "input.value" for the button label,
       // so we have to define a "data-action-params" attribute if we need action params.
-      submitParams = elForm.submitElement.getAttribute('data-action-params');
+      submitParams = elForm.submitTriggerElement.getAttribute('data-action-params');
     } else {
-      submitParams = elForm.submitElement.value;
+      submitParams = elForm.submitTriggerElement.value;
     }
     if (submitAction) {
       elForm.appendChild(this.createInputElement('hidden', '__ACTION__', submitAction));
@@ -591,9 +589,17 @@ F1.Pjax.prototype.getResponseErrorMessage = function(xhr)
 };
 
 
-F1.Pjax.prototype.loadSuccessHandler = function(xhr, progressEvent)
+// Override me!
+F1.Pjax.prototype.loadProgressHandler = function (xhr, progressEvent)
 {
-  // F1.console.log('F1.Pjax.loadSuccessHandler()');
+  // F1.console.log('Pjax.loadProgressHandler()');
+  return (progressEvent && xhr);
+};
+
+
+F1.Pjax.prototype.loadPageSuccessHandler = function(xhr, progressEvent)
+{
+  // F1.console.log('F1.Pjax.loadPageSuccessHandler()');
   if (this.onPageLoadSuccess && this.onPageLoadSuccess(xhr, progressEvent) === 'abort') { return; }
   if (this.isRedirectResponse(xhr)) { return this.handleRedirect(xhr); }
   this.updateDocument(xhr.response);
@@ -603,9 +609,9 @@ F1.Pjax.prototype.loadSuccessHandler = function(xhr, progressEvent)
 };
 
 
-F1.Pjax.prototype.loadFailedHandler = function(xhr, progressEvent)
+F1.Pjax.prototype.loadPageFailedHandler = function(xhr, progressEvent)
 {
-  // console.error('Pjax.loadFailedHandler(), xhr =', xhr);
+  // console.error('Pjax.loadPageFailedHandler(), xhr =', xhr);
   var errorMessage = this.getResponseErrorMessage(xhr);
   if (this.onPageLoadFail && this.onPageLoadFail(xhr, progressEvent, errorMessage) === 'abort') { return; }
   return this.showError(errorMessage);
@@ -613,18 +619,10 @@ F1.Pjax.prototype.loadFailedHandler = function(xhr, progressEvent)
 
 
 // Override me!
-F1.Pjax.prototype.loadProgressHandler = function (xhr, progressEvent)
+F1.Pjax.prototype.alwaysAfterLoadPageHandler = function(xhr, progressEvent)
 {
-  // F1.console.log('Pjax.loadProgressHandler()');
-  return (progressEvent && xhr);
-};
-
-
-// Override me!
-F1.Pjax.prototype.alwaysAfterLoadHandler = function(xhr, progressEvent)
-{
-  // console.log('Pjax.alwaysAfterLoadHandler()'); //, xhr =', xhr);
-  if (this.onAlwaysAfterLoad && this.onAlwaysAfterLoad(xhr, progressEvent) === 'abort') { return; }
+  // console.log('Pjax.alwaysAfterLoadPageHandler()'); //, xhr =', xhr);
+  if (this.onAlwaysAfterPageLoad && this.onAlwaysAfterPageLoad(xhr, progressEvent) === 'abort') { return; }
   if ( ! this.isRedirectResponse(xhr)) {
     this.getCurrentPath('force-update'); // Also force-updates 'this.currentLocation'
     this.removeBusyIndication();
@@ -640,17 +638,46 @@ F1.Pjax.prototype.loadPage = function(options)
   xhr.setRequestHeader('X-REQUESTED-WITH', 'PJAX');
   xhr.onload = function(progressEvent) {
     var xhr = this;
-    if (xhr.status === 200) { pjax.loadSuccessHandler(xhr, progressEvent); }
-    else { pjax.loadFailedHandler(xhr, progressEvent); }
-    pjax.alwaysAfterLoadHandler(xhr, progressEvent);
+    if (xhr.status === 200) { pjax.loadPageSuccessHandler(xhr, progressEvent); }
+    else { pjax.loadPageFailedHandler(xhr, progressEvent); }
+    pjax.alwaysAfterLoadPageHandler(xhr, progressEvent);
   };
   xhr.onerror = function() {
     var xhr = this;
-    pjax.loadFailedHandler(xhr);
-    pjax.alwaysAfterLoadHandler(xhr);
+    pjax.loadPageFailedHandler(xhr);
+    pjax.alwaysAfterLoadPageHandler(xhr);
   };
   xhr.onprogress = function(progressEvent) {
     pjax.loadProgressHandler(this, progressEvent);
+  };
+  xhr.send();
+};
+
+
+F1.Pjax.prototype.load = function(options)
+{
+  options = options || {};
+  options.onload = options.onload || function(){};
+  options.onerror = options.onerror || function(){};
+  options.always = options.always || function(){};
+  var pjax = this, xhr = new XMLHttpRequest();
+  xhr.open('GET', options.url);
+  xhr.setRequestHeader('X-REQUESTED-WITH', 'PJAX');
+  xhr.onload = function(progressEvent) {
+    var xhr = this;
+    if (xhr.status === 200) { options.onload(xhr, progressEvent); }
+    else { options.onerror(xhr, progressEvent); }
+    options.always(xhr, progressEvent);
+  };
+  xhr.onerror = function() {
+    var xhr = this;
+    options.onerror(xhr);
+    options.always(xhr);
+  };
+  xhr.onprogress = function(progressEvent) {
+    options.onprogress
+      ? options.onprogress(this, progressEvent)
+      : pjax.loadProgressHandler(this, progressEvent);
   };
   xhr.send();
 };
