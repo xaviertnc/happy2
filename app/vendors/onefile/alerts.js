@@ -22,20 +22,22 @@ F1.Alerts = function (alertsContainerSelector, options)
 
 
 F1.Alerts.prototype.mount = function(elAlert) {
-  let self = this, ttl = parseInt(elAlert.getAttribute('data-ttl')), ttlTimer;
-  elAlert.addEventListener('click', function() {
-    clearTimeout(ttlTimer);
-    elAlert.parentElement.removeChild(elAlert);
-  });
+  let ttlTimer;
+  const self = this;
+  const ttl = parseInt(elAlert.getAttribute('data-ttl'));
   if (ttl) {
-    setTimeout(function() {
+    ttlTimer = setTimeout(function() {
       elAlert.style.transition = 'opacity ' + self.fadeDuration + 'ms';
       elAlert.style.opacity = 0;
-      setTimeout(function() {
+      ttlTimer = setTimeout(function() {
         elAlert.parentElement.removeChild(elAlert);
       }, self.fadeDuration);
     }, ttl);
   }
+  elAlert.addEventListener('click', function() {
+    clearTimeout(ttlTimer);
+    elAlert.parentElement.removeChild(elAlert);
+  });
 };
 
 
