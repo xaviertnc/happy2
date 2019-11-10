@@ -10,7 +10,7 @@ F1.afterPageLoadScripts.push(function initPage1() {
   }
 
   class MultiValueField extends HappyField {
-    constructor(options, happy$) { super(options, happy$); this.subValidateInputs = true; }
+    constructor(options, happy$) { super(options, happy$); this.subValidate = true; }
   }
 
   class FullNameField extends MultiValueField {}
@@ -45,7 +45,7 @@ F1.afterPageLoadScripts.push(function initPage1() {
         }
       }
     },
-    customClasses: {
+    customComponentDefs: {
       fields: {
         fullname: FullNameField,
         birthday: BirthdayField

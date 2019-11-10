@@ -15,7 +15,7 @@ class Happy {
 
   constructor(options = {})
   {
-    this.baseClasses   = {
+    this.baseComponentDefs   = {
       item     : HappyItem,
       document : HappyDocument,
       form     : HappyForm,
@@ -24,21 +24,21 @@ class Happy {
     };
     this.cleaners      = {}; // and|or formatters
     this.validators    = {};
-    this.customClasses = {
+    this.customComponentDefs = {
       documents : {},
       forms     : {},
       fields    : {},
       inputs    : {}
     };
-    this.initVars();
+    this.initData();
     for (let prop in options) { this[prop] = options[prop]; }
     window.Happy.instance = this;
   }
 
 
-  initVars()
+  initData()
   {
-    this.items         = [];
+    this.items         = []; // HappyItem == HappyJS Base Component
     this.inputs        = [];
     this.fields        = [];
     this.forms         = [];
@@ -50,11 +50,11 @@ class Happy {
   }
 
 
-  getClass(baseType, specificType)
+  getComponentDef(baseType, specificType)
   {
-    let HappyClass, baseGroup = baseType + 's';
-    if (specificType) { HappyClass = this.customClasses[baseGroup][specificType]; }
-    return HappyClass || this.baseClasses[baseType];
+    let ComponentDef, baseGroup = baseType + 's';
+    if (specificType) { ComponentDef = this.customComponentDefs[baseGroup][specificType]; }
+    return ComponentDef || this.baseComponentDefs[baseType];
   }
 
 
@@ -68,14 +68,13 @@ class Happy {
   {
     let baseGroup = baseType + 's';
     let specificType = options.type;
-    let HappyClass = options.CustomClass || this.getClass(baseType, specificType);
-    delete options.CustomClass;
+    let ComponentDef = options.CustomDef || this.getComponentDef(baseType, specificType);
+    delete options.CustomDef;
     delete options.type;
-    // HappyClass can be a default Happy Item Class or a
-    // Custom Happy Item Class based on the specific type of the item
-    // and wether a corresponding custom class exists in `customClasses`!
-    // E.g. HappyClass === HappyField -OR- HappyClass === BirthdayField (custom)
-    let happyItem = new HappyClass(options, this);
+    // ComponentDef can be a BASE or EXTENDED Def/ES6Class depending on the type
+    // of the component and whether a corresponding entry exists in `customComponentDefs`!
+    // E.g. ComponentDef === HappyField (base) -OR- ComponentDef === BirthdayField (custom)
+    let happyItem = new ComponentDef(options, this);
     if (specificType) { happyItem[baseType + 'Type'] = specificType; }
     if (happyItem.isTopLevel) { this.topLevelItems.push(happyItem); }
     if (this[baseGroup]) { this[baseGroup].push(happyItem); }
@@ -136,7 +135,7 @@ class Happy {
   dismount()
   {
     this.topLevelItems.forEach(item => item.dismount());
-    this.initVars();
+    this.initData();
     F1.console.log('Happy::dismount()', this);
   }
 
@@ -230,7 +229,7 @@ class HappyItem {
 
   isHappy()
   {
-    if (this.happyType !== 'input' && this.happyType !== 'field' || this.subValidateInputs) {
+    if (this.happyType !== 'input' && this.happyType !== 'field' || this.subValidate) {
       for (let i=0, n=this.children.length; i < n; i++) {
         if ( ! this.children[i].happy) { return false; }
       }
@@ -424,7 +423,7 @@ class HappyItem {
       validateResults = fnCustomValidate(event, reason);
     } else {
       let happy$ = this.happy$;
-      if (this.subValidateInputs) {
+      if (this.subValidate) {
         // If we have child inputs, first validate their rules!
         let inputsWithRules = [];
         for (let i = 0, n = this.inputs.length; i < n; i++) {
@@ -513,7 +512,7 @@ class HappyItem {
     let happyField = happyInput.parent, happy$ = happyInput.happy$;
     happyInput.touched = true;
     happyField.touched = true;
-    if (happyField === happy$.currentField && !happyField.subValidateInputs) {
+    if (happyField === happy$.currentField && !happyField.subValidate) {
       // Ignore any pending `onBlur` event if we are still on the SAME FIELD!
       clearTimeout(happy$.delayBlurEventTimer); }
     happy$.currentField = happyField;
@@ -759,7 +758,7 @@ class HappyItem {
       for (let i = 0, n = this.inputs.length; i < n; i++) {
         let input = this.inputs[i];
         input.modified = input.isModified();
-        if (this.subValidateInputs) {
+        if (this.subValidate) {
           messages = messages.concat(input.messages);
         } else {
           input.happy = this.happy;
