@@ -15,28 +15,28 @@ class Happy {
 
   constructor(options = {})
   {
-    this.baseComponentDefs   = {
+    this.reset();
+    this.baseDefs = {
       item     : HappyItem,
       document : HappyDocument,
       form     : HappyForm,
       field    : HappyField,
       input    : HappyInput
     };
-    this.cleaners      = {}; // and|or formatters
-    this.validators    = {};
-    this.customComponentDefs = {
+    this.cleaners   = {}; // and|or formatters
+    this.validators = {};
+    this.customDefs = {
       documents : {},
       forms     : {},
       fields    : {},
       inputs    : {}
     };
-    this.initData();
     for (let prop in options) { this[prop] = options[prop]; }
     window.Happy.instance = this;
   }
 
 
-  initData()
+  reset()
   {
     this.items         = []; // HappyItem == HappyJS Base Component
     this.inputs        = [];
@@ -45,16 +45,16 @@ class Happy {
     this.documents     = [];
     this.topLevelItems = [];
     this.currentField  = undefined;
-    this.mounted       = false;
+    this.activated     = false;
     this.nextId        = 1;
   }
 
 
-  getComponentDef(baseType, specificType)
+  getHappyClass(baseType, specificType)
   {
-    let ComponentDef, baseGroup = baseType + 's';
-    if (specificType) { ComponentDef = this.customComponentDefs[baseGroup][specificType]; }
-    return ComponentDef || this.baseComponentDefs[baseType];
+    let HappyClass, baseGroup = baseType + 's';
+    if (specificType) { HappyClass = this.customDefs[baseGroup][specificType]; }
+    return HappyClass || this.baseDefs[baseType];
   }
 
 
@@ -68,13 +68,13 @@ class Happy {
   {
     let baseGroup = baseType + 's';
     let specificType = options.type;
-    let ComponentDef = options.CustomDef || this.getComponentDef(baseType, specificType);
+    let HappyClass = options.CustomDef || this.getHappyClass(baseType, specificType);
     delete options.CustomDef;
     delete options.type;
-    // ComponentDef can be a BASE or EXTENDED Def/ES6Class depending on the type
-    // of the component and whether a corresponding entry exists in `customComponentDefs`!
-    // E.g. ComponentDef === HappyField (base) -OR- ComponentDef === BirthdayField (custom)
-    let happyItem = new ComponentDef(options, this);
+    // HappyClass can be a BASE or EXTENDED Def/ES6Class depending on the type
+    // of the component and whether a corresponding entry exists in `customDefs`!
+    // E.g. HappyClass === HappyField (base) -OR- HappyClass === BirthdayField (custom)
+    let happyItem = new HappyClass(options, this);
     if (specificType) { happyItem[baseType + 'Type'] = specificType; }
     if (happyItem.isTopLevel) { this.topLevelItems.push(happyItem); }
     if (this[baseGroup]) { this[baseGroup].push(happyItem); }
@@ -114,29 +114,29 @@ class Happy {
   }
 
 
-  mount(options = {})
+  activate(options = {})
   {
-    if ( ! options.el) { throw new Error('A mount element is required!'); }
-    if (this.mounted) { throw new Error('Already mounted. Dismount before re-mount!'); }
+    if ( ! options.el) { throw new Error('Target DOM element required! i.e. options.el'); }
+    if (this.activated) { throw new Error('Already active!'); }
     if ( ! this.items.length) {
       let baseType = options.type;
       if (baseType) { delete options.type; }
       else { baseType = this.guessElementHappyType(options.el); }
       let item = this.addItem(baseType, options);
       item.mount();
-      this.mounted = true;
+      this.activated = true;
       return item;
     }
     this.topLevelItems.forEach(item => item.mount());
-    this.mounted = true;
+    this.activated = true;
   }
 
 
-  dismount()
+  deactivate()
   {
+    F1.console.log('Happy::deactivate()', this);
     this.topLevelItems.forEach(item => item.dismount());
-    this.initData();
-    F1.console.log('Happy::dismount()', this);
+    this.reset();
   }
 
 }
