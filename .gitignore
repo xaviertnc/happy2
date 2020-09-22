@@ -1,3 +1,4 @@
+storage/*
 assets/*.js
 assets/*.css
 **/cache
