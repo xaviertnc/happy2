@@ -1,8 +1,5 @@
-nbproject
-js
-!/js/main.js
+assets/*.js
+assets/*.css
 **/cache
 *sublime*
-/*.js
-/*.css
 .tmp.*

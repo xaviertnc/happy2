@@ -45,9 +45,9 @@
   // ----------------------
   else {
 
-    include $app->partialsPath . '/head.html';
-    include $view->partialFile($page->cachePath, $page->viewFilePath);
-    include $app->partialsPath . '/foot.html';
+    include $app->componentsPath . '/head.html';
+    include $view->renderTemplate($page->cachePath, $page->viewFilePath);
+    include $app->componentsPath . '/foot.html';
 
     $page->state['alerts'] = [];
     $page->state['errors'] = [];

@@ -126,14 +126,14 @@ class View {
   }
 
 
-  public function globalStyles($dentCount = 2, $dent = null)
+  public function styleLinks($dentCount = 2, $dent = null)
   {
-    $srcFilePaths = array_get($this->app->client, 'globalStyles', []);
+    $srcFilePaths = isset($this->app->styles) ? $this->app->styles : [];
     if (__ENV_PROD__)
     {
       $mostRecent = $this->getMostRecentTimestamp($srcFilePaths);
       if ( ! $mostRecent) { $mostRecent = time(); }
-      $assetHref = "$mostRecent.css";
+      $assetHref = "assets/$mostRecent.css";
       $assetFilePath = $this->app->webRootPath."/$assetHref";
       if ( ! file_exists($assetFilePath))
       {
@@ -159,14 +159,14 @@ class View {
   }
 
 
-  public function globalScripts($dentCount = 2, $dent = null)
+  public function scriptLinks($dentCount = 2, $dent = null)
   {
-    $srcFilePaths = array_get($this->app->client, 'globalScripts', []);
+    $srcFilePaths = isset($this->app->scripts) ? $this->app->scripts : [];
     if (__ENV_PROD__)
     {
       $mostRecent = $this->getMostRecentTimestamp($srcFilePaths);
       if ( ! $mostRecent) { $mostRecent = time(); }
-      $assetHref = "$mostRecent.js";
+      $assetHref = "assets/$mostRecent.js";
       $assetFilePath = $this->app->webRootPath."/$assetHref";
       if ( ! file_exists($assetFilePath))
       {
@@ -221,7 +221,7 @@ class View {
   }
 
 
-  public function partialFile($cachePath, $filePath, $fileType = 'html',
+  public function renderTemplate($cachePath, $filePath, $fileType = 'html',
     $dentCount = null, $dent = null, $before = null, $after = null, $inline = false)
   {
     if ( ! file_exists($filePath)) { return; }
@@ -231,10 +231,10 @@ class View {
   }
 
 
-  public function inlinePartialFile($cachePath, $filePath, $fileType = 'html',
+  public function inlineTemplate($cachePath, $filePath, $fileType = 'html',
     $dentCount = null, $dent = null, $before = null, $after = null)
   {
-    return $this->partialFile($cachePath, $filePath, $fileType,
+    return $this->renderTemplate($cachePath, $filePath, $fileType,
       $dentCount, $dent, $before, $after, true);
   }
 

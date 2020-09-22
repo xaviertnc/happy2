@@ -45,7 +45,7 @@ F1.afterPageLoadScripts.push(function initPage1() {
         }
       }
     },
-    customComponentDefs: {
+    customComponentTypes: {
       fields: {
         fullname: FullNameField,
         birthday: BirthdayField

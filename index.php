@@ -28,40 +28,39 @@ session_start();
 $app = new stdClass();
 
 // SERVER CONFIG
-require 'env-local.php';
+require '.env-local';
 
 // APP CONFIG
 $app->id = 'HappyJsDemo';
 $app->siteName = 'HappyJS';
 $app->siteSlogan = 'Validation that makes you smile!';
+$app->webRootPath = $app->rootPath;
 $app->appPath = $app->rootPath . '/app';
+$app->storagePath = $app->rootPath . '/storage';
+$app->cachePath = $app->storagePath . '/cache';
+$app->vendorsPath = $app->rootPath . '/vendors';
 $app->configPath = $app->appPath . '/config';
 $app->modelsPath = $app->appPath . '/models';
-$app->vendorsPath = $app->appPath . '/vendors';
-$app->storagePath = $app->appPath . '/storage';
 $app->servicesPath = $app->appPath . '/services';
-$app->partialsPath = $app->appPath . '/partials';
-$app->componentsPath = $app->appPath . '/components';
-$app->cachePath = $app->storagePath . '/cache';
-$app->webRootPath = $app->rootPath;
+$app->pagesPath = $app->appPath . '/pages';
+$app->componentsPath = $app->pagesPath . '/shared/components';
 $app->pagesUri = 'app/pages';
 $app->homeUri = 'demo1';
 
-$app->client = [
-  'globalStyles' => [
-    $app->webRootPath . '/css/style.css',
-    $app->webRootPath . '/css/form.css'
-  ],
-  'globalScripts' => [
-    // $app->vendorsPath . '/onefile/polyfill.js',
-    $app->vendorsPath . '/onefile/alerts.js',
-    $app->vendorsPath . '/onefile/modal.js',
-    $app->vendorsPath . '/onefile/b2top.js',
-    $app->vendorsPath . '/onefile/tabs.js',
-    $app->vendorsPath . '/onefile/pjax.js',
-    $app->vendorsPath . '/onefile/h7.js',
-    $app->webRootPath . '/js/main.js'
-  ]
+$app->styles = [
+  $app->webRootPath . '/assets/css/style.css',
+  $app->webRootPath . '/assets/css/form.css'
+];
+
+$app->scripts = [
+  // $app->vendorsPath . '/onefile/polyfill.js',
+  $app->vendorsPath . '/onefile/alerts.js',
+  $app->vendorsPath . '/onefile/modal.js',
+  $app->vendorsPath . '/onefile/b2top.js',
+  $app->vendorsPath . '/onefile/tabs.js',
+  $app->vendorsPath . '/onefile/pjax.js',
+  $app->vendorsPath . '/onefile/h7.js',
+  $app->webRootPath . '/assets/js/main.js'
 ];
 
 
@@ -103,7 +102,7 @@ $app->controllerPath = $app->appPath . '/pages/' . $request->pageref;
 $app->controller = $app->controllerPath . '/' . $app->currentPage . '.php';
 
 if ( ! file_exists($app->controller)) {
-  $app->controllerPath = $app->appPath . '/errors/404';
+  $app->controllerPath = $app->pagesPath . '/shared/errors/404';
   $app->controller = $app->controllerPath . '/404.php';
 }
 
@@ -139,7 +138,7 @@ if (isset($response->redirectTo))
     }
     else
     {
-      $jsonData = ['redirect' => $response->redirectTo, 'external' => 1];
+      $jsonData = ['redirect' => $response->redirectTo, 'external' => 1]; // external = No PJAX page load.
     }
     echo json_encode($jsonData);
     exit;

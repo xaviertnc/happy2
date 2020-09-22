@@ -16,16 +16,16 @@ class Happy {
   constructor(options = {})
   {
     this.reset();
-    this.baseDefs = {
-      item     : HappyItem,
+    this.baseComponentTypes = {
+      item     : HappyItem,      // HappyItem == HappyJS Base Item
       document : HappyDocument,
       form     : HappyForm,
       field    : HappyField,
       input    : HappyInput
     };
-    this.cleaners   = {}; // and|or formatters
+    this.cleaners   = {};        // and|or formatters
     this.validators = {};
-    this.customDefs = {
+    this.customComponentTypes = {
       documents : {},
       forms     : {},
       fields    : {},
@@ -38,7 +38,7 @@ class Happy {
 
   reset()
   {
-    this.items         = []; // HappyItem == HappyJS Base Component
+    this.items         = [];
     this.inputs        = [];
     this.fields        = [];
     this.forms         = [];
@@ -53,8 +53,8 @@ class Happy {
   getHappyClass(baseType, specificType)
   {
     let HappyClass, baseGroup = baseType + 's';
-    if (specificType) { HappyClass = this.customDefs[baseGroup][specificType]; }
-    return HappyClass || this.baseDefs[baseType];
+    if (specificType) { HappyClass = this.customComponentTypes[baseGroup][specificType]; }
+    return HappyClass || this.baseComponentTypes[baseType];
   }
 
 
@@ -68,11 +68,11 @@ class Happy {
   {
     let baseGroup = baseType + 's';
     let specificType = options.type;
-    let HappyClass = options.CustomDef || this.getHappyClass(baseType, specificType);
-    delete options.CustomDef;
+    let HappyClass = options.ComponentTypeDef || this.getHappyClass(baseType, specificType);
+    delete options.ComponentTypeDef;
     delete options.type;
     // HappyClass can be a BASE or EXTENDED Def/ES6Class depending on the type
-    // of the component and whether a corresponding entry exists in `customDefs`!
+    // of the component and whether a corresponding entry exists in `customComponentTypes`!
     // E.g. HappyClass === HappyField (base) -OR- HappyClass === BirthdayField (custom)
     let happyItem = new HappyClass(options, this);
     if (specificType) { happyItem[baseType + 'Type'] = specificType; }
@@ -602,7 +602,7 @@ class HappyItem {
       clearTimeout(happyForm.happy$.delayChangeEventTimer);
       const messages = happyForm.checkAll(event, 'isSubmit');
       if (messages.length) {
-        const onUnhappySubmitFn = happyForm.getOpt('onUnhappySubmit');
+        const onUnhappySubmitFn = happyForm.getOpt('onUnhappyAfterSubmit');
         if (onUnhappySubmitFn && onUnhappySubmitFn(happyForm, messages, event) === 'end') { return; }
         happyForm.renderMessageSummary(messages, {
           elContext: happyForm.el,

@@ -2,7 +2,7 @@
 
 // MAIN
 
-F1.DEBUG = false;
+F1.DEBUG = true;
 
 
 if (F1.DEBUG && window.console) {
@@ -94,7 +94,7 @@ F1.tabs = new F1.Tabs();
 
 F1.pjax = new F1.Pjax({
   siteName: 'Happy JS Demo',
-  busyFaviconUrl: 'img/loading.ico',
+  busyFaviconUrl: 'assets/img/loading.ico',
   csrfTokenMetaName: 'X-CSRF-TOKEN',
   errorsContainerSelector: '#page-errors',
   viewports: ['#site-masthead', '#page-content'],
@@ -108,6 +108,7 @@ F1.pjax = new F1.Pjax({
   }
 });
 
+console.log('F1', F1);
 
 F1.runScripts(F1.afterPageLoadScripts);
 F1.afterPageLoadScripts = [];

@@ -7,7 +7,7 @@
     <base href="<?=$request->urlBase?>">
     <meta name="X-CSRF-TOKEN" content="<?=$page->csrfToken?>">
     <link id="favicon" href="favicon.ico" rel="shortcut icon">
-    <?=$view->globalStyles()?>
+    <?=$view->styleLinks()?>
     <?php if ($page->inlineStyle = $view->inlineStyle()) include $page->inlineStyle ?>
   </head>
 
@@ -46,13 +46,13 @@
 
       <header id="site-masthead">
         <div id="site-brand" class="container">
-          <img id="site-logo" src="img/happy-logo.png">
+          <img id="site-logo" src="assets/img/happy-logo.png">
           <div id="site-name">
             <h1><?=$app->siteName?> - <?=$page->title?></h1>
             <small><?=$app->siteSlogan?></small>
           </div>
         </div>
-        <?php include $view->inlinePartialFile($app->cachePath, $app->partialsPath . '/topnav.html', 'topnav.html'); ?>
+        <?php include $view->inlineTemplate($app->cachePath, $app->componentsPath . '/topnav.html', 'topnav.html'); ?>
       </header>
 
       <section id="page-content">
