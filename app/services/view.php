@@ -33,6 +33,28 @@ class View {
   }
 
 
+  public function assetPathToHref($assetFilePath)
+  {
+    $href = str_replace($this->app->appPath, '', $assetFilePath);
+    if ($href == $assetFilePath)  {
+      // Asset not in APP_PATH. Thus it's in PUBLIC_HTML... Just chop the root!
+      return trim(str_replace($this->app->webRootPath, '', $assetFilePath), '/');
+    }
+    // Copy the "private" asset file into public_html to ease DEV debugging.
+    $publicDir  = $this->app->assetsPath . dirname($href);
+    $publicFile = $this->app->assetsPath . $href;
+    if ( ! is_dir($publicDir)) {
+      $oldumask = umask(0);
+      mkdir($publicDir, 0755, true);
+      umask($oldumask);
+    }
+    if ( ! file_exists($publicFile) or filemtime($publicFile) != filemtime($assetFilePath)) {
+      copy($assetFilePath, $publicFile);
+    }
+    return $this->app->assetsUri . $href;
+  }
+
+
   public function menuItem($url, $label = null) {
     return '<li' . ($this->app->request->pageref == $url ? ' class="active">' : '>') .
       '<a href="' . $url . '" class="pagelink">' . ($label ?: $url) . '</a></li>' . PHP_EOL;
@@ -51,12 +73,12 @@ class View {
   }
 
 
-  public function getDefaultCachePath($srcFilePath = null)
+  public function getDefaultCachePath($assetFilePath = null)
   {
     if (isset($this->app->page) and isset($this->app->page->cachePath)) {
       return $this->app->page->cachePath;
     }
-    return dirname($srcFilePath) . '/cache';
+    return dirname($assetFilePath) . '/cache';
   }
 
 
@@ -67,10 +89,10 @@ class View {
    * NOTE: Add a pre-extension to $fileType to distinguish similar files.
    * E.g. ".pdf.html", ".csv.html" or .altview.html etc.
    */
-  public function getCachedFilePath($srcFilePath, $fileType, $cachePath = null)
+  public function getCachedFilePath($assetFilePath, $fileType, $cachePath = null)
   {
-    if ( ! $cachePath) { $cachePath = $this->getDefaultCachePath($srcFilePath); }
-    $srcFileTimestamp = filemtime($srcFilePath);
+    if ( ! $cachePath) { $cachePath = $this->getDefaultCachePath($assetFilePath); }
+    $srcFileTimestamp = filemtime($assetFilePath);
     return "$cachePath/$srcFileTimestamp.$fileType";
   }
 
@@ -128,72 +150,94 @@ class View {
 
   public function styleLinks($dentCount = 2, $dent = null)
   {
-    $srcFilePaths = isset($this->app->styles) ? $this->app->styles : [];
+    $assetFilePaths = isset($this->app->styles) ? $this->app->styles : [];
     if (__ENV_PROD__)
     {
-      $mostRecent = $this->getMostRecentTimestamp($srcFilePaths);
+      $mostRecent = $this->getMostRecentTimestamp($assetFilePaths);
       if ( ! $mostRecent) { $mostRecent = time(); }
       $assetHref = "assets/$mostRecent.css";
       $assetFilePath = $this->app->webRootPath."/$assetHref";
       if ( ! file_exists($assetFilePath))
       {
-        $content = $this->concatFiles($srcFilePaths);
+        $content = $this->concatFiles($assetFilePaths);
         $content = $this->minify($content, 'css');
         file_put_contents($assetFilePath, $content);
       }
-      return '<link href="' . $assetHref . '" rel="stylesheet">' . PHP_EOL;
+      $assetFilePaths = [ $assetFilePath ];
     }
-    else
+
+    if (isset($this->app->page->styles)) {
+      $assetFilePaths = array_merge($assetFilePaths, $this->app->page->styles);
+    }
+
+    $html = '';
+    $dent = $dent ?: $this->dent;
+    $indent = $this->indent($dentCount, $dent);
+    foreach ($assetFilePaths as $i => $assetFilePath)
     {
-      $html = '';
-      $dent = $dent ?: $this->dent;
-      $indent = $this->indent($dentCount, $dent);
-      foreach ($srcFilePaths as $i => $srcFilePath)
-      {
-        $fileName = basename($srcFilePath);;
-        $assetHref = "css/$fileName";
-        $html .= ($i ? $indent : '') . '<link href="' . $assetHref . '" rel="stylesheet">' . PHP_EOL;
-      }
-      return $html;
+      $assetHref = $this->assetPathToHref($assetFilePath);
+      $html .= ($i ? $indent : '') . '<link href="' . $assetHref . '" rel="stylesheet">' . PHP_EOL;
     }
+    return $html;
   }
 
 
   public function scriptLinks($dentCount = 2, $dent = null)
   {
-    $srcFilePaths = isset($this->app->scripts) ? $this->app->scripts : [];
+    $assetFilePaths = isset($this->app->scripts) ? $this->app->scripts : [];
+    $hasPageScripts = ! empty($this->app->page->scripts);
+    $mainJs = $hasPageScripts ? array_get($assetFilePaths, 'main') : null;
+
     if (__ENV_PROD__)
     {
-      $mostRecent = $this->getMostRecentTimestamp($srcFilePaths);
-      if ( ! $mostRecent) { $mostRecent = time(); }
-      $assetHref = "assets/$mostRecent.js";
-      $assetFilePath = $this->app->webRootPath."/$assetHref";
-      if ( ! file_exists($assetFilePath))
+      $minifiedFiles = [];
+      foreach ($assetFilePaths as $group => $groupFilePaths)
       {
-        $content = $this->concatFiles($srcFilePaths);
-        $content = $this->minify($content, 'js');
-        file_put_contents($assetFilePath, $content);
+        if ($hasPageScripts and $group == 'main') { continue; }
+        $mostRecent = $this->getMostRecentTimestamp($groupFilePaths);
+        if ( ! $mostRecent) { $mostRecent = time(); }
+        $assetHref = "{$this->app->assetsUri}/$group-$mostRecent.js";
+        $minifiedFile = "{$this->app->webRootPath}/$assetHref";
+        $minifiedFiles[] = $minifiedFile;
+        if ( ! file_exists($minifiedFile))
+        {
+          $content = $this->concatFiles($groupFilePaths);
+          $content = $this->minify($content, 'js');
+          file_put_contents($minifiedFile, $content);
+        }
       }
-      return '<script src="' . $assetHref . '"></script>' . PHP_EOL;
+      $assetFilePaths = $minifiedFiles;
     }
     else
     {
-      $html = '';
-      $dent = $dent ?: $this->dent;
-      $indent = $this->indent($dentCount, $dent);
-      foreach ($srcFilePaths as $i => $srcFilePath)
+      $ungroupedFiles = [];
+      foreach ($assetFilePaths as $group => $groupFilePaths)
       {
-        $fileName = basename($srcFilePath);;
-        $assetHref = "js/$fileName";
-        $assetFilePath = $this->app->webRootPath."/$assetHref";
-        if ( ! file_exists($assetFilePath)
-          or filemtime($srcFilePath) != filemtime($assetFilePath)) {
-          copy($srcFilePath, $assetFilePath);
-        }
-        $html .= ($i ? $indent : '') . '<script src="' . $assetHref . '"></script>' . PHP_EOL;
+        if ($hasPageScripts and $group == 'main') { continue; }
+        foreach($groupFilePaths as $groupFile) { $ungroupedFiles[] = $groupFile; }
       }
-      return $html;
+      $assetFilePaths = $ungroupedFiles;
     }
+
+    if ($hasPageScripts) {
+      $assetFilePaths = array_merge($assetFilePaths, $this->app->page->scripts);
+    }
+
+    $html = '';
+    $dent = $dent ?: $this->dent;
+    $indent = $this->indent($dentCount, $dent);
+    foreach ($assetFilePaths as $i => $assetFilePath)
+    {
+      $assetHref = $this->assetPathToHref($assetFilePath);
+      $html .= ($i ? $indent : '') . '<script src="' . $assetHref . '"></script>' . PHP_EOL;
+    }
+
+    if ($mainJs) {
+      $assetHref = $this->assetPathToHref($mainJs);
+      $html .= ($i ? $indent : '') . '<script src="' . $assetHref . '"></script>' . PHP_EOL;
+    }
+
+    return $html;
   }
 
 

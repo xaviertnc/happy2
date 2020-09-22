@@ -55,6 +55,9 @@
   // ----------------------
   else {
 
+    // $page->styles[] = $page->dir . '/demo1.css';
+    // $page->scripts[] = $page->dir . '/demo1.js';
+
     include $app->componentsPath . '/head.html';
     include $view->renderTemplate($page->cachePath, $page->viewFilePath);
     include $app->componentsPath . '/foot.html';

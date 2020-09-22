@@ -34,33 +34,38 @@ require '.env-local';
 $app->id = 'HappyJsDemo';
 $app->siteName = 'HappyJS';
 $app->siteSlogan = 'Validation that makes you smile!';
-$app->webRootPath = $app->rootPath;
 $app->appPath = $app->rootPath . '/app';
-$app->storagePath = $app->rootPath . '/storage';
-$app->cachePath = $app->storagePath . '/cache';
-$app->vendorsPath = $app->rootPath . '/vendors';
+$app->webRootPath = $app->rootPath;
 $app->configPath = $app->appPath . '/config';
 $app->modelsPath = $app->appPath . '/models';
-$app->servicesPath = $app->appPath . '/services';
 $app->pagesPath = $app->appPath . '/pages';
+$app->servicesPath = $app->appPath . '/services';
+$app->vendorsPath = $app->appPath . '/vendors';
 $app->componentsPath = $app->pagesPath . '/shared/components';
-$app->pagesUri = 'app/pages';
+$app->assetsPath = $app->webRootPath . '/assets';
+$app->storagePath = $app->webRootPath . '/storage';
+$app->cachePath = $app->storagePath . '/cache';
+$app->assetsUri = 'assets';
 $app->homeUri = 'demo1';
 
 $app->styles = [
-  $app->webRootPath . '/assets/css/style.css',
-  $app->webRootPath . '/assets/css/form.css'
+  $app->assetsPath . '/css/style.css',
+  $app->assetsPath . '/css/form.css'
 ];
 
 $app->scripts = [
-  // $app->vendorsPath . '/onefile/polyfill.js',
-  $app->vendorsPath . '/onefile/alerts.js',
-  $app->vendorsPath . '/onefile/modal.js',
-  $app->vendorsPath . '/onefile/b2top.js',
-  $app->vendorsPath . '/onefile/tabs.js',
-  $app->vendorsPath . '/onefile/pjax.js',
-  $app->vendorsPath . '/onefile/h7.js',
-  $app->webRootPath . '/assets/js/main.js'
+  'vendor' => [
+    // $app->vendorsPath . '/onefile/polyfill.js',
+    $app->vendorsPath . '/onefile/alerts.js',
+    $app->vendorsPath . '/onefile/modal.js',
+    $app->vendorsPath . '/onefile/b2top.js',
+    $app->vendorsPath . '/onefile/tabs.js',
+    $app->vendorsPath . '/onefile/pjax.js',
+    $app->vendorsPath . '/onefile/h7.js'
+  ],
+  'main' => [
+    $app->webRootPath . '/assets/js/main.js'
+  ]
 ];
 
 
