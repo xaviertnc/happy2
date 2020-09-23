@@ -84,6 +84,10 @@ ol, ul { padding-left: 0.8em; }
   z-index: 1000;
 }
 
+.top-hidden #back-to-top {
+  display: block;
+}
+
 #busy-indicator-overlay {
   position: fixed;
   top: 0;
@@ -109,9 +113,14 @@ ol, ul { padding-left: 0.8em; }
   position: relative;
 }
 
-#alerts {
-  position: absolute;
-  right: 1em;
+.top-hidden #alerts {
+  background-color: rgba(255,255,255,0.8);
+  box-shadow: 0 0 10px 5px rgba(255,255,255,0.8);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
 }
 
 #alerts .info {
@@ -132,7 +141,11 @@ ol, ul { padding-left: 0.8em; }
   color: crimson;
   cursor: pointer;
   padding: 0.3em 0.5em;
-  margin-bottom: 0.1em;
+  margin-bottom: 0.4em;
+}
+
+.top-hidden .alert {
+  margin: 0.2em 0.5em;
 }
 
 .alert::after {
