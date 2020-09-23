@@ -15,19 +15,17 @@ window.F1 = window.F1 || { afterPageLoadScripts: [] };
  *
  */
 
-F1.Back2Top = function (elementSelector, showOffset)
+F1.Back2Top = function (triggerOffset, elementSelector)
 {
-  this.showOffset = showOffset || 20;
-  this.el = document.querySelector(elementSelector || '#back-to-top');
-  window.addEventListener('scroll', this.scrollHandler.bind(this));
+  triggerOffset = triggerOffset || 20;
+  var el = document.querySelector(elementSelector || '#back-to-top');
+  var elDoc = document.documentElement || document.body;
+  var scrollHandler = function() {
+	  if (elDoc.scrollTop > triggerOffset) { elDoc.classList.add('top-hidden'); }
+	  else { elDoc.classList.remove('top-hidden'); }
+	};
+  window.addEventListener('scroll', scrollHandler);
   F1.console.log('F1 Back2Top Initialized');
-};
-
-
-F1.Back2Top.prototype.scrollHandler = function()
-{
-  this.el.style.display = (document.body.scrollTop > this.showOffset ||
-    document.documentElement.scrollTop > this.showOffset) ? 'block' : 'none';
 };
 
 // end: F1.Back2Top
