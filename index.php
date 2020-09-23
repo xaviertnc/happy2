@@ -98,6 +98,8 @@ $app->request = $request;
 
 // APP RESPONSE
 $response = new stdClass();
+$response->code = 200;
+$response->redirect = 0;
 $app->response = $response;
 
 
@@ -112,7 +114,7 @@ if ( ! file_exists($app->controller)) {
 }
 
 
-// RESTORE APP STATE
+// GET APP STATE
 $app->state = array_get($_SESSION, $app->id, []);
 
 
@@ -124,33 +126,26 @@ require $app->controller;
 $_SESSION[$app->id] = $app->state;
 
 
-// REDIRECT IF REQUIRED...
-if (isset($response->redirectTo))
+// HARD REDIRECT?
+if ($response->redirect and ! $request->isAjax)
 {
-  // If you want a HARD REDIRECT after an AJAX POST, just
-  // set $request->isAjax == false in the controller.
-  if ($request->isAjax)
-  {
-    // SOFT REDIRECT
-    http_response_code(202);
-    header('Content-type: application/json');
-    header('Cache-Control: no-cache, must-revalidate');
-    header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
-    if (empty($response->redirectExternal))
-    {
-      header('X-REDIRECT-TO:' . $response->redirectTo);
-      $jsonData = ['redirect' => $response->redirectTo];
-    }
-    else
-    {
-      $jsonData = ['redirect' => $response->redirectTo, 'external' => 1]; // external = No PJAX page load.
-    }
-    echo json_encode($jsonData);
-    exit;
-  }
-  // HARD REDIRECT
-  header('location:' . full_url($request->urlBase,  $response->redirectTo));
+  header('location:' . full_url($request->urlBase, $response->redirect));
   exit;
+}
+
+
+http_response_code($response->code);
+
+
+// AJAX RESPONSE
+if ($request->isAjax)
+{
+  header('Content-type: application/json');
+  header('Cache-Control: no-cache, must-revalidate');
+  header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+  // SOFT REDIRECT?
+  if ($response->redirect) { header('X-REDIRECT-TO:'.$response->redirect); }
+  echo json_encode($response);
 }
 
 
