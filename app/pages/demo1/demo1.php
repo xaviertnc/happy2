@@ -43,10 +43,20 @@
 
     } while (0);
 
-    $page->state['alerts'] = $alerts;
-    $page->state['errors'] = $errors;
-    $app->state[$page->id] = $page->state;
-    $response->redirectTo = $request->back ?: $request->uri;
+    if ($request->isAjax) {
+
+      $response->alerts = $alerts;
+      $response->errors = $errors;
+
+    } else {
+
+      $page->state['alerts'] = $alerts;
+      $page->state['errors'] = $errors;
+      $app->state[$page->id] = $page->state;
+
+      $response->redirect = $request->back ?: $request->uri;
+
+    }
   }
 
 
