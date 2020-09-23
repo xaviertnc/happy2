@@ -488,6 +488,7 @@ F1.Pjax.prototype.pageLinkClickHandler = function(event)
 // override me!
 F1.Pjax.prototype.formSubmitHandler = function(event, elForm)
 {
+  F1.console.log('F1.Pjax.formSubmitHandler(), elForm:', elForm);
   this.stopDOMEvent(event);
   if (elForm.submitTriggerElement) {
     var submitParams, submitAction = elForm.submitTriggerElement.name || '';
@@ -500,9 +501,18 @@ F1.Pjax.prototype.formSubmitHandler = function(event, elForm)
     } else {
       submitParams = elForm.submitTriggerElement.value;
     }
+    var elAction = elForm.querySelector('[name="__ACTION__"]');
+    var elParams = elForm.querySelector('[name="__PARAMS__"]');
+    F1.console.log('F1.Pjax.formSubmitHandler(), elAction:', elAction);
     if (submitAction) {
-      elForm.appendChild(this.createInputElement('hidden', '__ACTION__', submitAction));
-      elForm.appendChild(this.createInputElement('hidden', '__PARAMS__', submitParams));
+      F1.console.log('F1.Pjax.formSubmitHandler(), submitAction:', submitAction);
+      if (elAction) { elAction.value = submitAction; } else {
+        elForm.appendChild(this.createInputElement('hidden', '__ACTION__', submitAction)); }
+      if (elParams) { elParams.value = submitParams; } else {
+        elForm.appendChild(this.createInputElement('hidden', '__PARAMS__', submitParams)); }
+    } else {
+      if (elAction) { elForm.removeChild(elAction); }
+      if (elParams) { elForm.removeChild(elParams); }
     }
   }
   return this.postFormData(elForm);
@@ -546,21 +556,13 @@ F1.Pjax.prototype.handleRedirect = function(xhr) {
   var extLink;
   var resp = xhr.response;
   var redirectUrl = xhr.getResponseHeader('X-REDIRECT-TO');
-  // F1.console.log('Pjax.handleRedirect(), redirectUrl =', redirectUrl);
-  // F1.console.log('Pjax.handleRedirect(), xhr =', xhr);
   if ( ! redirectUrl) {
     resp = (typeof resp === 'string') ? JSON.parse(resp) : resp;
     redirectUrl = resp.redirect || resp.url || '';
-    extLink = !!resp.external;
-    if (extLink) {
-      // Redirect to an external page!
-      return window.location.href = redirectUrl;
-    }
+    // noPjax => Redirect to external (non PJAX page) url
+    if (resp.noPjax) { return window.location.href = redirectUrl; }
   }
-  // console.log('handleRedirect(), redirectUrl:', redirectUrl);
-  if ( ! this.isCurrentLocation(redirectUrl)) {
-    this.pushState(redirectUrl);
-  }
+  if ( ! this.isCurrentLocation(redirectUrl)) { this.pushState(redirectUrl); }
   this.loadPage({ url: redirectUrl });
 };
 
@@ -693,17 +695,16 @@ F1.Pjax.prototype.postSuccessHandler = function(xhr, progressEvent)
 
 F1.Pjax.prototype.postFailedHandler = function(xhr, progressEvent)
 {
-  F1.console.error('Pjax.postFailedHandler(), xhr =', xhr, ', progressEvent =', progressEvent);
   var errorMessage = this.getResponseErrorMessage(xhr);
   if (this.onPostFail && this.onPostFail(xhr, errorMessage) === 'abort') { return; }
   return this.showError(errorMessage);
 };
 
 
-// Override me!
 F1.Pjax.prototype.alwaysAfterPostHandler = function(xhr, progressEvent)
 {
-  return xhr && progressEvent;
+  if (this.onAlwaysAfterPost && this.onAlwaysAfterPost(xhr, progressEvent) === 'abort') { return; }
+  this.removeBusyIndication();
 };
 
 
@@ -723,7 +724,7 @@ F1.Pjax.prototype.postFormData = function(elForm)
   xhr.setRequestHeader('X-REQUESTED-WITH', 'PJAX');
   xhr.onload = function(progressEvent) {
     var xhr = this;
-    if (xhr.status === 200 || xhr.status === 202) {
+    if (xhr.status === 200) {
       pjax.postSuccessHandler(xhr, progressEvent);
     } else {
       pjax.postFailedHandler(xhr, progressEvent);
