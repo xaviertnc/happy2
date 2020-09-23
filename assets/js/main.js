@@ -84,7 +84,7 @@ F1.runScripts = function (scriptQueue)
 
 F1.console.log('*** DOCUMENT READY ***');
 
-F1.back2Top = new F1.Back2Top();
+F1.back2Top = new F1.Back2Top(130);
 
 F1.alerts = new F1.Alerts();
 
@@ -105,6 +105,15 @@ F1.pjax = new F1.Pjax({
     F1.pjax.bindViewports();
     F1.alerts.init();
     F1.tabs.init();
+  },
+  onPostSuccess: function(xhr, errorMessage) {
+    let resp = xhr.response;
+    if (typeof resp === 'string') { resp = JSON.parse(resp); }
+    F1.console.log('F1.Pjax.onPostSuccess(), resp:', resp);
+    if (resp.alerts) {
+      resp.alerts.forEach(alert => F1.alerts.add(alert[0], alert[1], alert[2]));
+    }
+    return 'abort';
   }
 });
 
