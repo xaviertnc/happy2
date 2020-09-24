@@ -15,7 +15,7 @@ class Happy {
 
   constructor(options = {})
   {
-    this.reset();
+    this.initVoid();
     this.baseComponentTypes = {
       item     : HappyItem,      // HappyItem == HappyJS Base Item
       document : HappyDocument,
@@ -36,7 +36,7 @@ class Happy {
   }
 
 
-  reset()
+  initVoid()
   {
     this.items         = [];
     this.inputs        = [];
@@ -114,6 +114,18 @@ class Happy {
   }
 
 
+  reset()
+  {
+    this.topLevelItems.forEach(item => item.reset());
+  }
+
+
+  clear()
+  {
+    this.topLevelItems.forEach(item => item.clear());
+  }
+
+
   activate(options = {})
   {
     if ( ! options.el) { throw new Error('Target DOM element required! i.e. options.el'); }
@@ -135,8 +147,10 @@ class Happy {
   deactivate()
   {
     F1.console.log('Happy::deactivate()', this);
+    if (this.delayBlurEventTimer) { clearTimeout(this.delayBlurEventTimer); }
+    if (this.delayChangeEventTimer) { clearTimeout(this.delayChangeEventTimer); }
     this.topLevelItems.forEach(item => item.dismount());
-    this.reset();
+    this.initVoid();
   }
 
 }
@@ -620,7 +634,8 @@ class HappyItem {
 
   removeMessages()
   {
-    // F1.console.log('HappyItem::removeMessages(),', this.id);
+    F1.console.log('HappyItem::removeMessages(),', this.id, ', messages:', this.messages);
+    // if (this.children) { this.children.forEach(child => child.removeMessages()); }
     const summarySelector = this.getOpt('summarySelector', '.message-summary');
     const summaryElements = document.querySelectorAll(summarySelector);
     summaryElements.forEach(function(elSummary) {
@@ -631,57 +646,60 @@ class HappyItem {
         elSummary.classList.add('hidden');
       }
     });
-    const elMessageZone = this.el;
-    const msgGrpSelector = '.' + this.getOpt('messageGroupClass', 'messages');
-    const msgGrpElements = elMessageZone.querySelectorAll(msgGrpSelector);
-    msgGrpElements.forEach(elMsgGrp => elMsgGrp.parentElement.removeChild(elMsgGrp));
-    this.inputs.forEach(input => input.messages = []);
-    this.messages = [];
+    if (this.messages) {
+      this.messages.forEach(function(msg) {
+        if(msg.el && msg.el.parentElement) { msg.el.parentElement.removeChild(msg.el); }
+      });
+      // this.messages.forEach(function(msg) {
+      //   if(msg.happyItem.elMsgGrp) { msg.happyItem.elMsgGrp.parentElement.removeChild(msg.el); }
+      // });
+      this.messages = [];
+    }
   }
 
 
-  addMessages(validateResults, onlyUpdateModel)
+  addMessages(validateResults)
   {
+    F1.console.log('HappyItem::addMessages(),', this.id, ', validateResults:', validateResults);
     const happyItems = [];
     const msgGrpClass = this.getOpt('messageGroupClass', 'messages');
     const msgClass = this.getOpt('messageClass', 'message error');
-    let message, elMsg, elMessageZone, validateResult, happyItem;
+    let messageText, elMsg, elMessageZone, validateResult, happyItem;
+    if ( ! this.messages) { this.messages = []; }
     for (let i = 0, n = validateResults.length; i < n; i++) {
       validateResult = validateResults[i];
-      message = validateResult.message;
+      messageText = validateResult.message;
       happyItem = validateResult.item || this;
       happyItem.messages = happyItem.messages || [];
-      if ( ! onlyUpdateModel && ! happyItem.elMsgGrp) { // (!elMsgGrp) == only render first msg.
-        elMsg = document.createElement('li');
-        elMsg.className = msgClass;
-        elMessageZone = (happyItem.happyType === 'input')
-          ? happyItem.el.parentElement
-          : happyItem.el.querySelector('.input-group');
-        if ( ! elMessageZone) { elMessageZone = happyItem.el; }
-        if ( ! happyItem.elMsgGrp) {
-          happyItem.elMsgGrp = document.createElement('ul');
-          happyItem.elMsgGrp.className = msgGrpClass;
-          elMessageZone.appendChild(happyItem.elMsgGrp);
-        }
-        elMsg.innerHTML = message;
-        happyItem.elMsgGrp.appendChild(elMsg);
+      elMsg = document.createElement('li');
+      elMsg.className = msgClass;
+      elMessageZone = (happyItem.happyType === 'input')
+        ? happyItem.el.parentElement
+        : happyItem.el.querySelector('.input-group');
+      if ( ! elMessageZone) { elMessageZone = happyItem.el; }
+      if ( ! happyItem.elMsgGrp) {
+        happyItem.elMsgGrp = document.createElement('ul');
+        happyItem.elMsgGrp.className = msgGrpClass;
+        elMessageZone.appendChild(happyItem.elMsgGrp);
       }
-      happyItem.messages.push({
-        el: elMsg, elParent: elMessageZone, text: message, happyItem: happyItem
-      });
+      elMsg.innerHTML = messageText;
+      happyItem.elMsgGrp.appendChild(elMsg);
+      const msgObj = { el: elMsg, text: messageText, happyItem: happyItem };
+      if (happyItem !== this) { this.messages.push(msgObj); }
+      happyItem.messages.push(msgObj);
       happyItems.push(happyItem);
+      break; // only render first msg.
     }
-    if ( ! onlyUpdateModel) {
-      setTimeout(function(){
-        // F1.console.log('addMessages::addMessages(), happyItems =', happyItems);
-        happyItems.forEach(function(item) {
-          if (item.elMsgGrp) {
-            item.elMsgGrp.classList.add('animate');
-            delete item.elMsgGrp;
-          }
-        });
-      }, 150);
-    }
+    setTimeout(function(){
+      // F1.console.log('addMessages::addMessages(), happyItems =', happyItems);
+      happyItems.forEach(function(item) {
+        if (item.elMsgGrp) {
+          item.elMsgGrp.classList.add('animate');
+          delete item.elMsgGrp;
+        }
+      });
+    }, 150);
+    F1.console.log('HappyItem::addMessages(),', this.id, ', messages:', this.messages);
   }
 
 
@@ -744,39 +762,39 @@ class HappyItem {
   }
 
 
+  // Only validate FIELDS!  Update field values + modified status + happy status.
+  // When we exit or change an input's value, always select the parent field to run check() on!
+  // When we submit via checkAll(), we go down to the fields and validate all. Then update parent form + doc (if existing)
+  // reason = null (manual check), isSubmit, onBlur, onChange ...
   check(event, reason)
   {
     let messages = [];
-    const reasonCheckOrSubmit = (reason === 'check' || reason === 'isSubmit');
-    // F1.console.log('HappyItem::check(),', this.id, reason);
+    F1.console.log('HappyItem::check(),', this.id, reason);
     this.value = this.getValue();
     this.modified = this.isModified();
-    if (reason !== 'isParent') {
+    if (this.happyType === 'field') {
       const validateResults = this.validate(event, reason) || [];
       this.removeMessages();
       this.addMessages(validateResults); // , reasonCheckOrSubmit
       for (let i = 0, n = this.inputs.length; i < n; i++) {
         let input = this.inputs[i];
         input.modified = input.isModified();
-        if (this.subValidate) {
-          messages = messages.concat(input.messages);
-        } else {
-          input.happy = this.happy;
-        }
+        if ( ! this.subValidate) { input.happy = this.happy; }
         input.renderState();
       }
     } else {
       this.happy = this.isHappy();
     }
     this.renderState();
-    if ( ! reasonCheckOrSubmit && this.parent) { this.parent.check(event, 'isParent'); }
+    if ( reason !== 'isSubmit' && this.parent) { this.parent.check(event, 'isParent'); }
     return messages.concat(this.messages || []);
   }
 
 
-  checkAll(event, reason) // reason: 'check' or 'isSubmit'
+  // A top-down
+  checkAll(event, reason) // reason = null (manual check) or isSubmit
   {
-    // F1.console.log('HappyItem::checkAll(),', this.id, reason);
+    F1.console.log('HappyItem::checkAll(),', this.id, reason);
     let messages = [];
     if (this.happyType === 'document') {
       this.forms.forEach(function(form) {
@@ -833,6 +851,39 @@ class HappyItem {
     this.mounted = false;
     if ( ! this.isRenderedElement) {
       this.unbindEvents();
+    }
+  }
+
+
+  setValue(value)
+  {
+    F1.console.log('Happy[', this.happyType, ']::setValue(), value:', value, ', id:', this.id, ', this.val:', this.value);
+    if (this.happyType === 'input') {
+      this.value = value;
+      this.el.value = this.value;
+    }
+  }
+
+
+  reset(skipCheck)
+  {
+    F1.console.log('Happy[', this.happyType, ']::reset(), skipCheck:', skipCheck, ', id:', this.id, ', children:', this.children);
+    if (this.children.length) { this.children.forEach(child => child.reset('skipCheck')); }
+    if ( ! skipCheck) { this.removeMessages(); }
+    this.setValue(this.initialValue);
+    this.modified = false;
+    this.unhappy = false;
+    this.renderState();
+  }
+
+
+  clear(skipCheck)
+  {
+    if (this.children) { this.children.forEach(child => child.clear('skipCheck')); }
+    else { this.setValue(''); }
+    if ( ! skipCheck ) {
+      if ( this.happyType === 'field' ) { this.check(); }
+      else { this.checkAll(); } // i.e. this is document or form
     }
   }
 
